@@ -24,4 +24,46 @@ CONFIG = {
     ],
     "timeframes": ["M1", "M5", "M15", "M30", "H1", "H4", "D1"],
     "log_level": "INFO"
+},
+"languages": {
+    "en": {
+        "start": "Welcome! Tap 📈 Start to generate a signal.",
+        "choose_timeframe": "⏱ Choose a timeframe:",
+        "choose_symbol": "💱 Choose a currency pair:",
+        "generating": "📡 Generating signal...",
+        "no_signal": "⚠️ No signal at this moment.",
+        "signal_title": "📡 New Forex Signal Alert!",
+        "pair": "Pair",
+        "direction": "Direction",
+        "strength": "Strength",
+        "confidence": "Confidence",
+        "entry": "Entry Price",
+        "recommend": "Recommended Entry",
+        "high": "High",
+        "low": "Low",
+        "volume": "Volume",
+        "payout": "Simulated Payout (92%)",
+        "timer": "Action Window: Execute within 1 minute!",
+        "refresh": "Refresh"
+    },
+    "pt": {
+        "start": "Bem-vindo! Toque 📈 Iniciar para gerar um sinal.",
+        "choose_timeframe": "⏱ Escolha o timeframe:",
+        "choose_symbol": "💱 Escolha o par de moedas:",
+        "generating": "📡 Gerando sinal...",
+        "no_signal": "⚠️ Nenhum sinal neste momento.",
+        "signal_title": "📡 Novo Alerta de Sinal Forex!",
+        "pair": "Par",
+        "direction": "Direção",
+        "strength": "Força",
+        "confidence": "Confiança",
+        "entry": "Preço de Entrada",
+        "recommend": "Entrada Recomendada",
+        "high": "Alta",
+        "low": "Baixa",
+        "volume": "Volume",
+        "payout": "Lucro Simulado (92%)",
+        "timer": "⏱ Execute dentro de 1 minuto!",
+        "refresh": "Atualizar"
+    }
 }
