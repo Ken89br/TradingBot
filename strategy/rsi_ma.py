@@ -1,3 +1,5 @@
+# strategy/rsi_ma.py
+
 import talib
 import numpy as np
 
@@ -34,6 +36,7 @@ class AggressiveRSIMA:
         highs = [float(c["high"]) for c in history]
         lows = [float(c["low"]) for c in history]
         volumes = [float(c.get("volume", 0)) for c in history]
+
         return {
             "signal": signal,
             "price": closes[-1],
@@ -43,4 +46,5 @@ class AggressiveRSIMA:
             "recommend_entry": (highs[-1] + lows[-1]) / 2,
             "strength": strength,
             "confidence": confidence
-          }
+                        }
+    
