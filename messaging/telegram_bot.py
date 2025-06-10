@@ -32,20 +32,6 @@ class TelegramNotifier:
         self.strategy = strategy
         self.data_client = data_client
         
-@self.dp.message_handler(lambda msg: msg.text.lower() in ["/help", "help"])
-async def help_cmd(msg: types.Message):
-    await msg.answer("ℹ️ This bot generates real-time forex signals using AI and technical strategies.\nUse 📈 Start to begin.")
-
-@self.dp.message_handler(lambda msg: msg.text.lower() in ["/support", "support"])
-async def support_cmd(msg: types.Message):
-    username = CONFIG["support"]["@kenbreu"]
-    await msg.answer(f"🛟 Contact support at: {username}")
-
-@self.dp.message_handler(lambda msg: msg.text.lower() in ["/stop", "stop"])
-async def stop_cmd(msg: types.Message, state: FSMContext):
-    await state.finish()
-    await msg.answer("🛑 Signal generation stopped. Use 📈 Start to begin again.")
-
         # Command: /start
         @self.dp.message_handler(commands=['start'])
         async def start_cmd(msg: types.Message):
@@ -57,6 +43,21 @@ async def stop_cmd(msg: types.Message, state: FSMContext):
             keyboard.add(KeyboardButton("/help"), KeyboardButton("/support"))
             await msg.reply(get_text("start"), reply_markup=keyboard)
 
+        # Butão help, support
+        @self.dp.message_handler(lambda msg: msg.text.lower() in ["/help", "help"])
+        async def help_cmd(msg: types.Message):
+            await msg.answer("ℹ️ This bot generates real-time forex signals using AI and technical strategies.\nUse 📈 Start to begin.")
+
+        @self.dp.message_handler(lambda msg: msg.text.lower() in ["/support", "support"])
+        async def support_cmd(msg: types.Message):
+            username = CONFIG["support"]["username"]
+            await msg.answer(f"🛟 Contact support at: {username}")
+
+        @self.dp.message_handler(lambda msg: msg.text.lower() in ["/stop", "stop"])
+        async def stop_cmd(msg: types.Message, state: FSMContext):
+           await state.finish()
+           await msg.answer("🛑 Signal generation stopped. Use 📈 Start to begin again.")
+    
         # 📈 Start button pressed
         @self.dp.message_handler(lambda msg: msg.text == "📈 Start", state="*")
         async def handle_start_signal(msg: types.Message):
