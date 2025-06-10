@@ -15,5 +15,5 @@ services:
         value: 8137693719
       - key: TWELVE_DATA_API_KEY
         value: 2e08f48192c14bee8d4ecefc763a2a37
-      - key: PORT
-        value: 10000
+      - key: WEBHOOK_URL
+        value: https://tradingbotv2.onrender.com
