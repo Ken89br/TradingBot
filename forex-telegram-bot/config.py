@@ -67,5 +67,5 @@ CONFIG = {
         "refresh": "Atualizar"
     }
     "webhook": {
-    "url": "https://your-render-app.onrender.com"
+    "url": "https://tradingbotv2.onrender.com"
 }
