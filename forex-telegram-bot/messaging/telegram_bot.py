@@ -4,6 +4,9 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from config import CONFIG
+from aiogram.dispatcher.webhook import WebhookRequestHandler
+from aiogram.utils.executor import start_webhook
+
 
 class SignalState(StatesGroup):
     choosing_timeframe = State()
