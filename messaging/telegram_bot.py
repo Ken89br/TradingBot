@@ -19,7 +19,10 @@ SYMBOL_PAGES = [
     CONFIG["symbols"][8:]
 ]
 
-def get_text(key, lang="en"):
+def get_text(key, lang=None, chat_id=None):
+    if chat_id:
+        lang = user_languages.get(chat_id, "en")
+    lang = lang or "en"
     return CONFIG["languages"].get(lang, CONFIG["languages"]["en"]).get(key, key)
 
 class TelegramNotifier:
