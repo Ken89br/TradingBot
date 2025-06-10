@@ -67,13 +67,6 @@ class TelegramNotifier:
             kb.add(*buttons)
             await msg.reply(get_text("choose_timeframe"), reply_markup=kb, parse_mode="Markdown")
 
-        @self.dp.callback_query_handler(lambda c: c.data.startswith("timeframe:"), state=SignalState.choosing_timeframe)
-        async def select_timeframe(callback: types.CallbackQuery, state: FSMContext):
-            tf = callback.data.split(":")[1]
-            await state.update_data(timeframe=tf)
-            await SignalState.choosing_symbol.set()
-            await self.send_symbol_buttons(callback.message, page=0)
-
         @self.dp.callback_query_handler(lambda c: c.data == "more_symbols", state=SignalState.choosing_symbol)
         async def more_symbols_callback(callback: types.CallbackQuery, state: FSMContext):
             await self.send_symbol_buttons(callback.message, page=1)
