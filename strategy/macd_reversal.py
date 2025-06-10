@@ -1,3 +1,5 @@
+# strategy/macd_reversal.py
+
 import talib
 import numpy as np
 
@@ -8,10 +10,15 @@ class MACDReversalStrategy:
     def generate_signal(self, candle):
         closes = np.array([float(c["close"]) for c in candle["history"]])
         macd, signal, hist = talib.MACD(closes)
+
+        if len(hist) < 2:
+            return None
+
         if hist[-2] < 0 and hist[-1] > 0:
             return self._package("call", candle["history"], "high")
         elif hist[-2] > 0 and hist[-1] < 0:
             return self._package("put", candle["history"], "high")
+
         return None
 
     def _package(self, signal, history, strength):
@@ -20,6 +27,7 @@ class MACDReversalStrategy:
         highs = [float(c["high"]) for c in history]
         lows = [float(c["low"]) for c in history]
         volumes = [float(c.get("volume", 0)) for c in history]
+
         return {
             "signal": signal,
             "price": closes[-1],
@@ -29,4 +37,5 @@ class MACDReversalStrategy:
             "recommend_entry": (highs[-1] + lows[-1]) / 2,
             "strength": strength,
             "confidence": confidence
-      }
+            }
+        
