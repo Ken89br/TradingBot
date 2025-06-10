@@ -3,14 +3,14 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
+from aiohttp import web
 from config import CONFIG
-from aiogram.dispatcher.webhook import WebhookRequestHandler
-from aiogram.utils.executor import start_webhook
 
 
 class SignalState(StatesGroup):
     choosing_timeframe = State()
     choosing_symbol = State()
+
 
 REGISTERED_USERS = set()
 signal_context = {}
@@ -20,6 +20,11 @@ SYMBOL_PAGES = [
     CONFIG["symbols"][8:]
 ]
 
+
+def get_text(key, lang="en"):
+    return CONFIG["languages"].get(lang, CONFIG["languages"]["en"]).get(key, key)
+
+
 class TelegramNotifier:
     def __init__(self, token, strategy, data_client):
         self.bot = Bot(token=token)
@@ -27,6 +32,7 @@ class TelegramNotifier:
         self.strategy = strategy
         self.data_client = data_client
 
+        # Command: /start
         @self.dp.message_handler(commands=['start'])
         async def start_cmd(msg: types.Message):
             chat_id = msg.chat.id
@@ -35,15 +41,16 @@ class TelegramNotifier:
             keyboard.add(KeyboardButton("📈 Start"))
             keyboard.add(KeyboardButton("/status"), KeyboardButton("/stop"))
             keyboard.add(KeyboardButton("/help"), KeyboardButton("/support"))
-            await msg.reply("🤖 Welcome! Tap 📈 *Start* to generate a signal.", reply_markup=keyboard)
+            await msg.reply(get_text("start"), reply_markup=keyboard)
 
+        # 📈 Start button pressed
         @self.dp.message_handler(lambda msg: msg.text == "📈 Start", state="*")
         async def handle_start_signal(msg: types.Message):
             await SignalState.choosing_timeframe.set()
             kb = InlineKeyboardMarkup(row_width=3)
             buttons = [InlineKeyboardButton(tf, callback_data=f"timeframe:{tf}") for tf in CONFIG["timeframes"]]
             kb.add(*buttons)
-            await msg.reply("⏱ *Choose a timeframe:*", reply_markup=kb, parse_mode="Markdown")
+            await msg.reply(get_text("choose_timeframe"), reply_markup=kb, parse_mode="Markdown")
 
         @self.dp.callback_query_handler(lambda c: c.data.startswith("timeframe:"), state=SignalState.choosing_timeframe)
         async def select_timeframe(callback: types.CallbackQuery, state: FSMContext):
@@ -63,7 +70,7 @@ class TelegramNotifier:
             kb.add(*buttons)
             if page == 0:
                 kb.add(InlineKeyboardButton("➡️ More", callback_data="more_symbols"))
-            await message.edit_text("💱 *Choose a currency pair:*", parse_mode="Markdown", reply_markup=kb)
+            await message.edit_text(get_text("choose_symbol"), parse_mode="Markdown", reply_markup=kb)
 
         @self.dp.callback_query_handler(lambda c: c.data.startswith("symbol:"), state=SignalState.choosing_symbol)
         async def select_symbol(callback: types.CallbackQuery, state: FSMContext):
@@ -74,7 +81,7 @@ class TelegramNotifier:
                 timeframe = user_data["timeframe"]
 
                 await callback.message.edit_text(
-                    f"⏱ Timeframe: `{timeframe}`\n💱 Symbol: `{symbol}`\n\n📡 Generating signal...",
+                    f"⏱ Timeframe: `{timeframe}`\n💱 Symbol: `{symbol}`\n\n{get_text('generating')}",
                     parse_mode="Markdown"
                 )
 
@@ -85,7 +92,7 @@ class TelegramNotifier:
 
                 signal_data = self.strategy.generate_signal(candle)
                 if not signal_data:
-                    await self.bot.send_message(callback.from_user.id, "⚠️ No signal at this moment.")
+                    await self.bot.send_message(callback.from_user.id, get_text("no_signal"))
                 else:
                     signal_context[callback.from_user.id] = {"symbol": symbol, "timeframe": timeframe}
                     await self.send_trade_signal(callback.from_user.id, symbol, signal_data)
@@ -106,9 +113,10 @@ class TelegramNotifier:
             candle = self.data_client.fetch_candles(ctx["symbol"], self._map_timeframe(ctx["timeframe"]))
             signal_data = self.strategy.generate_signal(candle)
             if not signal_data:
-                await self.bot.send_message(user_id, "⚠️ Still no signal.")
+                await self.bot.send_message(user_id, get_text("no_signal"))
             else:
                 await self.send_trade_signal(user_id, ctx["symbol"], signal_data)
+
             await callback_query.answer("🔁 Refreshed.")
 
     def _map_timeframe(self, tf):
@@ -119,19 +127,20 @@ class TelegramNotifier:
 
     async def send_trade_signal(self, chat_id, asset, signal_data):
         payout = round(signal_data['price'] * 0.92, 5)
+
         msg = (
-            f"📡 *New Forex Signal Alert!*\n\n"
-            f"📌 *Pair:* `{asset}`\n"
-            f"📈 *Direction:* `{signal_data['signal'].upper()}`\n"
-            f"💪 *Strength:* `{signal_data['strength'].upper()}`\n"
-            f"🎯 *Confidence:* `{signal_data['confidence']}%`\n\n"
-            f"💰 *Entry Price:* `{signal_data['price']}`\n"
-            f"📊 *Recommended Entry:* `{signal_data['recommend_entry']}`\n"
-            f"📈 *High:* `{signal_data['high']}`\n"
-            f"📉 *Low:* `{signal_data['low']}`\n"
-            f"📦 *Volume:* `{signal_data['volume']}`\n\n"
-            f"💸 *Simulated Payout (92%):* `{payout}`\n"
-            f"⏱ *Action Window:* Execute within *1 minute!*"
+            f"📡 *{get_text('signal_title')}*\n\n"
+            f"📌 *{get_text('pair')}:* `{asset}`\n"
+            f"📈 *{get_text('direction')}:* `{signal_data['signal'].upper()}`\n"
+            f"💪 *{get_text('strength')}:* `{signal_data['strength'].upper()}`\n"
+            f"🎯 *{get_text('confidence')}:* `{signal_data['confidence']}%`\n\n"
+            f"💰 *{get_text('entry')}:* `{signal_data['price']}`\n"
+            f"📊 *{get_text('recommend')}:* `{signal_data['recommend_entry']}`\n"
+            f"📈 *{get_text('high')}:* `{signal_data['high']}`\n"
+            f"📉 *{get_text('low')}:* `{signal_data['low']}`\n"
+            f"📦 *{get_text('volume')}:* `{signal_data['volume']}`\n\n"
+            f"💸 *{get_text('payout')}:* `{payout}`\n"
+            f"⏱ *{get_text('timer')}*"
         )
 
         keyboard = InlineKeyboardMarkup()
@@ -139,5 +148,16 @@ class TelegramNotifier:
 
         await self.bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown", reply_markup=keyboard)
 
-    async def start(self):
-        await self.dp.start_polling()
+    @property
+    def token(self):
+        return CONFIG["telegram"]["bot_token"]
+
+    async def set_webhook(self):
+        webhook_url = f"{CONFIG['webhook']['url']}/webhook/{self.token}"
+        await self.bot.set_webhook(webhook_url)
+
+    async def webhook_handler(self, request: web.Request):
+        data = await request.json()
+        update = types.Update(**data)
+        await self.dp.process_update(update)
+        return web.Response()
