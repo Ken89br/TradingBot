@@ -159,5 +159,12 @@ class TelegramNotifier:
     async def webhook_handler(self, request: web.Request):
         data = await request.json()
         update = types.Update(**data)
+
+        # Set bot and dispatcher context explicitly
+        from aiogram import Bot, Dispatcher
+        Bot.set_current(self.bot)
+        Dispatcher.set_current(self.dp)
+
         await self.dp.process_update(update)
         return web.Response()
+
