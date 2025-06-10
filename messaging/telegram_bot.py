@@ -40,7 +40,15 @@ class TelegramNotifier:
             keyboard.add(KeyboardButton("/help"), KeyboardButton("/support"))
             keyboard.add(KeyboardButton("🌐 Language"))
             await msg.reply(get_text("start"), reply_markup=keyboard)
-
+            
+        @self.dp.message_handler(lambda msg: msg.text == "🌐 Language")
+        async def language_toggle(msg: types.Message):
+            chat_id = msg.chat.id
+            current_lang = user_languages.get(chat_id, "en")
+            new_lang = "pt" if current_lang == "en" else "en"
+            user_languages[chat_id] = new_lang
+            await msg.reply(f"🌐 Language set to {'Português' if new_lang == 'pt' else 'English'} ✅")
+   
         @self.dp.message_handler(lambda msg: msg.text.lower() in ["/help", "help"])
         async def help_cmd(msg: types.Message):
             await msg.answer("ℹ️ This bot generates real-time forex signals using AI and technical strategies.\nUse 📈 Start to begin.")
