@@ -20,9 +20,9 @@ CONFIG = {
         "default_interval": "1min"
     },
     "symbols": [
-        "EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CHF", "NZD/USD", "USDCAD", "EURJPY",
-        "EUR/NZD", "AED/CNY OTC", "AUD/CAD OTC", "AUD/CHF OTC", "AUD/NZD OTC", "AUD/USD OTC",
-        "CAD/JPY OTC", "CHF/JPY OTC", "EUR/GBP OTC", "EUR/JPY OTC"
+        "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCHF", "NZDUSD", "USDCAD", "EURJPY",
+        "EURNZD", "AEDCNY OTC", "AUDCAD OTC", "AUDCHF OTC", "AUDNZD OTC", "AUDUSD OTC",
+        "CADJPY OTC", "CHFJPY OTC", "EURGBP OTC", "EURJPY OTC"
     ],
     "timeframes": ["M1", "M5", "M15", "M30", "H1", "H4", "D1"],
     "log_level": "INFO",
