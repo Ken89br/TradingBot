@@ -1,3 +1,5 @@
+# strategy/wick_reversal.py
+
 class WickReversalStrategy:
     def __init__(self, config):
         self.wick_ratio = 2.0
@@ -8,15 +10,19 @@ class WickReversalStrategy:
         close_price = float(latest["close"])
         high = float(latest["high"])
         low = float(latest["low"])
+
         body = abs(close_price - open_price)
         upper_wick = high - max(open_price, close_price)
         lower_wick = min(open_price, close_price) - low
+
         if body == 0:
             return None
+
         if lower_wick > body * self.wick_ratio:
             return self._package("call", candle["history"], "medium")
         elif upper_wick > body * self.wick_ratio:
             return self._package("put", candle["history"], "medium")
+
         return None
 
     def _package(self, signal, history, strength):
@@ -25,6 +31,7 @@ class WickReversalStrategy:
         highs = [float(c["high"]) for c in history]
         lows = [float(c["low"]) for c in history]
         volumes = [float(c.get("volume", 0)) for c in history]
+
         return {
             "signal": signal,
             "price": closes[-1],
@@ -34,4 +41,5 @@ class WickReversalStrategy:
             "recommend_entry": (highs[-1] + lows[-1]) / 2,
             "strength": strength,
             "confidence": confidence
-      }
+        }
+        
