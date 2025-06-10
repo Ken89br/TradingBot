@@ -42,7 +42,7 @@ class TelegramNotifier:
             keyboard.add(KeyboardButton("/status"), KeyboardButton("/stop"))
             keyboard.add(KeyboardButton("/help"), KeyboardButton("/support"))
             keyboard.add(KeyboardButton("🌐 Language"))
-            await msg.reply(get_text("start"), reply_markup=keyboard)
+            await msg.reply(get_text("start", chat_id=msg.chat.id), reply_markup=keyboard)
             
         @self.dp.message_handler(lambda msg: msg.text == "🌐 Language")
         async def language_toggle(msg: types.Message):
