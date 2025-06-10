@@ -1,5 +1,3 @@
-# strategy/wick_reversal.py
-
 class WickReversalStrategy:
     def __init__(self, config):
         self.wick_ratio = 2.0
@@ -41,5 +39,5 @@ class WickReversalStrategy:
             "recommend_entry": (highs[-1] + lows[-1]) / 2,
             "strength": strength,
             "confidence": confidence
-        }
-        
+            }
+            
