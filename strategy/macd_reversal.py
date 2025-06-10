@@ -1,6 +1,6 @@
 # strategy/macd_reversal.py
 
-import talib
+import ta
 import numpy as np
 
 class MACDReversalStrategy:
