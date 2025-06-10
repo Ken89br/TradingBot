@@ -1,7 +1,7 @@
-# strategy/rsi_ma.py
-
-import ta
+import pandas as pd
 import numpy as np
+import ta
+
 
 class AggressiveRSIMA:
     def __init__(self, config):
@@ -12,16 +12,18 @@ class AggressiveRSIMA:
 
     def generate_signal(self, candle):
         history = candle["history"]
-        closes = np.array([float(c["close"]) for c in history])
+        df = pd.DataFrame(history)
+        df["close"] = df["close"].astype(float)
 
-        if len(closes) < max(self.rsi_period, self.ma_period):
+        if len(df) < max(self.rsi_period, self.ma_period):
             return None
 
-        rsi = talib.RSI(closes, timeperiod=self.rsi_period)
-        ma = talib.SMA(closes, timeperiod=self.ma_period)
-        last_price = closes[-1]
-        last_rsi = rsi[-1]
-        last_ma = ma[-1]
+        df["rsi"] = ta.momentum.RSIIndicator(df["close"], window=self.rsi_period).rsi()
+        df["ma"] = ta.trend.SMAIndicator(df["close"], window=self.ma_period).sma_indicator()
+
+        last_rsi = df["rsi"].iloc[-1]
+        last_ma = df["ma"].iloc[-1]
+        last_price = df["close"].iloc[-1]
 
         if last_rsi < self.oversold and last_price > last_ma:
             return self._package("call", history, "high")
@@ -31,11 +33,11 @@ class AggressiveRSIMA:
         return None
 
     def _package(self, signal, history, strength):
-        confidence = {"high": 95, "medium": 80, "low": 65}.get(strength, 50)
         closes = [float(c["close"]) for c in history]
         highs = [float(c["high"]) for c in history]
         lows = [float(c["low"]) for c in history]
         volumes = [float(c.get("volume", 0)) for c in history]
+        confidence = {"high": 95, "medium": 80, "low": 65}.get(strength, 50)
 
         return {
             "signal": signal,
@@ -46,5 +48,4 @@ class AggressiveRSIMA:
             "recommend_entry": (highs[-1] + lows[-1]) / 2,
             "strength": strength,
             "confidence": confidence
-                        }
-    
+        }
