@@ -29,4 +29,4 @@ class MACDReversalStrategy:
             "recommend_entry": (highs[-1] + lows[-1]) / 2,
             "strength": strength,
             "confidence": confidence
-    }
+      }
