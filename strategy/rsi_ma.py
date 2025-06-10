@@ -1,6 +1,6 @@
 # strategy/rsi_ma.py
 
-import talib
+import ta
 import numpy as np
 
 class AggressiveRSIMA:
