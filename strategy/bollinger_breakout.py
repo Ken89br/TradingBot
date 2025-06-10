@@ -1,6 +1,6 @@
 # strategy/bollinger_breakout.py
 
-import talib
+import ta
 import numpy as np
 
 class BollingerBreakoutStrategy:
