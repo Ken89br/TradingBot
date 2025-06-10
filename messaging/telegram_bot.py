@@ -6,11 +6,9 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeybo
 from aiohttp import web
 from config import CONFIG
 
-
 class SignalState(StatesGroup):
     choosing_timeframe = State()
     choosing_symbol = State()
-
 
 REGISTERED_USERS = set()
 signal_context = {}
@@ -20,10 +18,8 @@ SYMBOL_PAGES = [
     CONFIG["symbols"][8:]
 ]
 
-
 def get_text(key, lang="en"):
     return CONFIG["languages"].get(lang, CONFIG["languages"]["en"]).get(key, key)
-
 
 class TelegramNotifier:
     def __init__(self, token, strategy, data_client):
@@ -31,8 +27,8 @@ class TelegramNotifier:
         self.dp = Dispatcher(self.bot, storage=MemoryStorage())
         self.strategy = strategy
         self.data_client = data_client
-        
-        # Command: /start
+
+        # /start command
         @self.dp.message_handler(commands=['start'])
         async def start_cmd(msg: types.Message):
             chat_id = msg.chat.id
@@ -43,7 +39,6 @@ class TelegramNotifier:
             keyboard.add(KeyboardButton("/help"), KeyboardButton("/support"))
             await msg.reply(get_text("start"), reply_markup=keyboard)
 
-        # Butão help, support
         @self.dp.message_handler(lambda msg: msg.text.lower() in ["/help", "help"])
         async def help_cmd(msg: types.Message):
             await msg.answer("ℹ️ This bot generates real-time forex signals using AI and technical strategies.\nUse 📈 Start to begin.")
@@ -55,10 +50,9 @@ class TelegramNotifier:
 
         @self.dp.message_handler(lambda msg: msg.text.lower() in ["/stop", "stop"])
         async def stop_cmd(msg: types.Message, state: FSMContext):
-           await state.finish()
-           await msg.answer("🛑 Signal generation stopped. Use 📈 Start to begin again.")
-    
-        # 📈 Start button pressed
+            await state.finish()
+            await msg.answer("🛑 Signal generation stopped. Use 📈 Start to begin again.")
+
         @self.dp.message_handler(lambda msg: msg.text == "📈 Start", state="*")
         async def handle_start_signal(msg: types.Message):
             await SignalState.choosing_timeframe.set()
@@ -67,9 +61,18 @@ class TelegramNotifier:
             kb.add(*buttons)
             await msg.reply(get_text("choose_timeframe"), reply_markup=kb, parse_mode="Markdown")
 
+        @self.dp.callback_query_handler(lambda c: c.data.startswith("timeframe:"), state=SignalState.choosing_timeframe)
+        async def select_timeframe(callback: types.CallbackQuery, state: FSMContext):
+            tf = callback.data.split(":")[1]
+            await state.update_data(timeframe=tf)
+            await state.set_state(SignalState.choosing_symbol.state)
+            await self.send_symbol_buttons(callback.message, page=0)
+            await callback.answer()
+
         @self.dp.callback_query_handler(lambda c: c.data == "more_symbols", state=SignalState.choosing_symbol)
         async def more_symbols_callback(callback: types.CallbackQuery, state: FSMContext):
             await self.send_symbol_buttons(callback.message, page=1)
+            await callback.answer()
 
         async def send_symbol_buttons(message, page=0):
             kb = InlineKeyboardMarkup(row_width=2)
@@ -109,6 +112,7 @@ class TelegramNotifier:
                 await self.bot.send_message(callback.from_user.id, f"❌ Error: {str(e)}")
 
             await state.finish()
+            await callback.answer()
 
         @self.dp.callback_query_handler(lambda c: c.data == "refresh_signal")
         async def refresh_callback(callback_query: types.CallbackQuery):
@@ -135,7 +139,6 @@ class TelegramNotifier:
 
     async def send_trade_signal(self, chat_id, asset, signal_data):
         payout = round(signal_data['price'] * 0.92, 5)
-
         msg = (
             f"📡 *{get_text('signal_title')}*\n\n"
             f"📌 *{get_text('pair')}:* `{asset}`\n"
@@ -150,10 +153,8 @@ class TelegramNotifier:
             f"💸 *{get_text('payout')}:* `{payout}`\n"
             f"⏱ *{get_text('timer')}*"
         )
-
         keyboard = InlineKeyboardMarkup()
         keyboard.add(InlineKeyboardButton("🔁 Refresh", callback_data="refresh_signal"))
-
         await self.bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown", reply_markup=keyboard)
 
     @property
@@ -168,11 +169,9 @@ class TelegramNotifier:
         data = await request.json()
         update = types.Update(**data)
 
-        # Set bot and dispatcher context explicitly
         from aiogram import Bot, Dispatcher
         Bot.set_current(self.bot)
         Dispatcher.set_current(self.dp)
 
         await self.dp.process_update(update)
         return web.Response()
-
