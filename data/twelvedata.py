@@ -11,18 +11,19 @@ class TwelveDataClient:
     def fetch_candles(self, symbol, interval=None, limit=30):
         interval = interval or self.interval
         formatted_symbol = symbol.replace("/", "")
+
         params = {
             "symbol": formatted_symbol,
             "interval": interval,
             "outputsize": limit,
             "apikey": self.api_key
         }
-        url = f"{self.base_url}/time_series"
+
         try:
-            response = requests.get(url, params=params)
+            response = requests.get(f"{self.base_url}/time_series", params=params)
             data = response.json()
         except Exception as e:
-            print(f"❌ Error fetching data: {e}")
+            print(f"❌ Error fetching data from TwelveData: {e}")
             return None
 
         if "values" not in data:
@@ -42,4 +43,5 @@ class TwelveDataClient:
         return {
             "history": candles,
             "close": candles[-1]["close"]
-  }
+        }
+        
