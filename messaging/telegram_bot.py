@@ -87,15 +87,6 @@ class TelegramNotifier:
             await self.send_symbol_buttons(callback.message, page=1)
             await callback.answer()
 
-        async def send_symbol_buttons(message, page=0):
-            kb = InlineKeyboardMarkup(row_width=2)
-            symbols = SYMBOL_PAGES[page]
-            buttons = [InlineKeyboardButton(sym, callback_data=f"symbol:{sym}") for sym in symbols]
-            kb.add(*buttons)
-            if page == 0:
-                kb.add(InlineKeyboardButton("➡️ More", callback_data="more_symbols"))
-            await message.edit_text(get_text("choose_symbol"), parse_mode="Markdown", reply_markup=kb)
-
         @self.dp.callback_query_handler(lambda c: c.data.startswith("symbol:"), state=SignalState.choosing_symbol)
         async def select_symbol(callback: types.CallbackQuery, state: FSMContext):
             try:
@@ -173,6 +164,15 @@ class TelegramNotifier:
     @property
     def token(self):
         return CONFIG["telegram"]["bot_token"]
+
+
+    async def send_symbol_buttons(self, message, page=0):
+    kb = InlineKeyboardMarkup(row_width=2)
+    symbols = SYMBOL_PAGES[page]
+    buttons = [InlineKeyboardButton(sym, callback_data=f"symbol:{sym}") for sym in symbols]
+    kb.add(*buttons)
+    if page == 0:kb.add(InlineKeyboardButton("➡️ More", callback_data="more_symbols"))
+    await message.edit_text(get_text("choose_symbol", chat_id=message.chat.id), parse_mode="Markdown", reply_markup=kb)
 
     async def set_webhook(self):
         webhook_url = f"{CONFIG['webhook']['url']}/webhook/{self.token}"
