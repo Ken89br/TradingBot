@@ -37,6 +37,7 @@ class TelegramNotifier:
             keyboard.add(KeyboardButton("📈 Start"))
             keyboard.add(KeyboardButton("/status"), KeyboardButton("/stop"))
             keyboard.add(KeyboardButton("/help"), KeyboardButton("/support"))
+            keyboard.add(KeyboardButton("🌐 Language"))
             await msg.reply(get_text("start"), reply_markup=keyboard)
 
         @self.dp.message_handler(lambda msg: msg.text.lower() in ["/help", "help"])
