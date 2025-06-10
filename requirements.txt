@@ -1,0 +1,11 @@
+aiogram==3.4.1
+aiohttp==3.9.5
+python-dotenv==1.0.1
+yfinance==0.2.37
+pandas==2.2.2
+numpy==1.26.4
+requests==2.31.0
+twelvedata==1.1.2
+scikit-learn
+gunicorn
+pytz
