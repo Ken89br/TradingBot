@@ -24,8 +24,8 @@ CONFIG = {
     ],
     "timeframes": ["M1", "M5", "M15", "M30", "H1", "H4", "D1"],
     "log_level": "INFO"
-},
-"languages": {
+    },
+    "languages": {
     "en": {
         "start": "Welcome! Tap 📈 Start to generate a signal.",
         "choose_timeframe": "⏱ Choose a timeframe:",
@@ -66,4 +66,6 @@ CONFIG = {
         "timer": "⏱ Execute dentro de 1 minuto!",
         "refresh": "Atualizar"
     }
+    "webhook": {
+    "url": "https://your-render-app.onrender.com"
 }
