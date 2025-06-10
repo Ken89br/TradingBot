@@ -12,6 +12,7 @@ class SignalState(StatesGroup):
 
 REGISTERED_USERS = set()
 signal_context = {}
+user_languages = {}  # chat_id: "en" or "pt"
 
 SYMBOL_PAGES = [
     CONFIG["symbols"][:8],
