@@ -1,42 +1,41 @@
-# strategy/bollinger_breakout.py
-
+import pandas as pd
 import ta
-import numpy as np
 
 class BollingerBreakoutStrategy:
     def __init__(self, config):
         self.period = 20
 
     def generate_signal(self, candle):
-        closes = np.array([float(c["close"]) for c in candle["history"]])
-        if len(closes) < self.period:
+        df = pd.DataFrame(candle["history"])
+        df = df.astype(float)
+
+        if len(df) < self.period:
             return None
 
-        upper, middle, lower = talib.BBANDS(closes, timeperiod=self.period)
-        price = closes[-1]
+        bb = ta.volatility.BollingerBands(df["close"], window=self.period)
+        df["upper"] = bb.bollinger_hband()
+        df["lower"] = bb.bollinger_lband()
 
-        if price < lower[-1]:
-            return self._package("call", candle["history"], "medium")
-        elif price > upper[-1]:
-            return self._package("put", candle["history"], "medium")
+        price = df["close"].iloc[-1]
+
+        if price < df["lower"].iloc[-1]:
+            return self._package("call", df, "medium")
+        elif price > df["upper"].iloc[-1]:
+            return self._package("put", df, "medium")
 
         return None
 
-    def _package(self, signal, history, strength):
+    def _package(self, signal, df, strength):
         confidence = {"high": 95, "medium": 80, "low": 65}.get(strength, 50)
-        closes = [float(c["close"]) for c in history]
-        highs = [float(c["high"]) for c in history]
-        lows = [float(c["low"]) for c in history]
-        volumes = [float(c.get("volume", 0)) for c in history]
 
         return {
             "signal": signal,
-            "price": closes[-1],
-            "high": highs[-1],
-            "low": lows[-1],
-            "volume": volumes[-1],
-            "recommend_entry": (highs[-1] + lows[-1]) / 2,
+            "price": df["close"].iloc[-1],
+            "high": df["high"].iloc[-1],
+            "low": df["low"].iloc[-1],
+            "volume": df["volume"].iloc[-1],
+            "recommend_entry": (df["high"].iloc[-1] + df["low"].iloc[-1]) / 2,
             "strength": strength,
             "confidence": confidence
-                                 }
+        }
         
