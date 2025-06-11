@@ -125,7 +125,7 @@ class TelegramNotifier:
                     print(f"🧪 Raw candle data: {candle}")
 
                 if not candle or "history" not in candle:
-                    await self.bot.send_message(callback.from_user.id, "⚠️ Failed to retrieve price data.")
+                    await self.bot.send_message(callback.from_user.id, "⚠️ Failed to retrieve price data.\nDebug: {candle}")
                     return
 
                 signal_data = self.strategy.generate_signal(candle)
