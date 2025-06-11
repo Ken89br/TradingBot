@@ -1,6 +1,7 @@
 from strategy.sma_cross import SMACrossStrategy
 from strategy.rsi import RSIStrategy
 from strategy.bbands import BollingerStrategy
+from strategy.ai_filter import AIFilter  # ✅ new import
 
 class EnsembleStrategy:
     def __init__(self):
@@ -9,6 +10,7 @@ class EnsembleStrategy:
             RSIStrategy(),
             BollingerStrategy()
         ]
+        self.filter = AIFilter()  # ✅ instantiate AI filter
 
     def generate_signal(self, data):
         votes = []
@@ -31,12 +33,11 @@ class EnsembleStrategy:
         elif down_votes > up_votes:
             signal = "down"
         else:
-            return None  # Neutral/no consensus
+            return None  # no consensus
 
         confidence = round((max(up_votes, down_votes) / len(votes)) * 100)
 
-        # Merge meta
-        return {
+        result = {
             "signal": signal,
             "strength": "strong" if confidence >= 70 else "moderate",
             "confidence": confidence,
@@ -46,3 +47,6 @@ class EnsembleStrategy:
             "low": min(c["low"] for c in data["history"]),
             "volume": sum(c["volume"] for c in data["history"])
         }
+
+        # ✅ apply AI filter
+        return self.filter.apply(result, data["history"])
