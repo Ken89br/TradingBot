@@ -1,31 +1,46 @@
 import os
+import logging
+
+def get_env(key, default=None, required=False):
+    val = os.getenv(key, default)
+    if required and val is None:
+        raise EnvironmentError(f"Missing required environment variable: {key}")
+    return val
 
 CONFIG = {
     "telegram": {
         "enabled": True,
-        "bot_token": os.getenv("TELEGRAM_BOT_TOKEN"),
-        "chat_id": os.getenv("TELEGRAM_CHAT_ID"),
-        "admin_id": os.getenv("TELEGRAM_ADMIN_ID")
+        "bot_token": get_env("TELEGRAM_BOT_TOKEN", required=True),
+        "chat_id": get_env("TELEGRAM_CHAT_ID"),
+        "admin_id": get_env("TELEGRAM_ADMIN_ID")
     },
+
     "support": {
         "username": "@kenbreu"
     },
+
     "webhook": {
-        "url": os.getenv("WEBHOOK_URL", "https://your-render-url.com")
+        "url": get_env("WEBHOOK_URL", "https://your-render-url.com")
     },
+
     "data_feed": "twelvedata",
+
     "twelvedata": {
-        "api_key": os.getenv("TWELVE_DATA_API_KEY"),
+        "api_key": get_env("TWELVE_DATA_API_KEY", required=True),
         "base_url": "https://api.twelvedata.com",
         "default_interval": "1min"
     },
+
     "symbols": [
-        "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCHF", "NZDUSD", "USDCAD", "EURJPY",
-        "EURNZD", "AEDCNY OTC", "AUDCAD OTC", "AUDCHF OTC", "AUDNZD OTC", "AUDUSD OTC",
-        "CADJPY OTC", "CHFJPY OTC", "EURGBP OTC", "EURJPY OTC"
+        "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCHF", "NZDUSD",
+        "USDCAD", "EURJPY", "EURNZD", "AEDCNY", "AUDCAD", "AUDCHF",
+        "AUDNZD", "AUDUSD", "CADJPY", "CHFJPY", "EURGBP", "EURJPY"
     ],
+
     "timeframes": ["M1", "M5", "M15", "M30", "H1", "H4", "D1"],
+
     "log_level": "INFO",
+
     "languages": {
         "en": {
             "start": "Welcome! Tap 📈 Start to generate a signal.",
@@ -69,3 +84,6 @@ CONFIG = {
         }
     }
 }
+
+# Optional: Set up logger based on config
+logging.basicConfig(level=getattr(logging, CONFIG["log_level"].upper(), logging.INFO))
