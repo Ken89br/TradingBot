@@ -1,3 +1,4 @@
+# config.py
 import os
 import logging
 
@@ -23,9 +24,10 @@ CONFIG = {
         "url": get_env("WEBHOOK_URL", "https://your-render-url.com")
     },
 
-    "data_feed": "finnhub",  # ⬅ switch from 'twelvedata'
+    "data_feed": "finnhub",
+
     "finnhub": {
-    "api_key": get_env("FINNHUB_API_KEY", required=True),
+        "api_key": get_env("FINNHUB_API_KEY", required=True),
     },
 
     "symbols": [
@@ -82,5 +84,5 @@ CONFIG = {
     }
 }
 
-# Optional: Set up logger based on config
+# Logger
 logging.basicConfig(level=getattr(logging, CONFIG["log_level"].upper(), logging.INFO))
