@@ -1,3 +1,4 @@
+from config import CONFIG
 from strategy.sma_cross import SMACrossStrategy
 from strategy.rsi import RSIStrategy
 from strategy.bbands import BollingerStrategy
@@ -10,7 +11,7 @@ from strategy.macd_reversal import MACDReversalStrategy
 class EnsembleStrategy:
     def __init__(self):
         self.strategies = [
-            AggressiveRSIMA(),
+            AggressiveRSIMA(CONFIG),
             BollingerBreakoutStrategy(),
             WickReversalStrategy(),
             MACDReversalStrategy(),
