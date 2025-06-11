@@ -1,13 +1,14 @@
 # data/twelvedata.py
 import requests
 import os
+import time
 
 class TwelveDataClient:
     def __init__(self):
-        self.api_key = os.getenv("TWELVE_DATA_API_KEY") or "MISSING_API_KEY"
+        self.api_key = os.getenv("TWELVE_DATA_API_KEY", "MISSING_API_KEY")
         self.base_url = "https://api.twelvedata.com"
 
-    def fetch_candles(self, symbol, interval="1min", limit=30):
+    def fetch_candles(self, symbol, interval="1min", limit=30, retries=2):
         symbol = symbol.replace("/", "").upper()  # e.g., EUR/USD → EURUSD
 
         params = {
@@ -17,40 +18,51 @@ class TwelveDataClient:
             "apikey": self.api_key
         }
 
-        try:
-            url = f"{self.base_url}/time_series"
-            print(f"🔍 Fetching candles for {symbol} with {interval}")
-            print(f"🛰️  URL: {url}")
-            print(f"📦  Params: {params}")
-            response = requests.get(url, params=params)
-            print(f"📥  Response: {response.status_code} {response.text}")
-                return None
+        url = f"{self.base_url}/time_series"
+        print(f"\n🔍 Fetching candles for {symbol} ({interval})")
+        print(f"🛰️  URL: {url}")
+        print(f"📦 Params: {params}")
 
-            data = response.json()
+        attempt = 0
+        while attempt <= retries:
+            try:
+                response = requests.get(url, params=params, timeout=5)
+                print(f"📥 Response {response.status_code}")
 
-            if "values" not in data:
-                print(f"⚠️ No data returned: {data}")
-                return None
+                if response.status_code != 200:
+                    print(f"❌ HTTP Error: {response.text}")
+                    attempt += 1
+                    time.sleep(1)
+                    continue
 
-            candles = []
-            for entry in reversed(data["values"]):
-                candles.append({
-                    "open": float(entry["open"]),
-                    "high": float(entry["high"]),
-                    "low": float(entry["low"]),
-                    "close": float(entry["close"]),
-                    "volume": float(entry.get("volume", 0))
-                })
+                data = response.json()
 
-            if not candles:
-                print("⚠️ No candles returned.")
-                return None
+                if "values" not in data:
+                    print(f"⚠️ Invalid response: {data}")
+                    return None
 
-            return {
-                "history": candles,
-                "close": candles[-1]["close"]
-            }
+                candles = []
+                for entry in reversed(data["values"]):
+                    candles.append({
+                        "open": float(entry["open"]),
+                        "high": float(entry["high"]),
+                        "low": float(entry["low"]),
+                        "close": float(entry["close"]),
+                        "volume": float(entry.get("volume", 0))
+                    })
 
-        except Exception as e:
-            print(f"❌ TwelveData fetch error: {e}")
-            return None
+                if not candles:
+                    print("⚠️ No candles returned.")
+                    return None
+
+                return {
+                    "history": candles,
+                    "close": candles[-1]["close"]
+                }
+
+            except Exception as e:
+                print(f"❌ Exception: {e}")
+                attempt += 1
+                time.sleep(1)
+
+        return None
