@@ -13,7 +13,7 @@ services:
         value: 8137693719
       - key: TELEGRAM_ADMIN_ID
         value: 8137693719
-      - key: FINNHUB_API_KEY
+      - key: POLYGON_API_KEY
         value: d14fhkhr01qq13oqu0h0d14fhkhr01qq13oqu0hg
       - key: WEBHOOK_URL
         value: https://tradingbotv2.onrender.com
