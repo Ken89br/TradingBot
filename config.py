@@ -23,10 +23,9 @@ CONFIG = {
         "url": get_env("WEBHOOK_URL", "https://your-render-url.com")
     },
 
-    "data_feed": "twelvedata",
-
-    "twelvedata": {
-        "api_key": get_env("TWELVE_DATA_API_KEY", required=True),
+    "data_feed": "finnhub",  # ⬅ switch from 'twelvedata'
+    "finnhub": {
+    "api_key": get_env("FINNHUB_API_KEY", required=True),
         "base_url": "https://api.twelvedata.com",
         "default_interval": "1min"
     },
