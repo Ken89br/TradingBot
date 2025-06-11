@@ -90,14 +90,14 @@ class TelegramNotifier:
             sym_info = signal_context.get(user_id)
             if sym_info:
                 response = (
-                f"✅ Bot is running.\n\n"
-                f"🕐 Last selected timeframe: `{sym_info['timeframe']}`\n"
-                f"💱 Last selected pair: `{sym_info['symbol']}`"
+                    f"✅ Bot is running.\n\n"
+                    f"🕐 Last selected timeframe: `{sym_info['timeframe']}`\n"
+                    f"💱 Last selected pair: `{sym_info['symbol']}`"
             )
             else:
                 response = (
-                  "✅ Bot is running.\n"
-                  "ℹ️ No signal context found. Use 📈 Start to begin."
+                    "✅ Bot is running.\n"
+                    "ℹ️ No signal context found. Use 📈 Start to begin."
             )
 
             await msg.reply(response, parse_mode="Markdown")
