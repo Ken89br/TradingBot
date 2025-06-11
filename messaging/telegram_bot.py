@@ -104,6 +104,7 @@ class TelegramNotifier:
                     await self.bot.send_message(callback.from_user.id, "⚠️ Failed to retrieve price data.")
                     return
 
+                print(f"🧪 Raw candle data: {candle}"
                 signal_data = self.strategy.generate_signal(candle)
                 if not signal_data:
                     await self.bot.send_message(callback.from_user.id, get_text("no_signal", chat_id=callback.from_user.id))
