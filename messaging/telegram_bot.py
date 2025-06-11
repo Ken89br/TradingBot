@@ -1,3 +1,4 @@
+# messaging/telegram_bot.py
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
@@ -36,11 +37,13 @@ class TelegramNotifier:
         async def start_cmd(msg: types.Message):
             chat_id = msg.chat.id
             REGISTERED_USERS.add(chat_id)
+
             keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add(KeyboardButton("📈 Start"))
             keyboard.add(KeyboardButton("/status"), KeyboardButton("/stop"))
             keyboard.add(KeyboardButton("/help"), KeyboardButton("/support"))
             keyboard.add(KeyboardButton("🌐 Language"))
+
             await msg.reply(get_text("start", chat_id=chat_id), reply_markup=keyboard)
 
         @self.dp.message_handler(lambda msg: msg.text == "🌐 Language")
@@ -100,8 +103,8 @@ class TelegramNotifier:
                 )
 
                 candle = self.data_client.fetch_candles(symbol, interval=self._map_timeframe(timeframe))
-
-                print(f"🧪 Raw candle data: {candle}")
+                if CONFIG.get("debug"):
+                    print(f"🧪 Raw candle data: {candle}")
 
                 if not candle or "history" not in candle:
                     await self.bot.send_message(callback.from_user.id, "⚠️ Failed to retrieve price data.")
@@ -130,6 +133,7 @@ class TelegramNotifier:
 
             ctx = signal_context[user_id]
             candle = self.data_client.fetch_candles(ctx["symbol"], self._map_timeframe(ctx["timeframe"]))
+
             if not candle or "history" not in candle:
                 await self.bot.send_message(user_id, get_text("no_signal", chat_id=user_id))
                 return
@@ -173,8 +177,10 @@ class TelegramNotifier:
             f"💸 *{get_text('payout', chat_id=chat_id)}:* `{payout}`\n"
             f"⏱ *{get_text('timer', chat_id=chat_id)}*"
         )
+
         keyboard = InlineKeyboardMarkup()
         keyboard.add(InlineKeyboardButton("🔁 Refresh", callback_data="refresh_signal"))
+
         await self.bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown", reply_markup=keyboard)
 
     @property
@@ -189,7 +195,6 @@ class TelegramNotifier:
         data = await request.json()
         update = types.Update(**data)
 
-        from aiogram import Bot, Dispatcher
         Bot.set_current(self.bot)
         Dispatcher.set_current(self.dp)
 
