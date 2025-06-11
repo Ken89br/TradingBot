@@ -1,7 +1,7 @@
 # server.py
 
 from aiohttp import web
-from data.finnhub_data import FinnhubClient
+from data.polygon_data import PolygonClient
 from strategy.ensemble_strategy import EnsembleStrategy
 from messaging.telegram_bot import TelegramNotifier
 from config import CONFIG
