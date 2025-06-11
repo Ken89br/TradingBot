@@ -7,7 +7,7 @@ from messaging.telegram_bot import TelegramNotifier
 from config import CONFIG
 
 async def init_app():
-    data_client = FinnhubClient()
+    data_client = PolygonClient()
     strategy = EnsembleStrategy()  # Uses all configured strategies
     notifier = TelegramNotifier(CONFIG["telegram"]["bot_token"], strategy, data_client)
 
