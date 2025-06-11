@@ -27,7 +27,7 @@ CONFIG = {
     "data_feed": "polygon",
 
     "polygon": {
-        "api_key": get_env("WM3qHfs_R2VILyPyuXnUp2ZRrfcV6i5g", required=True),
+        "api_key": get_env("POLYGON_API_KEY", required=True),
     },
 
     "symbols": [
