@@ -13,9 +13,9 @@ class EnsembleStrategy:
             AggressiveRSIMA(),
             BollingerBreakoutStrategy(),
             WickReversalStrategy(),
-            MACDReversalStrategy()
-            SMACrossStrategy(),
+            MACDReversalStrategy(),
             RSIStrategy(),
+            SMACrossStrategy(),
             BollingerStrategy()
         ]
         self.filter = AIFilter()  # ✅ instantiate AI filter
