@@ -27,11 +27,11 @@ CONFIG = {
     "data_feed": "polygon",
 
     "polygon": {
-        "api_key": get_env("POLYGON_API_KEY", required=True),
+        "api_key": get_env("WM3qHfs_R2VILyPyuXnUp2ZRrfcV6i5g", required=True),
     },
 
     "symbols": [
-        "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCHF", "NZDUSD",
+        "EUR/USD", "GBPUSD", "USDJPY", "AUDUSD", "USDCHF", "NZDUSD",
         "USDCAD", "EURJPY", "EURNZD", "AEDCNY", "AUDCAD", "AUDCHF",
         "AUDNZD", "AUDUSD", "CADJPY", "CHFJPY", "EURGBP", "EURJPY"
     ],
