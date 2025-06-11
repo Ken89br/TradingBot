@@ -8,28 +8,20 @@ class PolygonClient:
     def __init__(self):
         self.api_key = os.getenv("POLYGON_API_KEY", "MISSING_API_KEY")
         self.base_url = "https://api.polygon.io"
-    
+
     def fetch_candles(self, symbol, interval="1min", limit=30, retries=2):
-        interval_map = {
-            "1min": "1", "5min": "5", "15min": "15",
-            "30min": "30", "1h": "60", "4h": "240", "1day": "D"
-        }
-        # Convert to Polygon's expected timeframe format
-        resolution = interval_map.get(interval, "1")
-        
-        # Format symbol: EURUSD → C:EURUSD
         if len(symbol) != 6:
             print(f"❌ Invalid symbol format: {symbol}")
             return None
+
         formatted_symbol = f"C:{symbol.upper()}"
 
-        # Calculate Unix timestamps
-        end = int(time.time())
-        start = end - (limit * 60)
+        # Build dates
+        end_unix = int(time.time())
+        start_unix = end_unix - (limit * 60)
 
-        # Polygon expects YYYY-MM-DD dates in the path
-        from_date = time.strftime("%Y-%m-%d", time.gmtime(start))
-        to_date = time.strftime("%Y-%m-%d", time.gmtime(end))
+        from_date = time.strftime("%Y-%m-%d", time.gmtime(start_unix))
+        to_date = time.strftime("%Y-%m-%d", time.gmtime(end_unix))
 
         url = f"{self.base_url}/v2/aggs/ticker/{formatted_symbol}/range/1/minute/{from_date}/{to_date}"
         params = {
@@ -39,36 +31,30 @@ class PolygonClient:
             "apiKey": self.api_key
         }
 
-        print(f"🔍 Fetching {formatted_symbol} from Polygon.io")
-        print(f"🛰️ URL: {url}")
+        print(f"🔍 Polygon GET {url}")
         print(f"📦 Params: {params}")
 
         for attempt in range(retries + 1):
             try:
-                response = requests.get(url, params=params, timeout=5)
-                if response.status_code != 200:
-                    print(f"❌ HTTP {response.status_code}: {response.text}")
-                    time.sleep(1)
-                    continue
-
-                data = response.json()
+                res = requests.get(url, params=params, timeout=5)
+                data = res.json()
                 print("📥 Polygon raw JSON:", data)
 
-                if not data or "results" not in data or not data["results"]:
-                    print("⚠️ No valid candle data returned.")
-                    return None
+                if "results" not in data or not data["results"]:
+                    print("⚠️ No candle data.")
+                    continue
 
-                # Sort candles in ascending time
-                sorted_candles = sorted(data["results"], key=lambda x: x["t"])
+                # Sort candles oldest → newest
+                results = sorted(data["results"], key=lambda x: x["t"])
 
                 candles = []
-                for entry in sorted_candles:
+                for row in results:
                     candles.append({
-                        "open": entry["o"],
-                        "high": entry["h"],
-                        "low": entry["l"],
-                        "close": entry["c"],
-                        "volume": entry["v"]
+                        "open": row["o"],
+                        "high": row["h"],
+                        "low": row["l"],
+                        "close": row["c"],
+                        "volume": row["v"]
                     })
 
                 return {
@@ -77,8 +63,9 @@ class PolygonClient:
                 }
 
             except Exception as e:
-                print(f"❌ Exception fetching candles: {e}")
+                print(f"❌ Exception: {e}")
                 time.sleep(1)
 
         print("⛔ Max retries reached.")
         return None
+        
