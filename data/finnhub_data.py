@@ -19,6 +19,7 @@ class FinnhubClient:
         if len(symbol) != 6:
             print(f"❌ Invalid symbol format: {symbol}")
             return None
+
         formatted_symbol = f"OANDA:{symbol[:3]}_{symbol[3:]}"
 
         end = int(time.time())
@@ -40,7 +41,7 @@ class FinnhubClient:
             try:
                 response = requests.get(url, params=params, timeout=5)
                 if response.status_code != 200:
-                    print(f"❌ HTTP Error {response.status_code}: {response.text}")
+                    print(f"❌ HTTP {response.status_code}: {response.text}")
                     time.sleep(1)
                     continue
 
@@ -49,15 +50,16 @@ class FinnhubClient:
                     print(f"⚠️ Bad API Response: {data}")
                     return None
 
-                candles = []
-                for i in range(len(data["c"])):
-                    candles.append({
+                candles = [
+                    {
                         "open": data["o"][i],
                         "high": data["h"][i],
                         "low": data["l"][i],
                         "close": data["c"][i],
                         "volume": data["v"][i]
-                    })
+                    }
+                    for i in range(len(data["c"]))
+                ]
 
                 return {
                     "history": candles,
@@ -65,8 +67,9 @@ class FinnhubClient:
                 }
 
             except Exception as e:
-                print(f"❌ Exception: {e}")
+                print(f"❌ Exception fetching candles: {e}")
                 time.sleep(1)
 
         print("⛔ Max retries reached.")
         return None
+            
