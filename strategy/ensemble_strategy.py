@@ -12,12 +12,12 @@ class EnsembleStrategy:
     def __init__(self):
         self.strategies = [
             AggressiveRSIMA(CONFIG),
-            BollingerBreakoutStrategy(),
-            WickReversalStrategy(),
-            MACDReversalStrategy(),
-            RSIStrategy(),
-            SMACrossStrategy(),
-            BollingerStrategy()
+            BollingerBreakoutStrategy(CONFIG),
+            WickReversalStrategy(CONFIG),
+            MACDReversalStrategy(CONFIG),
+            RSIStrategy(CONFIG),
+            SMACrossStrategy(CONFIG),
+            BollingerStrategy(CONFIG)
         ]
         self.filter = AIFilter()  # ✅ instantiate AI filter
 
