@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: forex-telegram-bot
+    name: TradingBot
     env: python
     region: oregon
     plan: free
@@ -14,6 +14,6 @@ services:
       - key: TELEGRAM_ADMIN_ID
         value: 8137693719
       - key: FINNHUB_API_KEY
-        value: 25a617de10c041e1ad502caa9e12d3b0
+        value: d14fhkhr01qq13oqu0h0d14fhkhr01qq13oqu0hg
       - key: WEBHOOK_URL
         value: https://tradingbotv2.onrender.com
