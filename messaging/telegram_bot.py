@@ -89,7 +89,7 @@ class TelegramNotifier:
         @self.dp.callback_query_handler(lambda c: c.data.startswith("symbol:"), state=SignalState.choosing_symbol)
         async def select_symbol(callback: types.CallbackQuery, state: FSMContext):
             try:
-                symbol = callback.data.split(":")[1]
+                symbol = callback.data.split(":")[1].replace(" OTC", "")
                 await state.update_data(symbol=symbol)
                 user_data = await state.get_data()
                 timeframe = user_data["timeframe"]
@@ -100,12 +100,15 @@ class TelegramNotifier:
                 )
 
                 candle = self.data_client.fetch_candles(symbol, interval=self._map_timeframe(timeframe))
-                if not candle:
+
+                print(f"🧪 Raw candle data: {candle}")
+
+                if not candle or "history" not in candle:
                     await self.bot.send_message(callback.from_user.id, "⚠️ Failed to retrieve price data.")
                     return
 
-                print(f"🧪 Raw candle data: {candle}"
                 signal_data = self.strategy.generate_signal(candle)
+
                 if not signal_data:
                     await self.bot.send_message(callback.from_user.id, get_text("no_signal", chat_id=callback.from_user.id))
                 else:
@@ -127,6 +130,10 @@ class TelegramNotifier:
 
             ctx = signal_context[user_id]
             candle = self.data_client.fetch_candles(ctx["symbol"], self._map_timeframe(ctx["timeframe"]))
+            if not candle or "history" not in candle:
+                await self.bot.send_message(user_id, get_text("no_signal", chat_id=user_id))
+                return
+
             signal_data = self.strategy.generate_signal(candle)
             if not signal_data:
                 await self.bot.send_message(user_id, get_text("no_signal", chat_id=user_id))
@@ -188,4 +195,3 @@ class TelegramNotifier:
 
         await self.dp.process_update(update)
         return web.Response()
-    
