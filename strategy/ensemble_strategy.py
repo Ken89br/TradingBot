@@ -6,6 +6,7 @@ from strategy.wick_reversal import WickReversalStrategy
 from strategy.macd_reversal import MACDReversalStrategy
 from strategy.rsi import RSIStrategy
 from strategy.bbands import BollingerStrategy
+from strategy.sma_cross import SMACrossStrategy  # ✅ FIXED: import
 from strategy.ai_filter import AIFilter
 
 class EnsembleStrategy:
@@ -15,9 +16,9 @@ class EnsembleStrategy:
             BollingerBreakoutStrategy(CONFIG),
             WickReversalStrategy(CONFIG),
             MACDReversalStrategy(CONFIG),
-            RSIStrategy(CONFIG),
-            SMACrossStrategy(),
-            BollingerStrategy()
+            RSIStrategy(),             # ✅ FIXED: no config
+            SMACrossStrategy(),        # ✅ Import added
+            BollingerStrategy()        # ✅ no config
         ]
         self.filter = AIFilter()
 
@@ -32,7 +33,7 @@ class EnsembleStrategy:
                     votes.append(result["signal"].lower())
                     meta.append(result)
             except Exception as e:
-                print(f"⚠️ Strategy error: {e}")
+                print(f"⚠️ Strategy error from {type(strat).__name__}: {e}")
 
         if not votes:
             return None
@@ -61,3 +62,4 @@ class EnsembleStrategy:
         }
 
         return self.filter.apply(signal_data, data["history"])
+            
