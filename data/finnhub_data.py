@@ -46,7 +46,9 @@ class FinnhubClient:
                     continue
 
                 data = response.json()
-                if data.get("s") != "ok":
+                if not data or data.get("s") != "ok" or not data.get("c"):
+                    print("⚠️ No valid candle data returned.")
+                    return None
                     print(f"⚠️ Bad API Response: {data}")
                     return None
 
