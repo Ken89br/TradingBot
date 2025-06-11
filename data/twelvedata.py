@@ -19,10 +19,11 @@ class TwelveDataClient:
 
         try:
             url = f"{self.base_url}/time_series"
-            print(f"🔍 Requesting: {url} | Params: {params}")
+            print(f"🔍 Fetching candles for {symbol} with {interval}")
+            print(f"🛰️  URL: {url}")
+            print(f"📦  Params: {params}")
             response = requests.get(url, params=params)
-            if response.status_code != 200:
-                print(f"❌ HTTP {response.status_code}: {response.text}")
+            print(f"📥  Response: {response.status_code} {response.text}")
                 return None
 
             data = response.json()
