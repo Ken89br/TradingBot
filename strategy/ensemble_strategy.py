@@ -2,10 +2,18 @@ from strategy.sma_cross import SMACrossStrategy
 from strategy.rsi import RSIStrategy
 from strategy.bbands import BollingerStrategy
 from strategy.ai_filter import AIFilter  # ✅ new import
+from strategy.rsi_ma import AggressiveRSIMA
+from strategy.bollinger_breakout import BollingerBreakoutStrategy
+from strategy.wick_reversal import WickReversalStrategy
+from strategy.macd_reversal import MACDReversalStrategy
 
 class EnsembleStrategy:
     def __init__(self):
         self.strategies = [
+            AggressiveRSIMA(),
+            BollingerBreakoutStrategy(),
+            WickReversalStrategy(),
+            MACDReversalStrategy()
             SMACrossStrategy(),
             RSIStrategy(),
             BollingerStrategy()
