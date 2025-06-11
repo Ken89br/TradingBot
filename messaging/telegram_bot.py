@@ -84,6 +84,24 @@ class TelegramNotifier:
             await self.send_symbol_buttons(callback.message, page=0)
             await callback.answer()
 
+        @self.dp.message_handler(lambda msg: msg.text.lower() in ["/status", "status"])
+        async def status_cmd(msg: types.Message):
+            user_id = msg.chat.id
+            sym_info = signal_context.get(user_id)
+            if sym_info:
+                response = (
+                f"✅ Bot is running.\n\n"
+                f"🕐 Last selected timeframe: `{sym_info['timeframe']}`\n"
+                f"💱 Last selected pair: `{sym_info['symbol']}`"
+            )
+            else:
+                response = (
+                  "✅ Bot is running.\n"
+                  "ℹ️ No signal context found. Use 📈 Start to begin."
+            )
+
+            await msg.reply(response, parse_mode="Markdown")
+
         @self.dp.callback_query_handler(lambda c: c.data == "more_symbols", state=SignalState.choosing_symbol)
         async def more_symbols_callback(callback: types.CallbackQuery, state: FSMContext):
             await self.send_symbol_buttons(callback.message, page=1)
