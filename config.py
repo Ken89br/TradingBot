@@ -26,8 +26,6 @@ CONFIG = {
     "data_feed": "finnhub",  # ⬅ switch from 'twelvedata'
     "finnhub": {
     "api_key": get_env("FINNHUB_API_KEY", required=True),
-        "base_url": "https://api.twelvedata.com",
-        "default_interval": "1min"
     },
 
     "symbols": [
