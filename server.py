@@ -1,5 +1,4 @@
 from aiohttp import web
-from data.twelvedata import TwelveDataClient
 from strategy.rsi_ma import AggressiveRSIMA
 from messaging.telegram_bot import TelegramNotifier
 from config import CONFIG
