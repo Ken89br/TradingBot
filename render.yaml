@@ -14,6 +14,6 @@ services:
       - key: TELEGRAM_ADMIN_ID
         value: 8137693719
       - key: POLYGON_API_KEY
-        value: d14fhkhr01qq13oqu0h0d14fhkhr01qq13oqu0hg
+        value: WM3qHfs_R2VILyPyuXnUp2ZRrfcV6i5g
       - key: WEBHOOK_URL
         value: https://tradingbotv2.onrender.com
