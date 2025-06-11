@@ -45,6 +45,8 @@ class FinnhubClient:
                     time.sleep(1)
                     continue
 
+                print("📥 Finnhub raw JSON:", data)
+
                 data = response.json()
                 if not data or data.get("s") != "ok" or not data.get("c"):
                     print("⚠️ No valid candle data returned.")
