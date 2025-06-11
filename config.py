@@ -24,10 +24,10 @@ CONFIG = {
         "url": get_env("WEBHOOK_URL", "https://your-render-url.com")
     },
 
-    "data_feed": "finnhub",
+    "data_feed": "polygon",
 
-    "finnhub": {
-        "api_key": get_env("FINNHUB_API_KEY", required=True),
+    "polygon": {
+        "api_key": get_env("POLYGON_API_KEY", required=True),
     },
 
     "symbols": [
