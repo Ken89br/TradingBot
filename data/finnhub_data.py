@@ -49,10 +49,6 @@ class FinnhubClient:
                 if not data or data.get("s") != "ok" or not data.get("c"):
                     print("⚠️ No valid candle data returned.")
                     return None
-                    
-                if not data or "s" not in data or data.get("s") != "ok":
-                    print(f"❌ Bad candle data: {data}")
-                    return None
             
                 candles = [
                     {
