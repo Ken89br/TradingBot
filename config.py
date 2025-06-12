@@ -31,7 +31,7 @@ CONFIG = {
     },
 
     "symbols": [
-        "EUR/USD", "GBPUSD", "USDJPY", "AUDUSD", "USDCHF", "NZDUSD",
+        "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCHF", "NZDUSD",
         "USDCAD", "EURJPY", "EURNZD", "AEDCNY", "AUDCAD", "AUDCHF",
         "AUDNZD", "AUDUSD", "CADJPY", "CHFJPY", "EURGBP", "EURJPY"
     ],
