@@ -23,3 +23,7 @@ services:
         value: 
         - key: GITHUB_REPO
         value: Ken89br/TradingBot
+        - key: TRAINING_DATA_CSV
+        value:
+        - key: UPLOAD_MODEL_URL
+        value:
