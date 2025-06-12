@@ -1,10 +1,9 @@
-# strategy/ml_utils.py
-
 import os
 import requests
 import base64
 import json
 import pandas as pd
+
 
 def download_model(url: str, dest: str = "model.pkl") -> bool:
     if not url:
@@ -12,6 +11,7 @@ def download_model(url: str, dest: str = "model.pkl") -> bool:
         return False
     try:
         r = requests.get(url)
+        r.raise_for_status()
         with open(dest, "wb") as f:
             f.write(r.content)
         print(f"⬇️ Model downloaded from {url} to {dest}")
@@ -20,6 +20,7 @@ def download_model(url: str, dest: str = "model.pkl") -> bool:
         print(f"❌ Failed to download model: {e}")
         return False
 
+
 def upload_model(model_path: str, upload_url: str) -> bool:
     """
     Upload model file (model.pkl) to Firebase/S3/etc.
@@ -27,6 +28,11 @@ def upload_model(model_path: str, upload_url: str) -> bool:
     if not upload_url:
         print("⚠️ UPLOAD_MODEL_URL is not set.")
         return False
+
+    if not os.path.exists(model_path):
+        print(f"❌ Model file not found: {model_path}")
+        return False
+
     try:
         with open(model_path, "rb") as f:
             response = requests.put(upload_url, data=f)
@@ -40,17 +46,28 @@ def upload_model(model_path: str, upload_url: str) -> bool:
         print(f"❌ Exception during upload: {e}")
         return False
 
+
 def upload_to_github(file_path, repo, path, token, commit_msg="Update model.pkl"):
     """
-    Upload or update a model file in GitHub.
+    Upload or update a file (model.pkl, CSV, etc.) in GitHub.
     """
+    if not os.path.exists(file_path):
+        print(f"❌ File not found: {file_path}")
+        return False
+
     api_url = f"https://api.github.com/repos/{repo}/contents/{path}"
-    with open(file_path, "rb") as f:
-        content = base64.b64encode(f.read()).decode("utf-8")
+
+    try:
+        with open(file_path, "rb") as f:
+            content = base64.b64encode(f.read()).decode("utf-8")
+    except Exception as e:
+        print(f"❌ Could not read file: {e}")
+        return False
 
     headers = {"Authorization": f"token {token}"}
     sha = None
     r = requests.get(api_url, headers=headers)
+
     if r.status_code == 200:
         sha = r.json().get("sha")
 
@@ -62,17 +79,22 @@ def upload_to_github(file_path, repo, path, token, commit_msg="Update model.pkl"
     if sha:
         data["sha"] = sha
 
-    r = requests.put(api_url, headers=headers, data=json.dumps(data))
-    if r.status_code in (200, 201):
-        print("✅ model.pkl uploaded to GitHub.")
-        return True
-    else:
-        print(f"❌ GitHub upload failed: {r.status_code} {r.text}")
+    try:
+        r = requests.put(api_url, headers=headers, data=json.dumps(data))
+        if r.status_code in (200, 201):
+            print(f"✅ File '{file_path}' uploaded to GitHub at {path}")
+            return True
+        else:
+            print(f"❌ GitHub upload failed: {r.status_code} {r.text}")
+            return False
+    except Exception as e:
+        print(f"❌ GitHub upload exception: {e}")
         return False
+
 
 def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Adds technical indicators to the DataFrame for training.
+    Add common indicators to a price DataFrame.
     Requires: open, high, low, close, volume
     """
     df["sma_5"] = df["close"].rolling(window=5).mean()
