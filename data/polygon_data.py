@@ -9,7 +9,7 @@ class PolygonClient:
         self.api_key = os.getenv("POLYGON_API_KEY", "MISSING_API_KEY")
         self.base_url = "https://api.polygon.io"
 
-    def fetch_candles(self, symbol, interval="1min", limit=30, retries=2):
+    def fetch_candles(self, symbol, interval="1min", limit=5, retries=2):
         if len(symbol) != 6:
             print(f"❌ Invalid symbol format: {symbol}")
             return None
