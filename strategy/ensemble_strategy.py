@@ -69,5 +69,14 @@ class EnsembleStrategy:
         "volume": sum(c["volume"] for c in data["history"])
         }
 
-        return self.filter.apply(signal_data, data["history"])
-            
+        result = self.filter.apply(signal_data, data["history"])
+        if not result:
+            return None
+
+        # ML confirms or downgrades
+        ml_prediction = self.ml.predict(data["history"])
+        if ml_prediction and ml_prediction != result["signal"]:
+            print("⚠️ ML disagrees with signal, downgrading confidence")
+            result["confidence"] -= 20
+            result["strength"] = "weak"
+        return result
