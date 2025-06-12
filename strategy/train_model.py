@@ -8,6 +8,7 @@ from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from utils.github_uploader import upload_to_github
+from strategy.ml_utils import upload_to_github
 
 from strategy.ml_utils import (
     add_indicators,
@@ -94,14 +95,6 @@ def main():
     # Step 5: Upload model to cloud (optional)
     upload_model(MODEL_PATH, os.getenv("UPLOAD_MODEL_URL"))
 
-    # Step 6: Upload model to GitHub (optional)
-    upload_to_github(
-        file_path=MODEL_PATH,
-        repo=os.getenv("GITHUB_REPO"),
-        path="model/model.pkl",
-        token=os.getenv("GITHUB_TOKEN"),
-        commit_msg="Auto update model from Render"
-    )
 # Upload signals CSV
 if os.path.exists("signals.csv"):
     upload_to_github(
@@ -110,7 +103,25 @@ if os.path.exists("signals.csv"):
         path="data/signals.csv",
         token=os.getenv("GITHUB_TOKEN"),
         commit_msg="Auto: updated signals.csv"
-    )   
+    )
 
+# Upload cleaned training data
+upload_to_github(
+    "training_data.csv",
+    repo=os.getenv("GITHUB_REPO"),
+    path="data/training_data.csv",
+    token=os.getenv("GITHUB_TOKEN"),
+    commit_msg="Auto update training data from Render"
+)
+
+# Upload model.pkl (again for redundancy)
+upload_to_github(
+    "model.pkl",
+    repo=os.getenv("GITHUB_REPO"),
+    path="model/model.pkl",
+    token=os.getenv("GITHUB_TOKEN"),
+    commit_msg="Auto update model from Render"
+    )
+    
 if __name__ == "__main__":
     main()
