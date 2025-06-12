@@ -21,3 +21,5 @@ services:
         value: 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
         - key: MODEL_URL
         value: 
+        - key: GITHUB_REPO
+        value: 
