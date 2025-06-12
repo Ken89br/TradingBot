@@ -11,6 +11,16 @@ from strategy.ml_utils import add_indicators
 MODEL_PATH = "model.pkl"
 DATA_URL = os.getenv("TRAINING_DATA_CSV", "training_data.csv")
 
+from strategy.ml_utils import upload_to_github
+
+upload_to_github(
+    "model.pkl",
+    repo=os.getenv("GITHUB_REPO"),             # e.g., "youruser/yourrepo"
+    path="model/model.pkl",                    # repo path
+    token=os.getenv("GITHUB_TOKEN"),           # GitHub token with 'repo' scope
+    commit_msg="Auto update model from Render"
+)
+
 def download_csv(url):
     if url.startswith("http"):
         print(f"⬇️ Downloading training data from {url}")
