@@ -22,4 +22,4 @@ services:
         - key: MODEL_URL
         value: 
         - key: GITHUB_REPO
-        value: 
+        value: Ken89br/TradingBot
