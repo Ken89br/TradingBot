@@ -8,6 +8,7 @@ from strategy.rsi import RSIStrategy
 from strategy.bbands import BollingerStrategy
 from strategy.sma_cross import SMACrossStrategy  # ✅ FIXED: import
 from strategy.ai_filter import SmartAIFilter
+from datetime import datetime, timedelta
 
 class EnsembleStrategy:
     def __init__(self):
@@ -50,15 +51,22 @@ class EnsembleStrategy:
 
         confidence = round((max(up_votes, down_votes) / len(votes)) * 100)
 
-        signal_data = {
-            "signal": signal,
-            "strength": "strong" if confidence >= 70 else "moderate",
-            "confidence": confidence,
-            "price": data["close"],
-            "recommend_entry": data["close"],
-            "high": max(c["high"] for c in data["history"]),
-            "low": min(c["low"] for c in data["history"]),
-            "volume": sum(c["volume"] for c in data["history"])
+    # Get UNIX ms timestamp from last candle
+    last_ts_ms = data["history"][-1].get("timestamp") or data["history"][-1].get("t")
+    last_ts_sec = int(last_ts_ms) / 1000 if last_ts_ms else time.time()
+
+    entry_dt = datetime.utcfromtimestamp(last_ts_sec + 180)  # +3 minutes
+    formatted_entry = entry_dt.strftime("%Hh:%Mmin (within 3 min)")
+
+    signal_data = {
+        "signal": signal,
+        "strength": "strong" if confidence >= 70 else "moderate",
+        "confidence": confidence,
+        "price": data["close"],
+        "recommended_entry_time": formatted_entry,  # ✅ time-based format
+        "high": max(c["high"] for c in data["history"]),
+        "low": min(c["low"] for c in data["history"]),
+        "volume": sum(c["volume"] for c in data["history"])
         }
 
         return self.filter.apply(signal_data, data["history"])
