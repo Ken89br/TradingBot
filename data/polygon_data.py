@@ -3,6 +3,7 @@
 import requests
 import os
 import time
+from datetime import datetime
 
 class PolygonClient:
     def __init__(self):
@@ -14,19 +15,14 @@ class PolygonClient:
             print(f"❌ Invalid symbol format: {symbol}")
             return None
 
-        formatted_symbol = f"C:{symbol.upper()}"
+        formatted_symbol = f"C:{symbol.upper()}"  # e.g., EURUSD → C:EURUSD
+        now = int(time.time())
+        from_unix = now - (limit * 60)
 
-        # Build dates
-        end_unix = int(time.time())
-        start_unix = end_unix - (limit * 60)
-
-        from_date = time.strftime("%Y-%m-%d", time.gmtime(start_unix))
-        to_date = time.strftime("%Y-%m-%d", time.gmtime(end_unix))
-
-        url = f"{self.base_url}/v2/aggs/ticker/{formatted_symbol}/range/1/minute/{from_date}/{to_date}"
+        url = f"{self.base_url}/v2/aggs/ticker/{formatted_symbol}/range/1/minute/{from_unix}/{now}"
         params = {
             "adjusted": "true",
-            "sort": "desc",
+            "sort": "asc",
             "limit": limit,
             "apiKey": self.api_key
         }
@@ -37,24 +33,27 @@ class PolygonClient:
         for attempt in range(retries + 1):
             try:
                 res = requests.get(url, params=params, timeout=5)
+                if res.status_code != 200:
+                    print(f"❌ HTTP {res.status_code}: {res.text}")
+                    time.sleep(1)
+                    continue
+
                 data = res.json()
                 print("📥 Polygon raw JSON:", data)
 
                 if "results" not in data or not data["results"]:
-                    print("⚠️ No candle data.")
+                    print("⚠️ No valid candle data.")
                     continue
 
-                # Sort candles oldest → newest
-                results = sorted(data["results"], key=lambda x: x["t"])
-
                 candles = []
-                for row in results:
+                for row in data["results"]:
                     candles.append({
                         "open": row["o"],
                         "high": row["h"],
                         "low": row["l"],
                         "close": row["c"],
-                        "volume": row["v"]
+                        "volume": row["v"],
+                        "timestamp": row["t"]  # Used for AI entry timing
                     })
 
                 return {
@@ -68,4 +67,4 @@ class PolygonClient:
 
         print("⛔ Max retries reached.")
         return None
-        
+                      
