@@ -31,12 +31,24 @@ def download_csv(url):
 
 
 def load_data():
-    path = download_csv(DATA_URL)
-    df = pd.read_csv(path)
+    """
+    Load training_data.csv if it exists; otherwise fallback to signals.csv
+    """
+    if os.path.exists("training_data.csv"):
+        print("📄 Loading training_data.csv")
+        df = pd.read_csv("training_data.csv")
+    elif os.path.exists("signals.csv"):
+        print("📄 training_data.csv missing — using signals.csv instead")
+        df = pd.read_csv("signals.csv")
+        if "close" not in df.columns and "price" in df.columns:
+            df["close"] = df["price"]
+    else:
+        print("⚠️ No data found: training_data.csv or signals.csv")
+        return pd.DataFrame()
+
     df = add_indicators(df)
     df.dropna(inplace=True)
     return df
-
 
 def load_or_create_model():
     if os.path.exists(MODEL_PATH):
