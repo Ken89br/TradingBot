@@ -7,7 +7,7 @@ from strategy.macd_reversal import MACDReversalStrategy
 from strategy.rsi import RSIStrategy
 from strategy.bbands import BollingerStrategy
 from strategy.sma_cross import SMACrossStrategy  # ✅ FIXED: import
-from strategy.ai_filter import AIFilter
+from strategy.ai_filter import SmartAIFilter
 
 class EnsembleStrategy:
     def __init__(self):
@@ -20,7 +20,7 @@ class EnsembleStrategy:
             SMACrossStrategy(),        # ✅ Import added
             BollingerStrategy()        # ✅ no config
         ]
-        self.filter = AIFilter()
+        self.filter = SmartAIFilter()
 
     def generate_signal(self, data):
         votes = []
