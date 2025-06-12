@@ -9,3 +9,4 @@ twelvedata==1.1.2
 scikit-learn
 gunicorn
 pytz
+joblib
