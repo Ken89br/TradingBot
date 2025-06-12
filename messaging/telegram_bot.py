@@ -6,6 +6,7 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from aiohttp import web
 from config import CONFIG
+from utils.signal_logger import log_signal
 
 class SignalState(StatesGroup):
     choosing_timeframe = State()
@@ -180,6 +181,7 @@ class TelegramNotifier:
         }.get(tf, "1min")
 
     async def send_trade_signal(self, chat_id, asset, signal_data):
+        log_signal(chat_id, asset, timeframe, signal_data)
         payout = round(signal_data['price'] * 0.92, 5)
         msg = (
             f"📡 *{get_text('signal_title', chat_id=chat_id)}*\n\n"
