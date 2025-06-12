@@ -1,9 +1,5 @@
-# strategy/ml_predictor.py
 import os
 import joblib
-import pandas as pd
-import requests
-from strategy.ml_utils import add_indicators
 
 class MLPredictor:
     def __init__(self, model_path="model.pkl"):
@@ -12,21 +8,33 @@ class MLPredictor:
 
     def _load_model(self):
         if not os.path.exists(self.model_path):
-            remote_url = os.getenv("MODEL_URL")
-            if remote_url:
-                print(f"⬇️ Downloading model from {remote_url}")
-                r = requests.get(remote_url)
-                with open(self.model_path, "wb") as f:
-                    f.write(r.content)
-        return joblib.load(self.model_path)
-
-    def predict(self, candles):
-        df = pd.DataFrame(candles)
-        df = add_indicators(df)
-        df.dropna(inplace=True)
-        if df.empty:
+            print("⚠️ model.pkl not found. Skipping ML prediction.")
             return None
-        features = ["open", "high", "low", "close", "volume", "sma_5", "sma_10", "rsi_14", "macd", "macd_signal"]
-        X = df.iloc[-1:][features]
-        return "up" if self.model.predict(X)[0] == 1 else "down"
-        
+        try:
+            return joblib.load(self.model_path)
+        except Exception as e:
+            print(f"❌ Failed to load model.pkl: {e}")
+            return None
+
+    def predict(self, candles: list):
+        if not self.model or not candles:
+            return None
+        try:
+            features = {
+                "open": candles[-1]["open"],
+                "high": candles[-1]["high"],
+                "low": candles[-1]["low"],
+                "close": candles[-1]["close"],
+                "volume": candles[-1]["volume"],
+            }
+            # Dummy values for now; make sure indicators are added later
+            for k in ["sma_5", "sma_10", "rsi_14", "macd", "macd_signal"]:
+                features[k] = candles[-1].get(k, 0)
+
+            df = pd.DataFrame([features])
+            prediction = self.model.predict(df)[0]
+            return "up" if prediction == 1 else "down"
+        except Exception as e:
+            print(f"⚠️ ML prediction failed: {e}")
+            return None
+            
