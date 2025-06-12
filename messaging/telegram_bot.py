@@ -202,6 +202,7 @@ class TelegramNotifier:
     if len(signal_df) >= 5:
         print("🔁 Detected 5+ signals — retraining...")
         run_training()  # calls your train_model.py logic
+        await self.bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown", reply_markup=keyboard)
 
         payout = round(signal_data['price'] * 0.92, 5)
         msg = (
@@ -221,8 +222,6 @@ class TelegramNotifier:
 
         keyboard = InlineKeyboardMarkup()
         keyboard.add(InlineKeyboardButton("🔁 Refresh", callback_data="refresh_signal"))
-
-        await self.bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown", reply_markup=keyboard)
 
     @property
     def token(self):
