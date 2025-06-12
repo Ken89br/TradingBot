@@ -9,6 +9,7 @@ from strategy.bbands import BollingerStrategy
 from strategy.sma_cross import SMACrossStrategy  # ✅ FIXED: import
 from strategy.ai_filter import SmartAIFilter
 from datetime import datetime, timedelta
+from strategy.ml_predictor import
 
 class EnsembleStrategy:
     def __init__(self):
@@ -22,6 +23,7 @@ class EnsembleStrategy:
             BollingerStrategy()        # ✅ no config
         ]
         self.filter = SmartAIFilter()
+        self.ml = MLPreditor()
 
     def generate_signal(self, data):
         votes = []
