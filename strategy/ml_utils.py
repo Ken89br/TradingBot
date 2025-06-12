@@ -1,9 +1,20 @@
 # strategy/ml_utils.py
 import pandas as pd
 
-def add_indicators(df):
+def add_indicators(df: pd.DataFrame):
     df["sma_5"] = df["close"].rolling(5).mean()
     df["sma_10"] = df["close"].rolling(10).mean()
+    delta = df["close"].diff()
+    up = delta.clip(lower=0)
+    down = -delta.clip(upper=0)
+    avg_gain = up.rolling(14).mean()
+    avg_loss = down.rolling(14).mean()
+    rs = avg_gain / (avg_loss + 1e-6)
+    df["rsi_14"] = 100 - (100 / (1 + rs))
+    df["macd"] = df["close"].ewm(span=12, adjust=False).mean() - df["close"].ewm(span=26, adjust=False).mean()
+    df["macd_signal"] = df["macd"].ewm(span=9, adjust=False).mean()
+    return df
+
     df["rsi_14"] = compute_rsi(df["close"], window=14)
     df["macd"], df["macd_signal"] = compute_macd(df["close"])
     return df
