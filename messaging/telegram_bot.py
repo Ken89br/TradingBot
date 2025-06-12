@@ -4,9 +4,12 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
-from aiohttp import web
+from aiohttp import web 
 from config import CONFIG
 from utils.signal_logger import log_signal
+import pandas as pd
+import os
+from strategy.train_model import main as run_training  # ✅ import train_model logic
 
 class SignalState(StatesGroup):
     choosing_timeframe = State()
@@ -179,9 +182,27 @@ class TelegramNotifier:
             "M1": "1min", "M5": "5min", "M15": "15min",
             "M30": "30min", "H1": "1h", "H4": "4h", "D1": "1day"
         }.get(tf, "1min")
+        
+        SIGNAL_CSV_PATH = "signals.csv"
 
     async def send_trade_signal(self, chat_id, asset, signal_data):
         log_signal(chat_id, asset, timeframe, signal_data)
+        signal_data["symbol"] = asset
+        signal_data["user"] = chat_id
+        signal_data["timeframe"] = signal_context.get(chat_id, {}).get("timeframe", "")
+        signal_data["timestamp"] = pd.Timestamp.now()
+        df = pd.DataFrame([signal_data])
+    if os.path.exists(SIGNAL_CSV_PATH):
+        df.to_csv(SIGNAL_CSV_PATH, mode="a", index=False, header=False)
+    else:
+        df.to_csv(SIGNAL_CSV_PATH, index=False)
+
+        # ✅ Train after 5 signals
+        signal_df = pd.read_csv(SIGNAL_CSV_PATH)
+    if len(signal_df) >= 5:
+        print("🔁 Detected 5+ signals — retraining...")
+        run_training()  # calls your train_model.py logic
+
         payout = round(signal_data['price'] * 0.92, 5)
         msg = (
             f"📡 *{get_text('signal_title', chat_id=chat_id)}*\n\n"
