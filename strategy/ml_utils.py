@@ -1,35 +1,57 @@
 # strategy/ml_utils.py
-import pandas as pd
 
-def add_indicators(df: pd.DataFrame):
-    df["sma_5"] = df["close"].rolling(5).mean()
-    df["sma_10"] = df["close"].rolling(10).mean()
+import pandas as pd
+import requests
+
+def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add technical indicators to the dataframe for training.
+    Assumes df has columns: open, high, low, close, volume
+    """
+
+    # Moving Averages
+    df["sma_5"] = df["close"].rolling(window=5).mean()
+    df["sma_10"] = df["close"].rolling(window=10).mean()
+
+    # RSI (Relative Strength Index)
     delta = df["close"].diff()
     up = delta.clip(lower=0)
-    down = -delta.clip(upper=0)
-    avg_gain = up.rolling(14).mean()
-    avg_loss = down.rolling(14).mean()
+    down = -1 * delta.clip(upper=0)
+
+    avg_gain = up.rolling(window=14).mean()
+    avg_loss = down.rolling(window=14).mean()
     rs = avg_gain / (avg_loss + 1e-6)
     df["rsi_14"] = 100 - (100 / (1 + rs))
-    df["macd"] = df["close"].ewm(span=12, adjust=False).mean() - df["close"].ewm(span=26, adjust=False).mean()
+
+    # MACD (12,26,9)
+    ema12 = df["close"].ewm(span=12, adjust=False).mean()
+    ema26 = df["close"].ewm(span=26, adjust=False).mean()
+    df["macd"] = ema12 - ema26
     df["macd_signal"] = df["macd"].ewm(span=9, adjust=False).mean()
+
     return df
 
-    df["rsi_14"] = compute_rsi(df["close"], window=14)
-    df["macd"], df["macd_signal"] = compute_macd(df["close"])
-    return df
+def upload_model(model_path: str, upload_url: str) -> bool:
+    """
+    Upload a model file (e.g., model.pkl) to a cloud storage URL.
+    The upload_url should be a valid pre-signed URL (Firebase, S3, etc.)
+    """
+    if not upload_url:
+        print("⚠️ Skipping model upload — UPLOAD_MODEL_URL not set.")
+        return False
 
-def compute_rsi(series, window=14):
-    delta = series.diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window).mean()
-    rs = gain / loss
-    return 100 - (100 / (1 + rs))
+    try:
+        with open(model_path, "rb") as f:
+            response = requests.put(upload_url, data=f)
 
-def compute_macd(series, short=12, long=26, signal=9):
-    ema_short = series.ewm(span=short, adjust=False).mean()
-    ema_long = series.ewm(span=long, adjust=False).mean()
-    macd = ema_short - ema_long
-    signal_line = macd.ewm(span=signal, adjust=False).mean()
-    return macd, signal_line
-  
+        if response.status_code in (200, 201):
+            print(f"✅ Model uploaded to {upload_url}")
+            return True
+        else:
+            print(f"❌ Upload failed: {response.status_code} {response.text}")
+            return False
+
+    except Exception as e:
+        print(f"❌ Exception during model upload: {e}")
+        return False
+    
