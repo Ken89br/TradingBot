@@ -72,7 +72,7 @@ class EnsembleStrategy:
         }
 
         # ML confirms or downgrades
-        ml_prediction = self.ml.predict(data["history"])
+    ml_prediction = self.ml.predict(data["history"])
         if ml_prediction and ml_prediction != result["signal"]:
             print("⚠️ ML disagrees with signal, downgrading confidence")
             result["confidence"] -= 20
