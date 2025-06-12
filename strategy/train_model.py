@@ -1,35 +1,40 @@
 # strategy/train_model.py
+import os
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
-import joblib
-from ml_utils import add_indicators
+from joblib import dump
+from strategy.ml_utils import add_indicators
 
-# === Load your CSV ===
-df = pd.read_csv("training_data.csv")  # Make sure you have this file
+DATA_URL = os.getenv("TRAINING_DATA_CSV")  # Set in Render as ENV VAR
 
-# === Add indicators ===
-df = add_indicators(df)
-df.dropna(inplace=True)
+def load_data():
+    if DATA_URL and DATA_URL.startswith("http"):
+        print(f"⬇️ Downloading training data from {DATA_URL}")
+        return pd.read_csv(DATA_URL)
+    return pd.read_csv("training_data.csv")
 
-# === Label target ===
-df["target"] = df["close"].shift(-1) > df["close"]
-df["target"] = df["target"].astype(int)  # 1 = up, 0 = down
+def main():
+    df = load_data()
+    df = add_indicators(df)
+    df.dropna(inplace=True)
 
-# === Features ===
-features = ["open", "high", "low", "close", "volume", "sma_5", "sma_10", "rsi_14", "macd", "macd_signal"]
-X = df[features]
-y = df["target"]
+    df["target"] = (df["close"].shift(-1) > df["close"]).astype(int)
+    features = ["open", "high", "low", "close", "volume", "sma_5", "sma_10", "rsi_14", "macd", "macd_signal"]
 
-# === Train ===
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-clf = RandomForestClassifier(n_estimators=100, random_state=42)
-clf.fit(X_train, y_train)
+    X_train, X_test, y_train, y_test = train_test_split(df[features], df["target"], test_size=0.2)
+    clf = XGBClassifier(use_label_encoder=False, eval_metric="logloss")
+    clf.fit(X_train, y_train)
 
-# === Evaluate ===
-print(classification_report(y_test, clf.predict(X_test)))
+    print("📊 Accuracy Report:")
+    print(classification_report(y_test, clf.predict(X_test)))
 
-# === Save model ===
-joblib.dump(clf, "model.pkl")
-print("✅ Model saved as model.pkl")
+    # Save to file
+    model_path = "model.pkl"
+    dump(clf, model_path)
+    print(f"✅ Trained model saved: {model_path}")
+
+if __name__ == "__main__":
+    main()
+  
