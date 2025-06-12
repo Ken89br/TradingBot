@@ -5,7 +5,6 @@ ta
 pandas==2.2.2
 numpy==1.26.4
 requests==2.31.0
-twelvedata==1.1.2
 scikit-learn
 gunicorn
 pytz
