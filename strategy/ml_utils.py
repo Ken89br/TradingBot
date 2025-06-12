@@ -22,7 +22,6 @@ def download_model(url: str, dest: str = "model.pkl") -> bool:
         print(f"❌ Failed to download model: {e}")
         return False
         
-
     # Moving Averages
     df["sma_5"] = df["close"].rolling(window=5).mean()
     df["sma_10"] = df["close"].rolling(window=10).mean()
