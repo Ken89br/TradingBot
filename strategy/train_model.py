@@ -61,7 +61,10 @@ def main():
 
     joblib.dump(clf, MODEL_PATH)
     print(f"✅ Model saved: {MODEL_PATH}")
+    
+    from strategy.ml_utils import upload_model
+
+    upload_model("model.pkl", os.getenv("UPLOAD_MODEL_URL"))
 
 if __name__ == "__main__":
     main()
-    
