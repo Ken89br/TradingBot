@@ -20,10 +20,8 @@ services:
         - key: GITHUB_TOKEN
         value: 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
         - key: MODEL_URL
-        value: 
+        value: https://raw.githubusercontent.com/Ken89br/TradingBot/main/model/model.pkl
         - key: GITHUB_REPO
         value: Ken89br/TradingBot
         - key: TRAINING_DATA_CSV
-        value:
-        - key: UPLOAD_MODEL_URL
-        value:
+        value: https://raw.githubusercontent.com/Ken89br/TradingBot/main/data/training_data.csv
