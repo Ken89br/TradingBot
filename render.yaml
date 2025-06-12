@@ -17,3 +17,7 @@ services:
         value: WM3qHfs_R2VILyPyuXnUp2ZRrfcV6i5g
       - key: WEBHOOK_URL
         value: https://tradingbotv2.onrender.com
+        - key: GITHUB_TOKEN
+        value: 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
+        - key: MODEL_URL
+        value: 
