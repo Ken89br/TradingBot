@@ -2,7 +2,41 @@
 
 import pandas as pd
 import requests
+import base64
+import json
 
+def upload_to_github(file_path, repo, path, token, commit_msg="Update model.pkl"):
+    """
+    Uploads or replaces a file in a GitHub repo.
+    """
+    api_url = f"https://api.github.com/repos/{repo}/contents/{path}"
+
+    with open(file_path, "rb") as f:
+        content = base64.b64encode(f.read()).decode("utf-8")
+
+    # Get SHA of existing file (if any)
+    sha = None
+    headers = {"Authorization": f"token {token}"}
+    r = requests.get(api_url, headers=headers)
+    if r.status_code == 200:
+        sha = r.json().get("sha")
+
+    data = {
+        "message": commit_msg,
+        "content": content,
+        "branch": "main",
+    }
+    if sha:
+        data["sha"] = sha
+
+    r = requests.put(api_url, headers=headers, data=json.dumps(data))
+    if r.status_code in [200, 201]:
+        print("✅ model.pkl uploaded to GitHub.")
+        return True
+    else:
+        print(f"❌ GitHub upload failed: {r.status_code} {r.text}")
+        return False
+    
 def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """
     Add technical indicators to the dataframe for training.
