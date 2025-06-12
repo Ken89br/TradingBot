@@ -7,6 +7,7 @@ import requests
 from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
+from utils.github_uploader import upload_to_github
 
 from strategy.ml_utils import (
     add_indicators,
@@ -89,7 +90,15 @@ def main():
         token=os.getenv("GITHUB_TOKEN"),
         commit_msg="Auto update model from Render"
     )
+# Upload signals CSV
+if os.path.exists("signals.csv"):
+    upload_to_github(
+        "signals.csv",
+        repo=os.getenv("GITHUB_REPO"),
+        path="data/signals.csv",
+        token=os.getenv("GITHUB_TOKEN"),
+        commit_msg="Auto: updated signals.csv"
+    )   
 
 if __name__ == "__main__":
     main()
-    
