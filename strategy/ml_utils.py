@@ -9,6 +9,20 @@ def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     Assumes df has columns: open, high, low, close, volume
     """
 
+def download_model(url: str, dest: str = "model.pkl") -> bool:
+    if not url:
+        return False
+    try:
+        r = requests.get(url)
+        with open(dest, "wb") as f:
+            f.write(r.content)
+        print(f"⬇️ Model downloaded from {url} to {dest}")
+        return True
+    except Exception as e:
+        print(f"❌ Failed to download model: {e}")
+        return False
+        
+
     # Moving Averages
     df["sma_5"] = df["close"].rolling(window=5).mean()
     df["sma_10"] = df["close"].rolling(window=10).mean()
