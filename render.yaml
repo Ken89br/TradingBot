@@ -25,3 +25,5 @@ services:
         value: Ken89br/TradingBot
         - key: TRAINING_DATA_CSV
         value: https://raw.githubusercontent.com/Ken89br/TradingBot/main/data/training_data.csv
+        key: PORT
+        value: 10000
