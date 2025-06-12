@@ -77,7 +77,7 @@ class EnsembleStrategy:
             print("âš ï¸ ML disagrees with signal, downgrading confidence")
             result["confidence"] -= 20
             result["strength"] = "weak"
-        return result
+            return result
 
     return self.filter.apply(signal_data, data["history"])
         
