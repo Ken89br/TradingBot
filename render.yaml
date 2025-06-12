@@ -17,13 +17,7 @@ services:
         value: WM3qHfs_R2VILyPyuXnUp2ZRrfcV6i5g
       - key: WEBHOOK_URL
         value: https://tradingbotv2.onrender.com
-        - key: GITHUB_TOKEN
+      - key: GITHUB_TOKEN
         value: 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
-        - key: MODEL_URL
-        value: https://raw.githubusercontent.com/Ken89br/TradingBot/main/model/model.pkl
-        - key: GITHUB_REPO
-        value: Ken89br/TradingBot
-        - key: TRAINING_DATA_CSV
-        value: https://raw.githubusercontent.com/Ken89br/TradingBot/main/data/training_data.csv
-        key: PORT
+      - key: PORT
         value: 10000
