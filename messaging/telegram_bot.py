@@ -1,22 +1,20 @@
-#telegram_bot.py
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from aiohttp import web
-from utils.telegram_safe import safe_send
+
 from config import CONFIG
 from utils.signal_logger import log_signal
+from utils.telegram_safe import safe_send
 import pandas as pd
 import os
 from strategy.train_model import main as run_training
 
-
 class SignalState(StatesGroup):
     choosing_timeframe = State()
     choosing_symbol = State()
-
 
 REGISTERED_USERS = set()
 signal_context = {}
@@ -27,13 +25,11 @@ SYMBOL_PAGES = [
     CONFIG["symbols"][8:]
 ]
 
-
 def get_text(key, lang=None, chat_id=None):
     if chat_id:
         lang = user_languages.get(chat_id, "en")
     lang = lang or "en"
     return CONFIG["languages"].get(lang, CONFIG["languages"]["en"]).get(key, key)
-
 
 class TelegramNotifier:
     def __init__(self, token, strategy, data_client):
@@ -46,12 +42,14 @@ class TelegramNotifier:
         async def start_cmd(msg: types.Message):
             chat_id = msg.chat.id
             REGISTERED_USERS.add(chat_id)
+
             keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add(KeyboardButton("📈 Start"))
             keyboard.add(KeyboardButton("/status"), KeyboardButton("/stop"))
             keyboard.add(KeyboardButton("/help"), KeyboardButton("/support"))
             keyboard.add(KeyboardButton("🌐 Language"))
-            await msg.reply(get_text("start", chat_id=chat_id), reply_markup=keyboard)
+
+            await safe_send(self.bot, chat_id, get_text("start", chat_id=chat_id), reply_markup=keyboard)
 
         @self.dp.message_handler(lambda msg: msg.text == "🌐 Language")
         async def language_toggle(msg: types.Message):
@@ -59,20 +57,20 @@ class TelegramNotifier:
             current_lang = user_languages.get(chat_id, "en")
             new_lang = "pt" if current_lang == "en" else "en"
             user_languages[chat_id] = new_lang
-            await msg.reply(f"🌐 Language set to {'Português' if new_lang == 'pt' else 'English'} ✅")
+            await safe_send(self.bot, chat_id, f"🌐 Language set to {'Português' if new_lang == 'pt' else 'English'} ✅")
 
         @self.dp.message_handler(lambda msg: msg.text.lower() in ["/help", "help"])
         async def help_cmd(msg: types.Message):
-            await msg.answer("ℹ️ This bot generates real-time forex signals using AI and technical strategies.\nUse 📈 Start to begin.")
+            await safe_send(self.bot, msg.chat.id, "ℹ️ This bot generates real-time forex signals using AI and technical strategies.\nUse 📈 Start to begin.")
 
         @self.dp.message_handler(lambda msg: msg.text.lower() in ["/support", "support"])
         async def support_cmd(msg: types.Message):
-            await msg.answer(f"🛟 Contact support at: {CONFIG['support']['username']}")
+            await safe_send(self.bot, msg.chat.id, f"🛟 Contact support at: {CONFIG['support']['username']}")
 
         @self.dp.message_handler(lambda msg: msg.text.lower() in ["/stop", "stop"])
         async def stop_cmd(msg: types.Message, state: FSMContext):
             await state.finish()
-            await msg.answer("🛑 Signal generation stopped. Use 📈 Start to begin again.")
+            await safe_send(self.bot, msg.chat.id, "🛑 Signal generation stopped. Use 📈 Start to begin again.")
 
         @self.dp.message_handler(lambda msg: msg.text.lower() in ["/status", "status"])
         async def status_cmd(msg: types.Message):
@@ -82,7 +80,7 @@ class TelegramNotifier:
                 response = f"✅ Bot is running.\n\n🕐 Timeframe: `{sym_info['timeframe']}`\n💱 Symbol: `{sym_info['symbol']}`"
             else:
                 response = "✅ Bot is running.\nℹ️ No signal context found. Use 📈 Start to begin."
-            await msg.reply(response, parse_mode="Markdown")
+            await safe_send(self.bot, user_id, response, parse_mode="Markdown")
 
         @self.dp.message_handler(lambda msg: msg.text == "📈 Start", state="*")
         async def handle_start_signal(msg: types.Message):
@@ -90,7 +88,7 @@ class TelegramNotifier:
             kb = InlineKeyboardMarkup(row_width=3)
             buttons = [InlineKeyboardButton(tf, callback_data=f"timeframe:{tf}") for tf in CONFIG["timeframes"]]
             kb.add(*buttons)
-            await msg.reply(get_text("choose_timeframe", chat_id=msg.chat.id), reply_markup=kb, parse_mode="Markdown")
+            await safe_send(self.bot, msg.chat.id, get_text("choose_timeframe", chat_id=msg.chat.id), reply_markup=kb, parse_mode="Markdown")
 
         @self.dp.callback_query_handler(lambda c: c.data.startswith("timeframe:"), state=SignalState.choosing_timeframe)
         async def select_timeframe(callback: types.CallbackQuery, state: FSMContext):
@@ -116,21 +114,25 @@ class TelegramNotifier:
                     f"⏱ Timeframe: `{timeframe}`\n💱 Symbol: `{symbol}`\n\n{get_text('generating', chat_id=callback.from_user.id)}",
                     parse_mode="Markdown"
                 )
-                
+
                 print(f"📡 Fetching candles for: {symbol} @ {self._map_timeframe(timeframe)}")
-    
                 candle = self.data_client.fetch_candles(symbol, interval=self._map_timeframe(timeframe))
+
                 if not candle or "history" not in candle:
-                    await self.bot.send_message(callback.from_user.id, "⚠️ Failed to retrieve price data.")
+                    await safe_send(self.bot, callback.from_user.id, "⚠️ Failed to retrieve price data.")
                     return
+
                 signal_data = self.strategy.generate_signal(candle)
+
                 if not signal_data:
-                    await self.bot.send_message(callback.from_user.id, get_text("no_signal", chat_id=callback.from_user.id))
+                    await safe_send(self.bot, callback.from_user.id, get_text("no_signal", chat_id=callback.from_user.id))
                 else:
                     signal_context[callback.from_user.id] = {"symbol": symbol, "timeframe": timeframe}
                     await self.send_trade_signal(callback.from_user.id, symbol, signal_data)
+
             except Exception as e:
-                await self.bot.send_message(callback.from_user.id, f"❌ Error: {str(e)}")
+                await safe_send(self.bot, callback.from_user.id, f"❌ Error: {str(e)}")
+
             await state.finish()
             await callback.answer()
 
@@ -140,16 +142,21 @@ class TelegramNotifier:
             if user_id not in signal_context:
                 await callback_query.answer("⚠️ No previous signal to refresh.", show_alert=True)
                 return
+
             ctx = signal_context[user_id]
             candle = self.data_client.fetch_candles(ctx["symbol"], self._map_timeframe(ctx["timeframe"]))
+
             if not candle or "history" not in candle:
-                await self.bot.send_message(user_id, get_text("no_signal", chat_id=user_id))
+                await safe_send(self.bot, user_id, get_text("no_signal", chat_id=user_id))
                 return
+
             signal_data = self.strategy.generate_signal(candle)
+
             if not signal_data:
-                await self.bot.send_message(user_id, get_text("no_signal", chat_id=user_id))
+                await safe_send(self.bot, user_id, get_text("no_signal", chat_id=user_id))
             else:
                 await self.send_trade_signal(user_id, ctx["symbol"], signal_data)
+
             await callback_query.answer("🔁 Refreshed.")
 
     async def send_symbol_buttons(self, message, page=0):
@@ -173,11 +180,12 @@ class TelegramNotifier:
         signal_data["user"] = chat_id
         signal_data["timeframe"] = timeframe
         signal_data["timestamp"] = pd.Timestamp.now()
-    
+
         log_signal(chat_id, asset, timeframe, signal_data)
 
         df = pd.DataFrame([signal_data])
         SIGNAL_CSV_PATH = "signals.csv"
+
         if os.path.exists(SIGNAL_CSV_PATH):
             df.to_csv(SIGNAL_CSV_PATH, mode="a", header=False, index=False)
         else:
@@ -202,9 +210,10 @@ class TelegramNotifier:
             f"💸 *{get_text('payout', chat_id=chat_id)}:* `{payout}`\n"
             f"⏱ *{get_text('timer', chat_id=chat_id)}*"
         )
+
         keyboard = InlineKeyboardMarkup()
         keyboard.add(InlineKeyboardButton("🔁 Refresh", callback_data="refresh_signal"))
-        await self.bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown", reply_markup=keyboard)
+        await safe_send(self.bot, chat_id, msg, parse_mode="Markdown", reply_markup=keyboard)
 
     @property
     def token(self):
@@ -221,4 +230,4 @@ class TelegramNotifier:
         Dispatcher.set_current(self.dp)
         await self.dp.process_update(update)
         return web.Response()
-        
+             
