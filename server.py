@@ -1,6 +1,6 @@
 # server.py
 from aiohttp import web
-from data.data_client import get_data_client
+from data.data_client import FallbackDataClient
 from strategy.ensemble_strategy import EnsembleStrategy
 from messaging.telegram_bot import TelegramNotifier
 from config import CONFIG
