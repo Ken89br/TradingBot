@@ -10,6 +10,7 @@ from utils.signal_logger import log_signal
 from utils.telegram_safe import safe_send
 import pandas as pd
 import os
+
 from strategy.train_model import main as run_training
 
 class SignalState(StatesGroup):
@@ -30,6 +31,7 @@ def get_text(key, lang=None, chat_id=None):
         lang = user_languages.get(chat_id, "en")
     lang = lang or "en"
     return CONFIG["languages"].get(lang, CONFIG["languages"]["en"]).get(key, key)
+
 
 class TelegramNotifier:
     def __init__(self, token, strategy, data_client):
@@ -114,7 +116,6 @@ class TelegramNotifier:
                     f"⏱ Timeframe: `{timeframe}`\n💱 Symbol: `{symbol}`\n\n{get_text('generating', chat_id=callback.from_user.id)}",
                     parse_mode="Markdown"
                 )
-
                 print(f"📡 Fetching candles for: {symbol} @ {self._map_timeframe(timeframe)}")
                 candle = self.data_client.fetch_candles(symbol, interval=self._map_timeframe(timeframe))
 
@@ -129,10 +130,8 @@ class TelegramNotifier:
                 else:
                     signal_context[callback.from_user.id] = {"symbol": symbol, "timeframe": timeframe}
                     await self.send_trade_signal(callback.from_user.id, symbol, signal_data)
-
             except Exception as e:
                 await safe_send(self.bot, callback.from_user.id, f"❌ Error: {str(e)}")
-
             await state.finish()
             await callback.answer()
 
@@ -142,21 +141,16 @@ class TelegramNotifier:
             if user_id not in signal_context:
                 await callback_query.answer("⚠️ No previous signal to refresh.", show_alert=True)
                 return
-
             ctx = signal_context[user_id]
             candle = self.data_client.fetch_candles(ctx["symbol"], self._map_timeframe(ctx["timeframe"]))
-
             if not candle or "history" not in candle:
                 await safe_send(self.bot, user_id, get_text("no_signal", chat_id=user_id))
                 return
-
             signal_data = self.strategy.generate_signal(candle)
-
             if not signal_data:
                 await safe_send(self.bot, user_id, get_text("no_signal", chat_id=user_id))
             else:
                 await self.send_trade_signal(user_id, ctx["symbol"], signal_data)
-
             await callback_query.answer("🔁 Refreshed.")
 
     async def send_symbol_buttons(self, message, page=0):
@@ -180,12 +174,12 @@ class TelegramNotifier:
         signal_data["user"] = chat_id
         signal_data["timeframe"] = timeframe
         signal_data["timestamp"] = pd.Timestamp.now()
+        signal_data["recommend_entry"] = signal_data.get("recommended_entry_time")  # ✅ FIXED
 
         log_signal(chat_id, asset, timeframe, signal_data)
 
         df = pd.DataFrame([signal_data])
         SIGNAL_CSV_PATH = "signals.csv"
-
         if os.path.exists(SIGNAL_CSV_PATH):
             df.to_csv(SIGNAL_CSV_PATH, mode="a", header=False, index=False)
         else:
@@ -213,6 +207,7 @@ class TelegramNotifier:
 
         keyboard = InlineKeyboardMarkup()
         keyboard.add(InlineKeyboardButton("🔁 Refresh", callback_data="refresh_signal"))
+
         await safe_send(self.bot, chat_id, msg, parse_mode="Markdown", reply_markup=keyboard)
 
     @property
@@ -230,4 +225,3 @@ class TelegramNotifier:
         Dispatcher.set_current(self.dp)
         await self.dp.process_update(update)
         return web.Response()
-             
