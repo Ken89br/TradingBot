@@ -1,4 +1,4 @@
-#rebder.yaml
+#render.yaml
 services:
   - type: web
     name: TradingBot
