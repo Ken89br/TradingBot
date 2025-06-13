@@ -115,6 +115,9 @@ class TelegramNotifier:
                     f"⏱ Timeframe: `{timeframe}`\n💱 Symbol: `{symbol}`\n\n{get_text('generating', chat_id=callback.from_user.id)}",
                     parse_mode="Markdown"
                 )
+                
+                print(f"📡 Fetching candles for: {symbol} @ {self._map_timeframe(timeframe)}")
+    
                 candle = self.data_client.fetch_candles(symbol, interval=self._map_timeframe(timeframe))
                 if not candle or "history" not in candle:
                     await self.bot.send_message(callback.from_user.id, "⚠️ Failed to retrieve price data.")
