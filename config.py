@@ -24,12 +24,6 @@ CONFIG = {
         "url": get_env("WEBHOOK_URL", "https://your-render-url.com")
     },
 
-    "data_feed": "polygon",
-
-    "polygon": {
-        "api_key": get_env("POLYGON_API_KEY", required=True),
-    },
-
     "symbols": [
         "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCHF", "NZDUSD",
         "USDCAD", "EURJPY", "EURNZD", "AEDCNY", "AUDCAD", "AUDCHF",
