@@ -1,18 +1,22 @@
 # data/data_client.py
-from config import CONFIG
 
 from data.polygon_data import PolygonClient
 from data.finnhub_data import FinnhubClient
 
-def get_data_client():
-    provider = CONFIG.get("data_feed", "polygon").lower()
+class FallbackDataClient:
+    def __init__(self):
+        self.primary = PolygonClient()
+        self.secondary = FinnhubClient()
 
-    if provider == "polygon":
-        print("🔌 Using PolygonClient as data provider")
-        return PolygonClient()
-    elif provider == "finnhub":
-        print("🔌 Using FinnhubClient as data provider")
-        return FinnhubClient()
-    else:
-        raise ValueError(f"❌ Unsupported data provider: {provider}")
-    
+    def fetch_candles(self, symbol, interval="1", limit=5, retries=2):
+        result = self.primary.fetch_candles(symbol, interval, limit, retries)
+        if result:
+            print("✅ Used Polygon successfully.")
+            return result
+        print("⚠️ Polygon failed, trying Finnhub...")
+        result = self.secondary.fetch_candles(symbol, interval, limit, retries)
+        if result:
+            print("✅ Fallback to Finnhub successful.")
+        else:
+            print("❌ Both data providers failed.")
+        return result
