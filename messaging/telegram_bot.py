@@ -5,6 +5,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from aiohttp import web
+from utils.telegram_safe import safe_send
 from config import CONFIG
 from utils.signal_logger import log_signal
 import pandas as pd
