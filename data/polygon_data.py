@@ -11,11 +11,22 @@ class PolygonClient:
         self.base_url = "https://api.polygon.io"
 
     def fetch_candles(self, symbol, interval="1min", limit=5, retries=2):
-        if len(symbol) != 6:
-            print(f"❌ Invalid symbol format: {symbol}")
+        if not symbol:
+            print("❌ Symbol is empty.")
             return None
 
-        formatted_symbol = f"C:{symbol.upper()}"  # e.g., EURUSD → C:EURUSD
+        # Format symbol for Polygon (Forex = C:, Stocks = X:)
+        if ":" not in symbol:
+            if symbol.isalpha() and len(symbol) <= 5:
+                formatted_symbol = f"X:{symbol.upper()}"  # Stock
+            elif len(symbol) == 6:
+                formatted_symbol = f"C:{symbol.upper()}"  # Forex
+            else:
+                print(f"❌ Invalid symbol format: {symbol}")
+                return None
+        else:
+            formatted_symbol = symbol
+
         now = int(time.time())
         from_unix = now - (limit * 60)
 
@@ -53,7 +64,7 @@ class PolygonClient:
                         "low": row["l"],
                         "close": row["c"],
                         "volume": row["v"],
-                        "timestamp": row["t"]  # Used for AI entry timing
+                        "timestamp": row["t"]
                     })
 
                 return {
@@ -67,4 +78,3 @@ class PolygonClient:
 
         print("⛔ Max retries reached.")
         return None
-                      
