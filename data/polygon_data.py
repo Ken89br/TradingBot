@@ -53,10 +53,14 @@ class PolygonClient:
                     continue
 
                 data = res.json()
+                if not isinstance(data, dict):
+                print("❌ Unexpected response format:", data)
+                return None
+            
                 print("📥 Polygon raw JSON:", data)
 
                 if "results" not in data or not data["results"]:
-                    print("⚠️ No valid candle data.")
+                    print("⚠️ No valid candle data.", data)
                     continue
 
                 candles = []
