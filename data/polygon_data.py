@@ -9,8 +9,8 @@ class PolygonClient:
     def __init__(self):
         self.api_key = os.getenv("POLYGON_API_KEY", "MISSING_API_KEY")
         self.base_url = "https://api.polygon.io"
-            print(f"🧪 Formatted symbol: {formatted_symbol}")
-            print(f"🔍 Final Polygon URL: {url}")
+        print(f"🧪 Formatted symbol: {formatted_symbol}")
+        print(f"🔍 Final Polygon URL: {url}")
 
 
     def fetch_candles(self, symbol, interval="1min", limit=5, retries=2):
