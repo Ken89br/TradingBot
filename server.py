@@ -1,13 +1,12 @@
 # server.py
-
 from aiohttp import web
-from data.polygon_data import PolygonClient
+from data.data_client import get_data_client
 from strategy.ensemble_strategy import EnsembleStrategy
 from messaging.telegram_bot import TelegramNotifier
 from config import CONFIG
 
 async def init_app():
-    data_client = PolygonClient()
+    data_client = get_data_client()
     strategy = EnsembleStrategy()  # Uses all configured strategies
     notifier = TelegramNotifier(CONFIG["telegram"]["bot_token"], strategy, data_client)
 
