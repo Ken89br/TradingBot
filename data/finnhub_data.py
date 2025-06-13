@@ -10,11 +10,17 @@ class FinnhubClient:
         self.base_url = "https://finnhub.io/api/v1"
 
     def fetch_candles(self, symbol, interval="1", limit=5, retries=2):
+    def _map_resolution(tf):
     resolution_map = {
-        "1": "1", "5": "5", "15": "15",
-        "30": "30", "60": "60", "D": "D"
+        "1min": "1",
+        "5min": "5",
+        "15min": "15",
+        "30min": "30",
+        "1h": "60",
+        "4h": "60",   # optional override
+        "1day": "D"
     }
-    resolution = resolution_map.get(interval, "1")
+    return resolution_map.get(tf, "1")
 
     now = int(time.time())
     from_unix = now - limit * 60
