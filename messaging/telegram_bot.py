@@ -169,8 +169,7 @@ class TelegramNotifier:
         signal_data["user"] = chat_id
         signal_data["timeframe"] = timeframe
         signal_data["timestamp"] = pd.Timestamp.now()
-        "recommend_entry": signal_data.get("recommended_entry_time")
-
+    
         log_signal(chat_id, asset, timeframe, signal_data)
 
         df = pd.DataFrame([signal_data])
