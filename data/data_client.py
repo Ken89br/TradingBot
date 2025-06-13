@@ -1,22 +1,20 @@
 # data/data_client.py
-
 from data.polygon_data import PolygonClient
-from data.finnhub_data import FinnhubClient
+from data.alpha_vantage_data import AlphaVantageClient
 
 class FallbackDataClient:
     def __init__(self):
-        self.primary = PolygonClient()
-        self.secondary = FinnhubClient()
+        self.sources = [
+            PolygonClient(),
+            AlphaVantageClient()
+        ]
 
-    def fetch_candles(self, symbol, interval="1", limit=5, retries=2):
-        result = self.primary.fetch_candles(symbol, interval, limit, retries)
-        if result:
-            print("✅ Used Polygon successfully.")
-            return result
-        print("⚠️ Polygon failed, trying Finnhub...")
-        result = self.secondary.fetch_candles(symbol, interval, limit, retries)
-        if result:
-            print("✅ Fallback to Finnhub successful.")
-        else:
-            print("❌ Both data providers failed.")
-        return result
+    def fetch_candles(self, symbol, interval="1min", limit=5):
+        for source in self.sources:
+            print(f"🔁 Trying: {source.__class__.__name__}")
+            data = source.fetch_candles(symbol, interval=interval, limit=limit)
+            if data and "history" in data:
+                return data
+        print("❌ All data providers failed.")
+        return None
+        
