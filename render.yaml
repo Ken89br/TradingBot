@@ -22,3 +22,5 @@ services:
         value: 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
       - key: PORT
         value: 10000
+        - key: FINNHUB_API_KEY
+        value: your-finnhub-api-key-here
