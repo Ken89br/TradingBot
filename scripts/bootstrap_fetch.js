@@ -1,7 +1,7 @@
 // strategy/bootstrap_fetch.js
 const fs = require("fs");
 const path = require("path");
-const dukas = require("dukascopy-node");
+const dukas = require("dukascopy");
 const dayjs = require("dayjs");
 
 const symbols = [
