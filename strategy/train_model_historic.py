@@ -1,5 +1,7 @@
-#strategy/train_model_historic.py
+# strategy/train_model_historic.py
+
 import os
+import glob
 import pandas as pd
 import joblib
 from xgboost import XGBClassifier
@@ -8,23 +10,42 @@ from sklearn.metrics import classification_report
 from strategy.ml_utils import add_indicators
 
 MODEL_PATH = "model.pkl"
-DUKASCOPY_PATH = os.getenv("DUKASCOPY_TRAINING_CSV", "data/EURUSD_dukascopy.csv")
+DATA_DIR = "data"
 
-def load_data():
-    if not os.path.exists(DUKASCOPY_PATH):
-        print(f"❌ Dukascopy CSV not found: {DUKASCOPY_PATH}")
+def load_all_dukas_data():
+    all_files = glob.glob(os.path.join(DATA_DIR, "dukascopy_*.csv"))
+    all_dfs = []
+
+    for file in all_files:
+        try:
+            df = pd.read_csv(file)
+            if not {"timestamp", "open", "high", "low", "close", "volume"}.issubset(df.columns):
+                print(f"⚠️ Skipping {file}, missing OHLCV columns")
+                continue
+
+            df["timestamp"] = pd.to_datetime(df["timestamp"], unit='ms')
+            df = df.sort_values("timestamp")
+            df = add_indicators(df)
+            df["target"] = (df["close"].shift(-1) > df["close"]).astype(int)
+            df.dropna(inplace=True)
+            all_dfs.append(df)
+        except Exception as e:
+            print(f"❌ Error processing {file}: {e}")
+
+    if not all_dfs:
+        print("⚠️ No valid data found in Dukascopy CSVs.")
         return pd.DataFrame()
 
-    df = pd.read_csv(DUKASCOPY_PATH)
-    print(f"📥 Loaded Dukascopy candles: {len(df)} rows")
+    return pd.concat(all_dfs, ignore_index=True)
 
-    df = add_indicators(df)
-    df.dropna(inplace=True)
+def main():
+    print("📥 Loading Dukascopy historical data...")
+    df = load_all_dukas_data()
 
-    df["target"] = (df["close"].shift(-1) > df["close"]).astype(int)
-    return df
+    if df.empty:
+        print("⛔ No training data available.")
+        return
 
-def train_model(df):
     features = [
         "open", "high", "low", "close", "volume",
         "sma_5", "sma_10", "rsi_14", "macd", "macd_signal"
@@ -38,19 +59,12 @@ def train_model(df):
     clf = XGBClassifier(use_label_encoder=False, eval_metric="logloss")
     clf.fit(X_train, y_train)
 
-    print("📊 Model trained.")
+    print("📊 Classification Report:")
     print(classification_report(y_test, clf.predict(X_test)))
 
     joblib.dump(clf, MODEL_PATH)
     print(f"✅ Model saved to {MODEL_PATH}")
 
-def main():
-    df = load_data()
-    if df.empty:
-        print("⚠️ No training data — skipping.")
-        return
-    train_model(df)
-
 if __name__ == "__main__":
     main()
-  
+    
