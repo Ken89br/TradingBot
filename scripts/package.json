@@ -1,14 +1,14 @@
 {
-  "name": "dukascopy-fetcher",
+  "name": "dukas-scripts",
   "version": "1.0.0",
-  "description": "Candle fetcher for Dukas + Live Trainer",
-  "type": "module",
+  "description": "Live & historical data fetcher using dukascopy-node",
+  "main": "bootstrap_fetch.js",
   "scripts": {
     "bootstrap": "node bootstrap_fetch.js",
     "live": "node live_update.js"
   },
   "dependencies": {
-    "dukascopy-node": "^1.3.0",
-    "csv-writer": "^1.6.0"
+    "dayjs": "^1.11.10",
+    "dukascopy-node": "^2.2.1"
   }
 }
