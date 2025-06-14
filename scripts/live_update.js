@@ -11,10 +11,8 @@ const symbols = [
   "audnzd", "cadjpy", "chfjpy", "eurgbp"
 ];
 
-// All supported real-time Dukascopy intervals except '1d'
 const timeframes = ["m1", "m5", "m15", "m30", "h1", "h4"];
 
-// Maps timeframe to lookback duration (fetch last N minutes/hours)
 const durationMap = {
   m1: 2,
   m5: 10,
@@ -26,6 +24,20 @@ const durationMap = {
 
 const now = new Date();
 
+function fetchCandles(symbol, tf, from, to) {
+  return new Promise((resolve, reject) => {
+    dukas.getCandles({
+      instrument: symbol.toUpperCase(),
+      dates: { from, to },
+      timeframe: tf,
+      format: "json"
+    }, (err, data) => {
+      if (err) return reject(err);
+      resolve(data);
+    });
+  });
+}
+
 (async () => {
   for (let symbol of symbols) {
     for (let tf of timeframes) {
@@ -33,11 +45,7 @@ const now = new Date();
       const from = dayjs(now).subtract(backMinutes, "minute").toDate();
 
       try {
-        const candles = await dukas.getCandles({
-          instrument: symbol.toUpperCase(),
-          dates: { from, to: now },
-          timeframe: tf
-        });
+        const candles = await fetchCandles(symbol, tf, from, now);
 
         const file = path.join(__dirname, `../data/${symbol}_${tf}.csv`);
         const rows = candles.map(c => [
@@ -48,7 +56,6 @@ const now = new Date();
         const exists = fs.existsSync(file);
         if (!exists) fs.writeFileSync(file, "timestamp,open,high,low,close,volume\n");
 
-        // Avoid duplicating candles — get existing timestamps
         const existingLines = exists ? fs.readFileSync(file, "utf8").split("\n") : [];
         const existingTimestamps = new Set(existingLines.map(l => l.split(",")[0]));
 
@@ -68,4 +75,4 @@ const now = new Date();
     }
   }
 })();
-          
+      
