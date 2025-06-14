@@ -3,7 +3,7 @@
 import os
 import pandas as pd
 import joblib
-import requests
+import request
 from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
