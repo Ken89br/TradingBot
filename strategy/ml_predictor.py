@@ -36,6 +36,8 @@ class MLPredictor:
                 features[k] = candles[-1].get(k, 0)
 
             df = pd.DataFrame([features])
+            df = add_indicators(df)  # <== Make sure this is added here
+            df.dropna(inplace=True)
             prediction = self.model.predict(df)[0]
             return "up" if prediction == 1 else "down"
         except Exception as e:
