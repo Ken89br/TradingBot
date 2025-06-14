@@ -46,6 +46,7 @@ def load_all_dukas_data():
 def main():
     print("📥 Loading all Dukascopy .csv files...")
     df = load_all_dukas_data()
+    df = df.drop_duplicates(subset=["timestamp"])
 
     if df.empty:
         print("⛔ No training data available.")
