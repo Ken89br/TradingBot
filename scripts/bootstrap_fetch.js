@@ -1,31 +1,49 @@
-// scripts/bootstrap_fetch.js
-
-const dukas = require('dukascopy-node');
-const fs = require('fs');
-const path = require('path');
+import dukas from 'dukascopy-node'
+import fs from 'fs'
+import path from 'path'
+import { createObjectCsvWriter } from 'csv-writer'
 
 const symbols = [
-  "eurusd", "gbpusd", "usdjpy", "audusd", "usdchf", "nzdusd",
-  "usdcad", "eurjpy", "eurnzd", "aedcny", "audcad", "audchf",
-  "audnzd", "cadjpy", "chfjpy", "eurgbp"
-];
+  "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCHF", "NZDUSD",
+  "USDCAD", "EURJPY", "EURNZD", "AEDCNY", "AUDCAD", "AUDCHF",
+  "AUDNZD", "CADJPY", "CHFJPY", "EURGBP"
+]
 
-const START = new Date("2021-01-01");
-const END = new Date();
-const timeframe = 'm1'; // 1-minute candles
+const to = new Date()
+const from = new Date()
+from.setFullYear(to.getFullYear() - 3)
 
-(async () => {
-  for (const sym of symbols) {
-    const output = path.resolve(__dirname, `../data/dukascopy_${sym}.csv`);
-    console.log(`⬇️ Downloading ${sym.toUpperCase()} from ${START.toISOString()} to ${END.toISOString()}`);
-    await dukas.download({
-      instrument: sym,
-      dates: { from: START, to: END },
-      timeframe,
-      format: 'csv',
-      csv: { filename: output }
-    });
+async function fetchAll() {
+  for (const symbol of symbols) {
+    const candles = await dukas.getCandles({
+      instrument: symbol,
+      timeframe: 'm30',
+      from,
+      to
+    })
+
+    if (!candles || !candles.length) {
+      console.log(`❌ No data for ${symbol}`)
+      continue
+    }
+
+    const filePath = path.join('data', `dukascopy_${symbol}.csv`)
+    const writer = createObjectCsvWriter({
+      path: filePath,
+      header: [
+        { id: 'timestamp', title: 'timestamp' },
+        { id: 'open', title: 'open' },
+        { id: 'high', title: 'high' },
+        { id: 'low', title: 'low' },
+        { id: 'close', title: 'close' },
+        { id: 'volume', title: 'volume' }
+      ]
+    })
+
+    await writer.writeRecords(candles)
+    console.log(`✅ Wrote ${candles.length} records to ${filePath}`)
   }
+}
 
-  console.log("✅ All symbol data bootstrapped.");
-})();
+fetchAll()
+      
