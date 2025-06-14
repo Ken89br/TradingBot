@@ -5,8 +5,8 @@ services:
     region: oregon
     plan: free
     buildCommand: |
-    pip install -r requirements.txt
-    npm --prefix scripts install
+      pip install -r requirements.txt
+      npm --prefix scripts install
     startCommand: |
       node scripts/bootstrap_fetch.js &&
       node scripts/live_update.js &&
