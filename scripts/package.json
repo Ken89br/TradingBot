@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "dayjs": "^1.11.10",
-    "dukascopy-node": "^1.0.1",
-    "fs": "^0.0.1-security"
+    "dukascopy-node": "1.0.1"
   }
 }
