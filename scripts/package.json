@@ -8,7 +8,7 @@
     "live": "node live_update.js"
   },
   "dependencies": {
-  "dukascopy-node": "github:cranties/dukascopy",
+  "dukascopy": "github:cranties/dukascopy",
   "dayjs": "1.11.10"
   }
 }
