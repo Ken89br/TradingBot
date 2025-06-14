@@ -9,6 +9,6 @@
   },
   "dependencies": {
     "dayjs": "^1.11.10",
-    "dukascopy-node": "^2.2.1"
+    "dukascopy-node": "^1.42.1"
   }
 }
