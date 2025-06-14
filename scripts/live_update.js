@@ -29,7 +29,7 @@ const now = new Date();
 (async () => {
   for (let symbol of symbols) {
     for (let tf of timeframes) {
-      const backMinutes = durationMap[tf] || 1;
+      const backMinutes = durationMap[tf] || 10;
       const from = dayjs(now).subtract(backMinutes, "minute").toDate();
 
       try {
