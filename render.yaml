@@ -22,5 +22,5 @@ services:
         value: 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
       - key: PORT
         value: 10000
-        - key: FINNHUB_API_KEY
-        value: d14fhkhr01qq13oqu0h0d14fhkhr01qq13oqu0hg
+        - key: TIINGO_API_KEY
+        value: 4672b0ac473424934228d0ad0ad1e8500a78f190
