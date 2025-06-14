@@ -10,4 +10,4 @@ pytz
 xgboost>=2.0.0
 scikit-learn>=1.3
 joblib
-python==3.11.9
+python>=3.11.9
