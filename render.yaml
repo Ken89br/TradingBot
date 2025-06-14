@@ -35,5 +35,5 @@ services:
 schedules:
   - name: Fetch Dukas Live + Retrain
     command: "node scripts/live_update.js"
-    cron: "*/10 * * * *"  # every 10 minutes
+    cron: "*/1 * * * *"  # every 1 minutes
     
