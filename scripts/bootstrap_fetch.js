@@ -1,3 +1,5 @@
+// scripts/bootstrap_fetch.js
+
 import dukas from 'dukascopy-node'
 import fs from 'fs'
 import path from 'path'
