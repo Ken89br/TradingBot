@@ -22,5 +22,7 @@ services:
         value: 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
       - key: PORT
         value: 10000
+      - key: TWELVEDATA_API_KEY
+        value: 2e08f48192c14bee8d4ecefc763a2a37
         - key: TIINGO_API_KEY
         value: 4672b0ac473424934228d0ad0ad1e8500a78f190
