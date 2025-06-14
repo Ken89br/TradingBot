@@ -11,7 +11,7 @@ from utils.telegram_safe import safe_send
 import pandas as pd
 import os
 
-from strategy.train_model import main as run_training
+from strategy.train_model_historic import main as run_training
 
 class SignalState(StatesGroup):
     choosing_timeframe = State()
