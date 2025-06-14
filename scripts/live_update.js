@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const dukas = require("dukascopy-js");
+const dukas = require("dukascopy-node");
 const dayjs = require("dayjs");
 
 const symbols = [
