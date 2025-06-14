@@ -2,7 +2,7 @@ aiogram==2.25.2
 aiohttp
 python-dotenv==1.0.1
 ta
-pandas==2.2.2
+pandas==2.1.4
 numpy==1.26.4
 requests==2.31.0
 gunicorn
