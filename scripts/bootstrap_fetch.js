@@ -1,7 +1,7 @@
 // strategy/bootstrap_fetch.js
 const fs = require("fs");
 const path = require("path");
-const dukas = require("dukascopy");
+const { getCandles } = require("dukascopy-node"); // ✅ FIXED
 const dayjs = require("dayjs");
 
 const symbols = [
@@ -11,7 +11,6 @@ const symbols = [
 ];
 
 const timeframes = ["m1", "m5", "m15", "m30", "h1", "h4"];
-
 const fromDate = dayjs().subtract(3, "year").toDate();
 const toDate = new Date();
 
@@ -20,8 +19,8 @@ const toDate = new Date();
     for (let tf of timeframes) {
       console.log(`📥 Fetching ${symbol.toUpperCase()} @ ${tf}...`);
       try {
-        const candles = await dukas.getCandles({
-          instrument: symbol.toUpperCase(),
+        const candles = await getCandles({
+          instrument: symbol.toLowerCase(),
           dates: { from: fromDate, to: toDate },
           timeframe: tf
         });
@@ -41,4 +40,4 @@ const toDate = new Date();
     }
   }
 })();
-        
+                                                 
