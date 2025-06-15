@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
-const { getCandles } = dukas;
+const { getHistoricalRates } = dukas;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -24,8 +24,8 @@ const toDate = new Date();
     for (let tf of timeframes) {
       console.log(`📥 Fetching ${symbol.toUpperCase()} @ ${tf}...`);
       try {
-        const candles = await getCandles({
-          instrument: symbol.toLowerCase(),
+        const candles = await getHistoricalRates({
+          instrument: symbol.toUpperCase(),
           dates: { from: fromDate, to: toDate },
           timeframe: tf
         });
@@ -45,4 +45,4 @@ const toDate = new Date();
     }
   }
 })();
-                                 
+          
