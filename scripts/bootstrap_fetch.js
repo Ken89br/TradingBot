@@ -1,11 +1,11 @@
 import fs from "fs";
 import path from "path";
-import dukas from "dukascopy-node";
 import dayjs from "dayjs";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-
+import dukas from "dukascopy-node"; // CommonJS default import
 const { getHistoricalRates } = dukas;
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -25,9 +25,10 @@ const toDate = new Date();
       console.log(`📥 Fetching ${symbol.toUpperCase()} @ ${tf}...`);
       try {
         const candles = await getHistoricalRates({
-          instrument: symbol.toUpperCase(),
+          instrument: symbol,
           dates: { from: fromDate, to: toDate },
-          timeframe: tf
+          timeframe: tf,
+          format: "json"
         });
 
         const rows = candles.map(c => [
@@ -40,9 +41,9 @@ const toDate = new Date();
         fs.writeFileSync(file, header + rows.map(r => r.join(",")).join("\n"));
         console.log(`✅ Saved to ${file}`);
       } catch (err) {
-        console.error(`❌ Error for ${symbol}@${tf}:`, err.message);
+        console.error(`❌ Error for ${symbol}@${tf}: ${err.message}`);
       }
     }
   }
 })();
-          
+      
