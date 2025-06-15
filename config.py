@@ -30,7 +30,7 @@ CONFIG = {
         "AUDNZD", "AUDUSD", "CADJPY", "CHFJPY", "EURGBP", "EURJPY"
     ],
 
-    "timeframes": ["M1", "M5", "M15", "M30", "H1", "H4", "D1"],
+    "timeframes": ["S1", "M1", "M5", "M15", "M30", "H1", "H4", "D1"],
 
     "log_level": "INFO",
 
