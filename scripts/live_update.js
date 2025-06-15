@@ -1,11 +1,11 @@
 import fs from "fs";
 import path from "path";
-import dukas from "dukascopy-node";
 import dayjs from "dayjs";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-
+import dukas from "dukascopy-node";
 const { getHistoricalRates } = dukas;
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -35,9 +35,10 @@ const now = new Date();
 
       try {
         const candles = await getHistoricalRates({
-          instrument: symbol.toUpperCase(),
+          instrument: symbol,
           dates: { from, to: now },
-          timeframe: tf
+          timeframe: tf,
+          format: "json"
         });
 
         const file = path.join(__dirname, `../data/${symbol}_${tf}.csv`);
