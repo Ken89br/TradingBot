@@ -1,4 +1,4 @@
-// scripts/bootstrap_fetch.js
+// scripts/live_update.js
 import fs from "fs";
 import path from "path";
 import { getCandles } from "dukascopy-node";
