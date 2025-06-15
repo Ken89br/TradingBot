@@ -3,12 +3,16 @@
   "version": "1.0.0",
   "description": "Live & historical data fetcher using dukascopy-node",
   "main": "bootstrap_fetch.js",
+  "type": "module",
   "scripts": {
-    "bootstrap": "node bootstrap_fetch.js",
-    "live": "node live_update.js"
+    "bootstrap": "node strategy/bootstrap_fetch.js",
+    "live": "node scripts/live_update.js"
   },
   "dependencies": {
-  "dukascopy": "github:cranties/dukascopy",
-  "dayjs": "1.11.10"
+    "dayjs": "1.11.10",
+    "dukascopy-node": "1.34.0"
+  },
+  "engines": {
+    "node": ">=12.0.0"
   }
 }
