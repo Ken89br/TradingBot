@@ -63,5 +63,5 @@ class FallbackDataClient:
         "s1": "s1",
         "1min": "m1", "5min": "m5", "15min": "m15",
         "30min": "m30", "1h": "h1", "4h": "h4", "1day": "d1"
-    }.get(interval.lower(), "m1")
+    }.get(interval.lower(), "s1")
         
