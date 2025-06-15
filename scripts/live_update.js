@@ -1,9 +1,8 @@
 // scripts/live_update.js
-
 const fs = require("fs");
 const path = require("path");
-const dukas = require("dukascopy");
 const dayjs = require("dayjs");
+const { getCandles } = require("dukascopy-node"); // ✅ FIXED
 
 const symbols = [
   "eurusd", "gbpusd", "usdjpy", "audusd", "usdchf", "nzdusd",
@@ -12,7 +11,6 @@ const symbols = [
 ];
 
 const timeframes = ["m1", "m5", "m15", "m30", "h1", "h4"];
-
 const durationMap = {
   m1: 2,
   m5: 10,
@@ -24,20 +22,6 @@ const durationMap = {
 
 const now = new Date();
 
-function fetchCandles(symbol, tf, from, to) {
-  return new Promise((resolve, reject) => {
-    dukas.getCandles({
-      instrument: symbol.toUpperCase(),
-      dates: { from, to },
-      timeframe: tf,
-      format: "json"
-    }, (err, data) => {
-      if (err) return reject(err);
-      resolve(data);
-    });
-  });
-}
-
 (async () => {
   for (let symbol of symbols) {
     for (let tf of timeframes) {
@@ -45,7 +29,11 @@ function fetchCandles(symbol, tf, from, to) {
       const from = dayjs(now).subtract(backMinutes, "minute").toDate();
 
       try {
-        const candles = await fetchCandles(symbol, tf, from, now);
+        const candles = await getCandles({
+          instrument: symbol.toLowerCase(),
+          dates: { from, to: now },
+          timeframe: tf
+        });
 
         const file = path.join(__dirname, `../data/${symbol}_${tf}.csv`);
         const rows = candles.map(c => [
@@ -75,4 +63,4 @@ function fetchCandles(symbol, tf, from, to) {
     }
   }
 })();
-      
+        
