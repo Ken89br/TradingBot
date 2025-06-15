@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
-const { getCandles } = dukas;
+const { getHistoricalRates } = dukas;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -34,8 +34,8 @@ const now = new Date();
       const from = dayjs(now).subtract(backMinutes, "minute").toDate();
 
       try {
-        const candles = await getCandles({
-          instrument: symbol.toLowerCase(),
+        const candles = await getHistoricalRates({
+          instrument: symbol.toUpperCase(),
           dates: { from, to: now },
           timeframe: tf
         });
@@ -68,3 +68,4 @@ const now = new Date();
     }
   }
 })();
+          
