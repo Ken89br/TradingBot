@@ -1,4 +1,4 @@
-#data/dukascopy_client.py
+#data/dukascopy_data.py
 
 import dayjs
 import pandas as pd
