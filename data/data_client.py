@@ -40,7 +40,7 @@ class FallbackDataClient:
 
     def _fetch_from_dukascopy(self, symbol, interval):
         now = datetime.utcnow()
-        from_dt = now - timedelta(days=2)  # Decreased from 3 years to 2 days for performance
+        from_dt = now - timedelta(days=7)  # Decreased from 3 years to 7 days for performance
 
         cmd = [
             "node", "data/dukascopy_client.cjs",
@@ -59,8 +59,9 @@ class FallbackDataClient:
         }
 
     def _convert_tf(self, interval):
-        return {
-            "1min": "m1", "5min": "m5", "15min": "m15",
-            "30min": "m30", "1h": "h1", "4h": "h4", "1day": "d1"
-        }.get(interval.lower(), "m1")
+    return {
+        "s1": "s1",
+        "1min": "m1", "5min": "m5", "15min": "m15",
+        "30min": "m30", "1h": "h1", "4h": "h4", "1day": "d1"
+    }.get(interval.lower(), "m1")
         
