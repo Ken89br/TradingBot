@@ -1,11 +1,11 @@
-// scripts/bootstrap_fetch.js
 import fs from "fs";
 import path from "path";
-import { getCandles } from "dukascopy-node";
+import dukas from "dukascopy-node";
 import dayjs from "dayjs";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
+const { getCandles } = dukas;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -45,4 +45,4 @@ const toDate = new Date();
     }
   }
 })();
-                                                 
+                                 
