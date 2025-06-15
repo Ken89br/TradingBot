@@ -1,8 +1,13 @@
-// strategy/bootstrap_fetch.js
-const fs = require("fs");
-const path = require("path");
-const { getCandles } = require("dukascopy-node"); // ✅ FIXED
-const dayjs = require("dayjs");
+// scripts/bootstrap_fetch.js
+import fs from "fs";
+import path from "path";
+import { getCandles } from "dukascopy-node";
+import dayjs from "dayjs";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const symbols = [
   "eurusd", "gbpusd", "usdjpy", "audusd", "usdchf", "nzdusd",
