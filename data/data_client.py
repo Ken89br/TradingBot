@@ -4,11 +4,13 @@ from datetime import datetime, timedelta
 from data.twelvedata_data import TwelveDataClient
 from data.tiingo_data import TiingoClient
 from data.polygon_data import PolygonClient
+from data.dukascopy_data import DukascopyClient  # ✅ Added this
 
 class FallbackDataClient:
     def __init__(self):
         self.providers = [
-            TwelveDataClient(),
+            DukascopyClient(),  # ✅ Primary
+            TwelveDataClient(),  # Fallbacks
             TiingoClient(),
             PolygonClient()
         ]
@@ -38,7 +40,7 @@ class FallbackDataClient:
 
     def _fetch_from_dukascopy(self, symbol, interval):
         now = datetime.utcnow()
-        from_dt = now - timedelta(days=2)
+        from_dt = now - timedelta(days=2)  # Decreased from 3 years to 2 days for performance
 
         cmd = [
             "node", "data/dukascopy_client.cjs",
@@ -61,4 +63,3 @@ class FallbackDataClient:
             "1min": "m1", "5min": "m5", "15min": "m15",
             "30min": "m30", "1h": "h1", "4h": "h4", "1day": "d1"
         }.get(interval.lower(), "m1")
-        
