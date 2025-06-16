@@ -44,7 +44,7 @@ class TwelveDataClient:
                 candles = []
                 for row in reversed(data["values"]):
                     candles.append({
-                        "timestamp": int(datetime.strptime(row["datetime"], "%Y-%m-%d %H:%M:%S").timestamp()),
+                        "timestamp": int(datetime.strptime(row["datetime"], "%Y-%m-%d").timestamp()),
                         "open": float(row["open"]),
                         "high": float(row["high"]),
                         "low": float(row["low"]),
