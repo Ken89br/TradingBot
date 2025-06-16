@@ -166,7 +166,8 @@ class TelegramNotifier:
             if not candles or "history" not in candles:
                 await safe_send(self.bot, uid, get_text("no_signal", chat_id=uid))
                 return
-            signal_data = self.strategy.generate_signal(candles)
+                
+            signal_data = self.strategy.generate_signal(candle, timeframe=self._map_timeframe(timeframe))
             if signal_data:
                 signal_data["expire_entry_time"] = pd.Timestamp.now() + pd.Timedelta(seconds=30)
                 await self.send_trade_signal(uid, ctx["symbol"], signal_data)
