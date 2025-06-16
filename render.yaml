@@ -5,8 +5,10 @@ services:
     region: oregon
     plan: free
     buildCommand: |
-      pip install -r requirements.txt
-      npm install --prefix scripts
+    pip install -r requirements.txt
+    npm install --prefix scripts
+    npm install --prefix data
+
     startCommand: |
       python -m strategy.train_model_historic && python server.py
     envVars:
