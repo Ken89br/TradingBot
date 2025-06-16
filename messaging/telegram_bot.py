@@ -29,8 +29,8 @@ SYMBOL_PAGES = [
     CONFIG["symbols"][8:]
 ]
 SYMBOL_PAGES_OTC = [
-    CONFIG["symbols_otc"][:8],
-    CONFIG["symbols_otc"][8:]
+    CONFIG["otc_symbols"][:8],
+    CONFIG["otc_symbols"][8:]
 ]
 
 def get_text(key, lang=None, chat_id=None):
