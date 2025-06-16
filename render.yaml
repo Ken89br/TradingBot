@@ -8,8 +8,6 @@ services:
       pip install -r requirements.txt
       npm --prefix scripts install
     startCommand: |
-      node scripts/bootstrap_fetch.js &&
-      node scripts/live_update.js &&
       python -m strategy.train_model_historic &&
       python server.py
     envVars:
