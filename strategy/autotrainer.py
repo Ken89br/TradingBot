@@ -14,7 +14,7 @@ SYMBOLS = [
     "EURUSD OTC", "GBPUSD OTC", "USDJPY OTC", "AUDUSD OTC"
 ]
 
-TIMEFRAME = "s1, m1"  # Always use 1-min for training
+TIMEFRAME = "s1, m1, m5, m15, m30, h1, h4"  # Always use 1-min for training
 
 DATA_DIR = "data"
 BOOTSTRAP_FLAG = "autotrainer_bootstrap.flag"
