@@ -1,4 +1,4 @@
-//data/dukascopy_client.py
+//data/dukascopy_client.cjs
 
 const { getHistoricalRates } = require("dukascopy-node");
 const [symbol, timeframe, from, to] = process.argv.slice(2);
