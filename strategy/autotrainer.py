@@ -1,4 +1,4 @@
-# autotrainer.py
+# strategy/autotrainer.py
 import os
 import time
 from datetime import datetime, timedelta
@@ -14,7 +14,7 @@ SYMBOLS = [
     "EURUSD OTC", "GBPUSD OTC", "USDJPY OTC", "AUDUSD OTC"
 ]
 
-TIMEFRAME = "m1"  # Always use 1-min for training
+TIMEFRAME = "s1, m1"  # Always use 1-min for training
 
 DATA_DIR = "data"
 BOOTSTRAP_FLAG = "autotrainer_bootstrap.flag"
@@ -27,7 +27,7 @@ def fetch_and_save(symbol, from_dt, to_dt):
             symbol.lower().replace(" ", ""), TIMEFRAME,
             from_dt.isoformat(), to_dt.isoformat()
         ]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         if result.returncode != 0:
             raise RuntimeError(result.stderr)
 
