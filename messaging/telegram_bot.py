@@ -164,7 +164,7 @@ class TelegramNotifier:
         await message.edit_text(get_text("choose_symbol", chat_id=message.chat.id), parse_mode="Markdown", reply_markup=kb)
 
     def _map_timeframe(self, tf):
-    return {
+        return {
         "S1": "s1",  # ✅ Add this
         "M1": "1min", "M5": "5min", "M15": "15min",
         "M30": "30min", "H1": "1h", "H4": "4h", "D1": "1day"
