@@ -196,6 +196,7 @@ class TelegramNotifier:
             f"🎯 *{get_text('confidence', chat_id=chat_id)}:* `{signal_data['confidence']}%`\n\n"
             f"💰 *{get_text('entry', chat_id=chat_id)}:* `{signal_data['price']}`\n"
             f"🕒 *{get_text('recommend_entry', chat_id=chat_id)}:* `{signal_data['recommended_entry_time']}`\n"
+            f"⏳ *{get_text('expire_entry', chat_id=chat_id)}:* `{signal_data['expire_entry_time']}`\n"
             f"📈 *{get_text('high', chat_id=chat_id)}:* `{signal_data['high']}`\n"
             f"📉 *{get_text('low', chat_id=chat_id)}:* `{signal_data['low']}`\n"
             f"📦 *{get_text('volume', chat_id=chat_id)}:* `{signal_data['volume']}`\n\n"
