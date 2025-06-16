@@ -10,21 +10,29 @@ from sklearn.metrics import classification_report
 
 from strategy.ml_utils import add_indicators
 
-MODEL_PATH = "model.pkl"
 DATA_DIR = "data"
+MODEL_DIR = "models"
+os.makedirs(MODEL_DIR, exist_ok=True)
 
-def load_all_dukas_data():
+def get_timeframe_from_filename(filename):
+    base = os.path.basename(filename).lower()
+    for tf in ["s1", "m1", "m5", "m15", "m30", "h1", "h4", "d1"]:
+        if f"_{tf}.csv" in base:
+            return tf
+    return None
+
+def load_data_grouped_by_timeframe():
+    grouped = {}
     csv_files = glob.glob(os.path.join(DATA_DIR, "*.csv"))
-    all_dfs = []
 
     for file in csv_files:
-        if not os.path.isfile(file):
+        tf = get_timeframe_from_filename(file)
+        if not tf:
             continue
 
         try:
             df = pd.read_csv(file)
             if not {"timestamp", "open", "high", "low", "close", "volume"}.issubset(df.columns):
-                print(f"⚠️ Skipping {file}, missing OHLCV columns")
                 continue
 
             df["timestamp"] = pd.to_datetime(df["timestamp"])
@@ -33,24 +41,14 @@ def load_all_dukas_data():
             df["target"] = (df["close"].shift(-1) > df["close"]).astype(int)
             df.dropna(inplace=True)
 
-            all_dfs.append(df)
+            grouped.setdefault(tf, []).append(df)
         except Exception as e:
-            print(f"❌ Error processing {file}: {e}")
+            print(f"❌ Error reading {file}: {e}")
 
-    if not all_dfs:
-        print("⚠️ No valid Dukascopy data found.")
-        return pd.DataFrame()
+    return {tf: pd.concat(dfs) for tf, dfs in grouped.items() if dfs}
 
-    return pd.concat(all_dfs, ignore_index=True)
-
-def main():
-    print("📥 Loading all Dukascopy .csv files...")
-    df = load_all_dukas_data()
-    df = df.drop_duplicates(subset=["timestamp"])
-
-    if df.empty:
-        print("⛔ No training data available.")
-        return
+def train_model_for_timeframe(tf, df):
+    print(f"\n🧠 Training model for timeframe: {tf.upper()} with {len(df)} rows")
 
     features = [
         "open", "high", "low", "close", "volume",
@@ -60,15 +58,23 @@ def main():
     X = df[features]
     y = df["target"]
 
-    print("🧠 Training new model...")
     model = XGBClassifier(use_label_encoder=False, eval_metric="logloss")
-    model.fit(X_train := X, y_train := y)
+    model.fit(X, y)
 
-    print("📊 Classification Report:")
-    print(classification_report(y_train, model.predict(X_train)))
+    print(classification_report(y, model.predict(X)))
+    path = os.path.join(MODEL_DIR, f"model_{tf}.pkl")
+    joblib.dump(model, path)
+    print(f"✅ Saved model to: {path}")
 
-    joblib.dump(model, MODEL_PATH)
-    print(f"✅ Model saved to: {MODEL_PATH}")
+def main():
+    grouped = load_data_grouped_by_timeframe()
+    if not grouped:
+        print("⛔ No valid data to train.")
+        return
+
+    for tf, df in grouped.items():
+        train_model_for_timeframe(tf, df)
 
 if __name__ == "__main__":
     main()
+                
