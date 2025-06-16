@@ -1,18 +1,16 @@
 {
-  "name": "dukas-scripts",
-  "version": "1.0.0",
-  "description": "Live & historical data fetcher using dukascopy-node",
-  "main": "bootstrap_fetch.js",
+  "name": "dukas-telegram-bot",
+  "version": "1.0.1",
+  "description": "Real-time Forex signal bot using Dukascopy data",
   "type": "module",
   "scripts": {
-    "bootstrap": "node strategy/bootstrap_fetch.js",
-    "live": "node scripts/live_update.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "dayjs": "1.11.10",
     "dukascopy-node": "1.34.0"
   },
   "engines": {
-    "node": ">=12"
+    "node": "12"
   }
 }
