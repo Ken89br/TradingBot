@@ -1,4 +1,4 @@
-# config.py
+#config
 import os
 import logging
 
@@ -24,19 +24,30 @@ CONFIG = {
         "url": get_env("WEBHOOK_URL", "https://your-render-url.com")
     },
 
+    # ✅ Regular Forex Pairs
     "symbols": [
         "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCHF", "NZDUSD",
         "USDCAD", "EURJPY", "EURNZD", "AEDCNY", "AUDCAD", "AUDCHF",
         "AUDNZD", "AUDUSD", "CADJPY", "CHFJPY", "EURGBP", "EURJPY"
     ],
 
+    # ✅ OTC Pairs
+    "otc_symbols": [
+        "EURUSD OTC", "GBPUSD OTC", "USDJPY OTC", "AUDUSD OTC", "EURJPY OTC",
+        "NZDUSD OTC", "AUDCAD OTC", "AUDCHF OTC", "GBPJPY OTC", "CADJPY OTC"
+    ],
+
     "timeframes": ["S1", "M1", "M5", "M15", "M30", "H1", "H4", "D1"],
+
+    # ✅ Model retraining triggers after at least N rows
+    "min_train_rows": 50,
 
     "log_level": "INFO",
 
     "languages": {
         "en": {
             "start": "Welcome! Tap 📈 Start to generate a signal.",
+            "choose_mode": "🧭 Choose trading mode:",
             "choose_timeframe": "⏱ Choose a timeframe:",
             "choose_symbol": "💱 Choose a currency pair:",
             "generating": "📡 Generating signal...",
@@ -47,7 +58,8 @@ CONFIG = {
             "strength": "Strength",
             "confidence": "Confidence",
             "entry": "Entry Price",
-            "recommend": "Recommended Entry",
+            "recommend_entry": "Recommended Entry",
+            "expire_entry": "Expires At",
             "high": "High",
             "low": "Low",
             "volume": "Volume",
@@ -56,7 +68,8 @@ CONFIG = {
             "refresh": "Refresh"
         },
         "pt": {
-            "start": "Bem-vindo! Toque 📈 Iniciar para gerar um sinal.",
+            "start": "Bem-vindo! Toque 📈 Start para gerar um sinal.",
+            "choose_mode": "🧭 Escolha o modo de negociação:",
             "choose_timeframe": "⏱ Escolha o timeframe:",
             "choose_symbol": "💱 Escolha o par de moedas:",
             "generating": "📡 Gerando sinal...",
@@ -67,7 +80,8 @@ CONFIG = {
             "strength": "Força",
             "confidence": "Confiança",
             "entry": "Preço de Entrada",
-            "recommend": "Entrada Recomendada",
+            "recommend_entry": "Entrada Recomendada",
+            "expire_entry": "Expira em",
             "high": "Alta",
             "low": "Baixa",
             "volume": "Volume",
@@ -78,5 +92,5 @@ CONFIG = {
     }
 }
 
-# Logger
+# ✅ Logger
 logging.basicConfig(level=getattr(logging, CONFIG["log_level"].upper(), logging.INFO))
