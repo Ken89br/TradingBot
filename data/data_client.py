@@ -1,11 +1,15 @@
-#data/data_client.py
-
 import subprocess
 import json
+import os
+import pandas as pd
+import joblib
 from datetime import datetime, timedelta
 from data.twelvedata_data import TwelveDataClient
 from data.tiingo_data import TiingoClient
 from data.polygon_data import PolygonClient
+from strategy.train_model_historic import main as run_training
+
+LAST_RETRAIN_PATH = "last_retrain.txt"
 
 class FallbackDataClient:
     def __init__(self):
@@ -14,6 +18,7 @@ class FallbackDataClient:
             TiingoClient(),
             PolygonClient()
         ]
+        self.initialized = False
 
     def fetch_candles(self, symbol, interval="1min", limit=5):
         print(f"📡 Fetching from Dukascopy: {symbol} @ {interval}")
@@ -21,6 +26,8 @@ class FallbackDataClient:
             candles = self._fetch_from_dukascopy(symbol, interval)
             if candles and "history" in candles:
                 print("✅ Dukascopy succeeded.")
+                self._save_to_csv(symbol, interval, candles["history"])
+                self._maybe_retrain()
                 return candles
         except Exception as e:
             print(f"❌ Dukascopy failed: {e}")
@@ -40,7 +47,13 @@ class FallbackDataClient:
 
     def _fetch_from_dukascopy(self, symbol, interval):
         now = datetime.utcnow()
-        from_dt = now - timedelta(days=7)  # Decreased from 3 years to 7 days for performance
+
+        # If it's the first call since start, fetch 7 days
+        if not self.initialized:
+            from_dt = now - timedelta(days=7)
+            self.initialized = True
+        else:
+            from_dt = now - timedelta(seconds=30)
 
         cmd = [
             "node", "data/dukascopy_client.cjs",
@@ -58,10 +71,44 @@ class FallbackDataClient:
             "close": candles[-1]["close"] if candles else None
         }
 
+    def _save_to_csv(self, symbol, interval, candles):
+        if not candles:
+            return
+        path = f"data/{symbol.lower()}_{self._convert_tf(interval)}.csv"
+        header = not os.path.exists(path)
+        with open(path, "a") as f:
+            if header:
+                f.write("timestamp,open,high,low,close,volume\n")
+            for c in candles:
+                line = f"{c['timestamp']},{c['open']},{c['high']},{c['low']},{c['close']},{c['volume']}\n"
+                f.write(line)
+
+    def _maybe_retrain(self):
+        now = datetime.utcnow()
+        last = self._load_last_retrain_time()
+        if not last or (now - last).total_seconds() >= 30:
+            print("🧠 Triggering model retraining...")
+            run_training()
+            self._store_last_retrain_time(now)
+
+    def _load_last_retrain_time(self):
+        if not os.path.exists(LAST_RETRAIN_PATH):
+            return None
+        try:
+            with open(LAST_RETRAIN_PATH, "r") as f:
+                ts = f.read().strip()
+                return datetime.fromisoformat(ts)
+        except:
+            return None
+
+    def _store_last_retrain_time(self, dt):
+        with open(LAST_RETRAIN_PATH, "w") as f:
+            f.write(dt.isoformat())
+
     def _convert_tf(self, interval):
         return {
-            "s1": "s1",
             "1min": "m1", "5min": "m5", "15min": "m15",
-            "30min": "m30", "1h": "h1", "4h": "h4", "1day": "d1"
+            "30min": "m30", "1h": "h1",
+            "4h": "h4", "1day": "d1", "s1": "s1"
         }.get(interval.lower(), "m1")
-        
+    
