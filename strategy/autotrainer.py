@@ -1,76 +1,102 @@
-#straregy/autotrainer.py
-
-import time
+# autotrainer.py
 import os
+import time
+from datetime import datetime, timedelta
 import subprocess
 import json
-import pandas as pd
-from datetime import datetime, timedelta
-from strategy.train_model_historic import main as retrain_model
+from strategy.train_model_historic import main as run_training
 from config import CONFIG
 
-def convert_tf(interval):
-    return {
-        "S1": "s1", "M1": "m1", "M5": "m5", "M15": "m15",
-        "M30": "m30", "H1": "h1", "H4": "h4", "D1": "d1"
-    }.get(interval, "m1")
+SYMBOLS = [
+    "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCHF", "NZDUSD",
+    "USDCAD", "EURJPY", "EURNZD", "AEDCNY", "AUDCAD", "AUDCHF",
+    "AUDNZD", "AUDUSD", "CADJPY", "CHFJPY", "EURGBP", "EURJPY",
+    "EURUSD OTC", "GBPUSD OTC", "USDJPY OTC", "AUDUSD OTC"
+]
 
-def fetch_from_dukascopy(symbol, timeframe):
+TIMEFRAME = "m1"  # Always use 1-min for training
+
+DATA_DIR = "data"
+BOOTSTRAP_FLAG = "autotrainer_bootstrap.flag"
+LAST_RETRAIN_PATH = "last_retrain.txt"
+
+def fetch_and_save(symbol, from_dt, to_dt):
+    try:
+        cmd = [
+            "node", "data/dukascopy_client.cjs",
+            symbol.lower().replace(" ", ""), TIMEFRAME,
+            from_dt.isoformat(), to_dt.isoformat()
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        if result.returncode != 0:
+            raise RuntimeError(result.stderr)
+
+        candles = json.loads(result.stdout)
+        if not candles:
+            print(f"⚠️ No candles fetched for {symbol}")
+            return
+
+        # Save to CSV
+        path = os.path.join(DATA_DIR, f"{symbol.lower().replace(' ', '')}_{TIMEFRAME}.csv")
+        header = not os.path.exists(path)
+        with open(path, "a") as f:
+            if header:
+                f.write("timestamp,open,high,low,close,volume\n")
+            for c in candles:
+                f.write(f"{c['timestamp']},{c['open']},{c['high']},{c['low']},{c['close']},{c['volume']}\n")
+
+        print(f"✅ Saved {len(candles)} rows for {symbol}")
+    except Exception as e:
+        print(f"❌ Error fetching {symbol}: {e}")
+
+def bootstrap_initial_data():
+    print("🚀 Bootstrapping 7-day historical data...")
     now = datetime.utcnow()
-    from_dt = now - timedelta(seconds=30)
+    from_dt = now - timedelta(days=7)
+    for symbol in SYMBOLS:
+        fetch_and_save(symbol, from_dt, now)
+    with open(BOOTSTRAP_FLAG, "w") as f:
+        f.write("done")
+    print("✅ Bootstrap complete.")
 
-    cmd = [
-        "node", "data/dukascopy_client.cjs",
-        symbol.lower(), convert_tf(timeframe),
-        from_dt.isoformat(), now.isoformat()
-    ]
+def should_retrain():
+    now = datetime.utcnow()
+    if not os.path.exists(LAST_RETRAIN_PATH):
+        return True
+    try:
+        with open(LAST_RETRAIN_PATH, "r") as f:
+            ts = f.read().strip()
+            last = datetime.fromisoformat(ts)
+        return (now - last).total_seconds() >= 30
+    except:
+        return True
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
-    if result.returncode != 0:
-        raise RuntimeError(result.stderr)
+def store_last_retrain_time():
+    with open(LAST_RETRAIN_PATH, "w") as f:
+        f.write(datetime.utcnow().isoformat())
 
-    candles = json.loads(result.stdout)
-    return candles
-
-def save_to_csv(symbol, timeframe, candles):
-    if not candles:
-        return
-    symbol = symbol.replace(" ", "_").lower()
-    tf_code = convert_tf(timeframe)
-    path = f"data/{symbol}_{tf_code}.csv"
-    header = not os.path.exists(path)
-
-    with open(path, "a") as f:
-        if header:
-            f.write("timestamp,open,high,low,close,volume\n")
-        for c in candles:
-            f.write(f"{c['timestamp']},{c['open']},{c['high']},{c['low']},{c['close']},{c['volume']}\n")
-
-def main_loop():
-    all_symbols = CONFIG["symbols"]
-    timeframes = CONFIG["timeframes"]
-
-    print("🔁 Starting auto-trainer loop...")
+def main():
+    # Only bootstrap if flag doesn't exist
+    if not os.path.exists(BOOTSTRAP_FLAG):
+        bootstrap_initial_data()
 
     while True:
-        for symbol in all_symbols:
-            for tf in timeframes:
-                try:
-                    print(f"📡 Fetching {symbol} @ {tf}")
-                    candles = fetch_from_dukascopy(symbol, tf)
-                    save_to_csv(symbol, tf, candles)
-                except Exception as e:
-                    print(f"❌ Error fetching {symbol}@{tf}: {e}")
-        try:
-            print("🧠 Training model...")
-            retrain_model()
-        except Exception as e:
-            print(f"❌ Training failed: {e}")
+        print(f"⏱️ {datetime.utcnow().isoformat()} - Fetching 30s slice")
+        now = datetime.utcnow()
+        from_dt = now - timedelta(seconds=30)
 
-        print("⏳ Sleeping for 30s...\n")
+        for symbol in SYMBOLS:
+            fetch_and_save(symbol, from_dt, now)
+
+        if should_retrain():
+            print("🧠 Triggering retraining from AutoTrainer...")
+            run_training()
+            store_last_retrain_time()
+        else:
+            print("⏳ Skipping retrain (not due yet)")
+
         time.sleep(30)
 
 if __name__ == "__main__":
-    main_loop()
-  
-
+    main()
+                
