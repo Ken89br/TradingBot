@@ -187,6 +187,11 @@ class TelegramNotifier:
         else:
             df.to_csv(SIGNAL_CSV_PATH, index=False)
 
+        df_all = pd.read_csv(SIGNAL_CSV_PATH)
+        if len(df_all) >= self.data_client.MIN_ROWS_BEFORE_RETRAIN:
+            print(f"📊 Detected {len(df_all)} signals, retraining model...")
+            run_training()
+        
         payout = round(signal_data['price'] * 0.92, 5)
         msg = (
             f"📡 *{get_text('signal_title', chat_id=chat_id)}*\n\n"
