@@ -2,8 +2,8 @@
 
 import time
 from datetime import datetime
-
 from config import CONFIG
+
 from strategy.rsi_ma import AggressiveRSIMA
 from strategy.bollinger_breakout import BollingerBreakoutStrategy
 from strategy.wick_reversal import WickReversalStrategy
@@ -28,7 +28,7 @@ class EnsembleStrategy:
         self.filter = SmartAIFilter()
         self.ml = MLPredictor()
 
-    def generate_signal(self, data):
+    def generate_signal(self, data, timeframe="1min"):  # ✅ add timeframe param
         votes, details = [], []
         for strat in self.strategies:
             try:
@@ -75,7 +75,7 @@ class EnsembleStrategy:
         }
 
         try:
-            ml_prediction = self.ml.predict(data["history"])
+            ml_prediction = self.ml.predict(data["history"], timeframe=timeframe)  # ✅ dynamic
             if ml_prediction and ml_prediction != signal_data["signal"]:
                 print("⚠️ ML disagrees — downgrading confidence")
                 signal_data["confidence"] = max(signal_data["confidence"] - 20, 10)
@@ -84,4 +84,4 @@ class EnsembleStrategy:
             print(f"⚠️ ML predictor failed: {e}")
 
         return self.filter.apply(signal_data, data["history"])
-        
+                
