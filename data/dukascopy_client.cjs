@@ -1,6 +1,6 @@
-// data/dukascopy_client.cjs
-const { getHistoricalRates } = require("dukascopy-node");
+//data/dukascopy_client.py
 
+const { getHistoricalRates } = require("dukascopy-node");
 const [symbol, timeframe, from, to] = process.argv.slice(2);
 
 (async () => {
@@ -16,7 +16,6 @@ const [symbol, timeframe, from, to] = process.argv.slice(2);
       volumes: true,
       ignoreFlats: true
     });
-
     console.log(JSON.stringify(data));
   } catch (error) {
     console.error("❌ Error:", error.message);
