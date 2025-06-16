@@ -57,7 +57,7 @@ class FallbackDataClient:
             from_dt = now - timedelta(seconds=30)
 
         cmd = [
-            "node", "data/dukascopy_client.cjs",
+            "node", "--max-old-space-size=5120", "data/dukascopy_client.cjs",
             symbol.lower(), self._convert_tf(interval),
             from_dt.isoformat(), now.isoformat()
         ]
