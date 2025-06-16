@@ -11,7 +11,7 @@ class MLPredictor:
         self.models_cache = {}  # ✅ Cache to avoid reloading on every prediction
 
     def _load_model(self, timeframe):
-        tf = timeframe.lower().replace("1min", "m1").replace("s1", "s1")
+        tf = timeframe.lower().replace("1min", "m1").replace("s1", "s1").replace("5min", "m5").replace("15min", "m15").replace("30min", "m30").replace("h1", "h1").replace("4h", "h4")
         filename = f"model_{tf}.pkl"
         path = os.path.join(self.model_dir, filename)
 
