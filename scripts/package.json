@@ -11,6 +11,6 @@
     "dukascopy-node": "1.34.0"
   },
   "engines": {
-    "node": "12"
+    "node": "20"
   }
 }
