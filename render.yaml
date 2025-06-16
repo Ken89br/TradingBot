@@ -6,8 +6,8 @@ services:
     plan: free
     buildCommand: |
     pip install -r requirements.txt
-    npm install --prefix scripts
-    npm install --prefix data
+    npm install --prefix scripts dukascopy-node
+    npm install --prefix data dukascopy-node
 
     startCommand: |
       python -m strategy.train_model_historic && python server.py
