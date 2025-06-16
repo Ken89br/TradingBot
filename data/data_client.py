@@ -12,7 +12,7 @@ from strategy.train_model_historic import main as run_training
 LAST_RETRAIN_PATH = "last_retrain.txt"
 
 class FallbackDataClient:
-    IN_ROWS_BEFORE_RETRAIN: 50
+    IN_ROWS_BEFORE_RETRAIN = 50
     def __init__(self):
         self.providers = [
             TwelveDataClient(),
