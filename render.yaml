@@ -6,10 +6,9 @@ services:
     plan: free
     buildCommand: |
       pip install -r requirements.txt
-      npm --prefix scripts install
+      npm install --prefix scripts
     startCommand: |
-      python -m strategy.train_model_historic &&
-      python server.py
+      python -m strategy.train_model_historic && python server.py
     envVars:
       - key: TELEGRAM_BOT_TOKEN
         value: 7651666306:AAHPdLdPclIxIsriSmswT6N7x5REwvuQBdw
@@ -29,8 +28,3 @@ services:
         value: 2e08f48192c14bee8d4ecefc763a2a37
       - key: TIINGO_API_KEY
         value: 4672b0ac473424934228d0ad0ad1e8500a78f190
-
-schedules:
-  - name: Fetch Dukas Live + Retrain
-    command: "node scripts/live_update.js"
-    cron: "*/1 * * * *"  # every 1 minute (works only on paid plan)
