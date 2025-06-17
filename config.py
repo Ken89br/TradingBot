@@ -21,7 +21,7 @@ CONFIG = {
     },
 
     "webhook": {
-        "url": get_env("WEBHOOK_URL", "https://your-render-url.com")
+        "url": get_env("WEBHOOK_URL", "https://tradingbot-5wgk.onrender.com")
     },
 
     # ✅ Regular Forex Pairs
