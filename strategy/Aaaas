@@ -40,7 +40,7 @@ def fetch_and_save(symbol, from_dt, to_dt, tf):
                 f.write("timestamp,open,high,low,close,volume\n")
             for c in candles:
                 f.write(f"{c['timestamp']},{c['open']},{c['high']},{c['low']},{c['close']},{c['volume']}\n")
-        print(f"✅ Saved {len(candles)} to {filepath}")
+        print(f"✅ Saved {len(candles)} rows for {symbol} [{timeframe}]) to {filepath}")
     except Exception as e:
         print(f"❌ Error fetching {symbol} @ {tf}: {e}")
 
