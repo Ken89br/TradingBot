@@ -24,7 +24,7 @@ LAST_RETRAIN_PATH = "last_retrain.txt"
 def fetch_and_save(symbol, from_dt, to_dt, timeframe):
     try:
         cmd = [
-            "node", "data/dukascopy_client.cjs",
+            "node", "--max-old-space-size=1024", "data/dukascopy_client.cjs",
             symbol.lower().replace(" ", ""), timeframe,
             from_dt.isoformat(), to_dt.isoformat()
         ]
