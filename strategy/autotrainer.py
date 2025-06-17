@@ -37,7 +37,7 @@ def fetch_and_save(symbol, from_dt, to_dt, timeframe):
             return
 
         # Save to CSV
-        path = os.path.join(DATA_DIR, f"{symbol.lower().replace(' ', '')}_{TIMEFRAME}.csv")
+        path = os.path.join(DATA_DIR, f"{symbol.lower().replace(' ', '')}_{timeframe}.csv")
         header = not os.path.exists(path)
         with open(path, "a") as f:
             if header:
@@ -54,7 +54,8 @@ def bootstrap_initial_data():
     now = datetime.utcnow()
     from_dt = now - timedelta(days=7)
     for symbol in SYMBOLS:
-        fetch_and_save(symbol, from_dt, now)
+    for tf in TIMEFRAMES:
+        fetch_and_save(symbol, from_dt, now, tf)
     with open(BOOTSTRAP_FLAG, "w") as f:
         f.write("done")
     print("✅ Bootstrap complete.")
