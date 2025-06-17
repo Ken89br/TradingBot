@@ -1,5 +1,6 @@
 //data/dukascopy_client.cjs
 
+"start": "node --max-old-space-size=512 data/dukascopy_client.cjs"
 const { getHistoricalRates } = require("dukascopy-node");
 const [symbol, timeframe, from, to] = process.argv.slice(2);
 
