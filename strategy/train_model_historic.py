@@ -7,16 +7,32 @@ import joblib
 from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
+from datetime import datetime
 
 from strategy.ml_utils import add_indicators
 
+# Directories
 DATA_DIR = "data"
 MODEL_DIR = "models"
 os.makedirs(MODEL_DIR, exist_ok=True)
 
+# Retraining frequency (in seconds) per timeframe
+RETRAIN_INTERVALS = {
+    "s1": 30,       # every 30 seconds
+    "m1": 60,       # every 1 minute
+    "m5": 300,      # every 5 minutes
+    "m15": 900,     # every 15 minutes
+    "m30": 1800,    # every 30 minutes
+    "h1": 3600,     # every hour
+    "h4": 14400     # every 4 hours
+}
+
+# Store last retrain time for each timeframe
+LAST_RETRAIN_TIMES = {}
+
 def get_timeframe_from_filename(filename):
     base = os.path.basename(filename).lower()
-    for tf in ["s1", "m1", "m5", "m15", "m30", "h1", "h4", "d1"]:
+    for tf in RETRAIN_INTERVALS.keys():
         if f"_{tf}.csv" in base:
             return tf
     return None
@@ -72,9 +88,17 @@ def main():
         print("⛔ No valid data to train.")
         return
 
+    now = datetime.utcnow()
     for tf, df in grouped.items():
-        train_model_for_timeframe(tf, df)
+        interval = RETRAIN_INTERVALS.get(tf, 60)  # default to 60s if missing
+        last = LAST_RETRAIN_TIMES.get(tf)
+
+        if not last or (now - last).total_seconds() >= interval:
+            train_model_for_timeframe(tf, df)
+            LAST_RETRAIN_TIMES[tf] = now
+        else:
+            time_left = interval - (now - last).total_seconds()
+            print(f"⏳ Skipping {tf.upper()} — next in {round(time_left)}s")
 
 if __name__ == "__main__":
     main()
-                
