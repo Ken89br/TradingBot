@@ -1,4 +1,5 @@
 # strategy/autotrainer.py
+
 import os
 import time
 from datetime import datetime, timedelta
@@ -14,7 +15,7 @@ SYMBOLS = [
     "EURUSD OTC", "GBPUSD OTC", "USDJPY OTC", "AUDUSD OTC"
 ]
 
-TIMEFRAMES = ["s1", "m1", "m5", "m15", "m30", "h1", "h4"]  # Always use all for training
+TIMEFRAMES = ["s1", "m1", "m5", "m15", "m30", "h1", "h4"]
 
 DATA_DIR = "data"
 BOOTSTRAP_FLAG = "autotrainer_bootstrap.flag"
@@ -33,7 +34,7 @@ def fetch_and_save(symbol, from_dt, to_dt, timeframe):
 
         candles = json.loads(result.stdout)
         if not candles:
-            print(f"⚠️ No candles fetched for {symbol}")
+            print(f"⚠️ No candles fetched for {symbol} {timeframe}")
             return
 
         # Save to CSV
@@ -45,17 +46,17 @@ def fetch_and_save(symbol, from_dt, to_dt, timeframe):
             for c in candles:
                 f.write(f"{c['timestamp']},{c['open']},{c['high']},{c['low']},{c['close']},{c['volume']}\n")
 
-        print(f"✅ Saved {len(candles)} rows for {symbol}")
+        print(f"✅ Saved {len(candles)} rows for {symbol} [{timeframe}]")
     except Exception as e:
-        print(f"❌ Error fetching {symbol}: {e}")
+        print(f"❌ Error fetching {symbol} [{timeframe}]: {e}")
 
 def bootstrap_initial_data():
     print("🚀 Bootstrapping 7-day historical data...")
     now = datetime.utcnow()
     from_dt = now - timedelta(days=7)
     for symbol in SYMBOLS:
-    for tf in TIMEFRAMES:
-        fetch_and_save(symbol, from_dt, now, tf)
+        for tf in TIMEFRAMES:
+            fetch_and_save(symbol, from_dt, now, tf)
     with open(BOOTSTRAP_FLAG, "w") as f:
         f.write("done")
     print("✅ Bootstrap complete.")
@@ -77,17 +78,17 @@ def store_last_retrain_time():
         f.write(datetime.utcnow().isoformat())
 
 def main():
-    # Only bootstrap if flag doesn't exist
     if not os.path.exists(BOOTSTRAP_FLAG):
         bootstrap_initial_data()
 
     while True:
-        print(f"⏱️ {datetime.utcnow().isoformat()} - Fetching 30s slice")
         now = datetime.utcnow()
         from_dt = now - timedelta(seconds=30)
+        print(f"⏱️ {now.isoformat()} - Fetching 30s slice...")
 
         for symbol in SYMBOLS:
-            fetch_and_save(symbol, from_dt, now)
+            for tf in TIMEFRAMES:
+                fetch_and_save(symbol, from_dt, now, tf)
 
         if should_retrain():
             print("🧠 Triggering retraining from AutoTrainer...")
@@ -100,4 +101,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-                
+            
