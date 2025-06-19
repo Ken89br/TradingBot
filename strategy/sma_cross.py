@@ -1,3 +1,4 @@
+#strategy/sma_cross.py
 class SMACrossStrategy:
     def generate_signal(self, data):
         candles = data["history"]
