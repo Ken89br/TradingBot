@@ -1,3 +1,4 @@
+#strategy/wick_reversal.py
 class WickReversalStrategy:
     def __init__(self, config):
         self.wick_ratio = 2.0
