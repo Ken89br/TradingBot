@@ -1,4 +1,4 @@
-#strategy/rsi.py
+#strategy/rsi py
 class RSIStrategy:
     def generate_signal(self, data):
         candles = data["history"]
@@ -15,10 +15,10 @@ class RSIStrategy:
         avg_loss = sum(losses) / 14 if losses else 0.01
         rs = avg_gain / avg_loss
         rsi = 100 - (100 / (1 + rs))
-        
-        if rsi > 70:
+
+        if rsi > 65:
             return {"signal": "down"}
-        elif rsi < 30:
+        elif rsi < 35:
             return {"signal": "up"}
-        elif 40 < rsi < 60:
         return None
+        
