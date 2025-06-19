@@ -50,7 +50,12 @@ class EnsembleStrategy:
         elif down_votes > up_votes:
             direction = "down"
         else:
-            print("⚠️ Equal votes — skipping signal.")
+            print("⚠️ Equal votes — using ML to break tie.")
+            ml_direction = self.ml.predict(data["history"], timeframe=timeframe)
+        if ml_direction:
+            direction = ml_direction
+        else:
+            print("⚠️ ML undecided — skipping signal.")
             return None
 
         confidence = round((max(up_votes, down_votes) / len(votes)) * 100)
