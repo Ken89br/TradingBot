@@ -7,25 +7,22 @@ class MACDReversalStrategy:
         pass
 
     def generate_signal(self, candle):
-        df = pd.DataFrame(candle["history"])
-        df = df.astype(float)
-
+        df = pd.DataFrame(candle["history"]).astype(float)
         if len(df) < 26:
             return None
 
         macd = ta.trend.MACD(df["close"])
         hist = macd.macd_diff()
+        prev, curr = hist.iloc[-2], hist.iloc[-1]
 
-        if hist.iloc[-2] < 0 < hist.iloc[-1]:
-            return self._package("call", df, "high")
-        elif hist.iloc[-2] > 0 > hist.iloc[-1]:
-            return self._package("put", df, "high")
-
+        if prev < 0 < curr or (prev < -0.1 and curr > -0.05):
+            return self._package("call", df, "medium")
+        elif prev > 0 > curr or (prev > 0.1 and curr < 0.05):
+            return self._package("put", df, "medium")
         return None
 
     def _package(self, signal, df, strength):
         confidence = {"high": 95, "medium": 80, "low": 65}.get(strength, 50)
-
         return {
             "signal": signal,
             "price": df["close"].iloc[-1],
@@ -36,4 +33,3 @@ class MACDReversalStrategy:
             "strength": strength,
             "confidence": confidence
         }
-        
