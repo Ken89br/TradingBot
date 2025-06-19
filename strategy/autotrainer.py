@@ -1,9 +1,8 @@
-Here's my autotrainer, so you can check ig there's anything wrong, missing, indentation error, etc, and fix, give me full script 
-# strategy/autotrainer.py
 import os
 import time
 import json
 import subprocess
+import glob
 from datetime import datetime, timedelta
 from strategy.train_model_historic import main as run_training
 from config import CONFIG
@@ -44,7 +43,8 @@ def fetch_and_save(symbol, from_dt, to_dt, tf):
                 f.write("timestamp,open,high,low,close,volume\n")
             for c in candles:
                 f.write(f"{c['timestamp']},{c['open']},{c['high']},{c['low']},{c['close']},{c['volume']}\n")
-        print(f"✅ Saved {len(candles)} rows for {symbol} [{timeframe}]) to {filepath}")
+
+        print(f"✅ Saved {len(candles)} rows for {symbol} [{tf}] to {filepath}")
     except Exception as e:
         print(f"❌ Error fetching {symbol} @ {tf}: {e}")
 
@@ -74,6 +74,21 @@ def store_last_retrain_time():
     with open(LAST_RETRAIN_PATH, "w") as f:
         f.write(datetime.utcnow().isoformat())
 
+def upload_models_to_github():
+    for model_file in glob.glob(f"{MODEL_DIR}/model_*.pkl"):
+        file_name = os.path.basename(model_file)
+        success = upload_to_github(
+            model_file,
+            REPO_NAME,
+            f"models/{file_name}",
+            GITHUB_TOKEN,
+            commit_msg=f"Update {file_name}"
+        )
+        if not success:
+            print(f"❌ Failed to upload {file_name}")
+        else:
+            print(f"📤 Uploaded: {file_name}")
+
 def main():
     if not os.path.exists(BOOTSTRAP_FLAG):
         bootstrap_initial_data()
@@ -91,22 +106,12 @@ def main():
             print("🧠 Triggering retraining...")
             run_training()
             store_last_retrain_time()
+            upload_models_to_github()  # ✅ Upload models after training
         else:
             print("⏳ Skipping retraining...")
 
         time.sleep(30)
 
-for model_file in glob.glob(f"{MODEL_DIR}/model_*.pkl"):
-    file_name = os.path.basename(model_file)
-    success = upload_to_github(
-        model_file,
-        REPO_NAME,
-        f"models/{file_name}",
-        GITHUB_TOKEN,
-        commit_msg=f"Update {file_name}"
-    )
-    if not success:
-        print(f"❌ Failed to upload {file_name}")
-
 if __name__ == "__main__":
     main()
+    
