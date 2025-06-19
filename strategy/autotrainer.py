@@ -1,5 +1,5 @@
+Here's my autotrainer, so you can check ig there's anything wrong, missing, indentation error, etc, and fix, give me full script 
 # strategy/autotrainer.py
-
 import os
 import time
 import json
@@ -12,6 +12,9 @@ from utils.github_uploader import upload_to_github
 SYMBOLS = CONFIG["symbols"] + CONFIG.get("otc_symbols", [])
 TIMEFRAMES = CONFIG["timeframes"]  # e.g. ["S1", "M1", "M5", ...]
 DATA_DIR = "data"
+MODEL_DIR = "models"
+REPO_NAME = "Ken89br/TradingBot"
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 BOOTSTRAP_FLAG = "autotrainer_bootstrap.flag"
 LAST_RETRAIN_PATH = "last_retrain.txt"
 
@@ -93,12 +96,17 @@ def main():
 
         time.sleep(30)
 
-upload_to_github(
-    "models/model_m1.pkl",
-    "Ken89br/TradingBot",
-    "models/model_m1.pkl",
-    os.getenv("GITHUB_TOKEN")
-)
+for model_file in glob.glob(f"{MODEL_DIR}/model_*.pkl"):
+    file_name = os.path.basename(model_file)
+    success = upload_to_github(
+        model_file,
+        REPO_NAME,
+        f"models/{file_name}",
+        GITHUB_TOKEN,
+        commit_msg=f"Update {file_name}"
+    )
+    if not success:
+        print(f"❌ Failed to upload {file_name}")
 
 if __name__ == "__main__":
     main()
