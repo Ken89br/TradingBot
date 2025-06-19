@@ -14,6 +14,9 @@ from strategy.train_model_historic import main as run_training
 import pandas as pd
 import os
 import time
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class SignalState(StatesGroup):
     choosing_mode = State()
