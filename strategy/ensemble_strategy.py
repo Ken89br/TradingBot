@@ -1,5 +1,3 @@
-#strategy/ensemble_strategy.py
-
 import time
 from datetime import datetime
 from config import CONFIG
@@ -28,7 +26,7 @@ class EnsembleStrategy:
         self.filter = SmartAIFilter()
         self.ml = MLPredictor()
 
-    def generate_signal(self, data, timeframe="1min"):  # ✅ add timeframe param
+    def generate_signal(self, data, timeframe="1min"):
         votes, details = [], []
         for strat in self.strategies:
             try:
@@ -45,18 +43,25 @@ class EnsembleStrategy:
 
         up_votes = votes.count("up")
         down_votes = votes.count("down")
+
+        ml_direction = None  # ✅ Initialize to avoid reference errors
+
         if up_votes > down_votes:
             direction = "up"
         elif down_votes > up_votes:
             direction = "down"
         else:
             print("⚠️ Equal votes — using ML to break tie.")
-            ml_direction = self.ml.predict(data["history"], timeframe=timeframe)
-        if ml_direction:
-            direction = ml_direction
-        else:
-            print("⚠️ ML undecided — skipping signal.")
-            return None
+            try:
+                ml_direction = self.ml.predict(data["history"], timeframe=timeframe)
+                if ml_direction:
+                    direction = ml_direction
+                else:
+                    print("⚠️ ML undecided — skipping signal.")
+                    return None
+            except Exception as e:
+                print(f"⚠️ ML predictor failed during tiebreaker: {e}")
+                return None
 
         confidence = round((max(up_votes, down_votes) / len(votes)) * 100)
         strength = "strong" if confidence >= 70 else "moderate"
@@ -80,7 +85,7 @@ class EnsembleStrategy:
         }
 
         try:
-            ml_prediction = self.ml.predict(data["history"], timeframe=timeframe)  # ✅ dynamic
+            ml_prediction = self.ml.predict(data["history"], timeframe=timeframe)
             if ml_prediction and ml_prediction != signal_data["signal"]:
                 print("⚠️ ML disagrees — downgrading confidence")
                 signal_data["confidence"] = max(signal_data["confidence"] - 20, 10)
@@ -89,4 +94,4 @@ class EnsembleStrategy:
             print(f"⚠️ ML predictor failed: {e}")
 
         return self.filter.apply(signal_data, data["history"])
-                
+        
