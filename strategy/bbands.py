@@ -1,3 +1,4 @@
+#strategy/bbands.py
 class BollingerStrategy:
     def generate_signal(self, data):
         candles = data["history"]
