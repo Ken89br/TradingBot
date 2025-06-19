@@ -74,7 +74,7 @@ def train_model_for_timeframe(tf, df):
     X = df[features]
     y = df["target"]
 
-    model = XGBClassifier(use_label_encoder=False, eval_metric="logloss")
+    model = XGBClassifier(eval_metric="logloss")
     model.fit(X, y)
 
     print(classification_report(y, model.predict(X)))
