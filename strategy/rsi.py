@@ -1,3 +1,4 @@
+#strategy/rsi.py
 class RSIStrategy:
     def generate_signal(self, data):
         candles = data["history"]
