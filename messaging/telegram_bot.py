@@ -18,12 +18,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
 class SignalState(StatesGroup):
     choosing_mode = State()
     choosing_timeframe = State()
     choosing_symbol = State()
-
 
 REGISTERED_USERS = set()
 signal_context = {}
@@ -32,13 +30,11 @@ user_languages = {}
 SYMBOL_PAGES = [CONFIG["symbols"][:8], CONFIG["symbols"][8:]]
 SYMBOL_PAGES_OTC = [CONFIG["otc_symbols"][:8], CONFIG["otc_symbols"][8:]]
 
-
 def get_text(key, lang=None, chat_id=None):
     if chat_id:
         lang = user_languages.get(chat_id, "en")
     lang = lang or "en"
     return CONFIG["languages"].get(lang, CONFIG["languages"]["en"]).get(key, key)
-
 
 class TelegramNotifier:
     def __init__(self, token, strategy, data_client):
