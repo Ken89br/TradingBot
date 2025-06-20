@@ -16,20 +16,19 @@ import os
 import time
 from dotenv import load_dotenv
 
-# ==== ADIÇÃO PARA FUSO HORÁRIO ====
+# ==== FUSO HORÁRIO ====
 from datetime import datetime
 import pytz
 
 TZ_MAPUTO = pytz.timezone("Africa/Maputo")
 
 def to_maputo_time(dt_utc):
-    """Converte datetime UTC para o fuso horário de Moçambique."""
     if isinstance(dt_utc, pd.Timestamp):
         dt_utc = dt_utc.to_pydatetime()
     if dt_utc.tzinfo is None:
         dt_utc = dt_utc.replace(tzinfo=pytz.UTC)
     return dt_utc.astimezone(TZ_MAPUTO)
-# ================================
+# ======================
 
 load_dotenv()
 
@@ -64,10 +63,10 @@ class TelegramNotifier:
             chat_id = msg.chat.id
             REGISTERED_USERS.add(chat_id)
             keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(KeyboardButton("📈 Start"))
+            keyboard.add(KeyboardButton("📈 Start" if user_languages.get(chat_id, "en") == "en" else "📈 Iniciar"))
             keyboard.add(KeyboardButton("/status"), KeyboardButton("/retrain"), KeyboardButton("/stop"))
             keyboard.add(KeyboardButton("/help"), KeyboardButton("/support"))
-            keyboard.add(KeyboardButton("🌐 Language"))
+            keyboard.add(KeyboardButton("🌐 Language" if user_languages.get(chat_id, "en") == "en" else "🌐 Idioma"))
             await safe_send(self.bot, chat_id, get_text("start", chat_id=chat_id), reply_markup=keyboard)
 
         @self.dp.message_handler(lambda msg: msg.text.lower() in ["/help", "help"])
@@ -76,7 +75,7 @@ class TelegramNotifier:
 
         @self.dp.message_handler(lambda msg: msg.text.lower() in ["/support", "support"])
         async def support_cmd(msg: types.Message):
-            await safe_send(self.bot, msg.chat.id, f"🛟 Contact support: {CONFIG['support']['username']}")
+            await safe_send(self.bot, msg.chat.id, f"🛟 {get_text('support_contact', chat_id=msg.chat.id)} {CONFIG['support']['username']}")
 
         @self.dp.message_handler(lambda msg: msg.text.lower() in ["/stop", "stop"])
         async def stop_cmd(msg: types.Message, state: FSMContext):
@@ -88,25 +87,27 @@ class TelegramNotifier:
             user_id = msg.chat.id
             sym_info = signal_context.get(user_id)
             if sym_info:
-                response = f"✅ Bot is running.\n\n🕐 Timeframe: `{sym_info['timeframe']}`\n💱 Symbol: `{sym_info['symbol']}`"
+                response = get_text("bot_running", chat_id=user_id).format(
+                    timeframe=sym_info['timeframe'], symbol=sym_info['symbol']
+                )
             else:
-                response = "✅ Bot is running.\nℹ️ No signal context found. Use 📈 Start to begin."
+                response = get_text("bot_running_no_ctx", chat_id=user_id)
             await safe_send(self.bot, user_id, response, parse_mode="Markdown")
 
         @self.dp.message_handler(lambda msg: msg.text.lower() in ["/retrain", "retrain"])
         async def retrain_force(msg: types.Message):
-            await safe_send(self.bot, msg.chat.id, "🔁 Force retraining initiated (manual override).")
+            await safe_send(self.bot, msg.chat.id, get_text("force_retraining", chat_id=msg.chat.id))
             run_training()
 
-        @self.dp.message_handler(lambda msg: msg.text == "🌐 Language")
+        @self.dp.message_handler(lambda msg: msg.text in ["🌐 Language", "🌐 Idioma"])
         async def toggle_lang(msg: types.Message):
             chat_id = msg.chat.id
             current_lang = user_languages.get(chat_id, "en")
             new_lang = "pt" if current_lang == "en" else "en"
             user_languages[chat_id] = new_lang
-            await safe_send(self.bot, chat_id, f"🌐 Language set to {'Português' if new_lang == 'pt' else 'English'} ✅")
+            await safe_send(self.bot, chat_id, get_text("language_set", chat_id=chat_id))
 
-        @self.dp.message_handler(lambda msg: msg.text == "📈 Start", state="*")
+        @self.dp.message_handler(lambda msg: msg.text in ["📈 Start", "📈 Iniciar"], state="*")
         async def start_signal(msg: types.Message):
             await SignalState.choosing_mode.set()
             kb = InlineKeyboardMarkup(row_width=2)
@@ -124,8 +125,22 @@ class TelegramNotifier:
             kb = InlineKeyboardMarkup(row_width=3)
             buttons = [InlineKeyboardButton(tf, callback_data=f"timeframe:{tf}") for tf in CONFIG["timeframes"]]
             kb.add(*buttons)
+            # Botão voltar
+            kb.add(InlineKeyboardButton(get_text("back", chat_id=callback.from_user.id), callback_data="back_mainmenu"))
             await callback.message.edit_text(get_text("choose_timeframe", chat_id=callback.from_user.id), reply_markup=kb)
             await callback.answer()
+
+        @self.dp.callback_query_handler(lambda c: c.data == "back_mainmenu", state="*")
+        async def back_main_menu(callback: types.CallbackQuery, state: FSMContext):
+            await state.finish()
+            chat_id = callback.from_user.id
+            keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(KeyboardButton("📈 Start" if user_languages.get(chat_id, "en") == "en" else "📈 Iniciar"))
+            keyboard.add(KeyboardButton("/status"), KeyboardButton("/retrain"), KeyboardButton("/stop"))
+            keyboard.add(KeyboardButton("/help"), KeyboardButton("/support"))
+            keyboard.add(KeyboardButton("🌐 Language" if user_languages.get(chat_id, "en") == "en" else "🌐 Idioma"))
+            await callback.message.edit_text(get_text("main_menu", chat_id=chat_id))
+            await safe_send(self.bot, chat_id, get_text("start", chat_id=chat_id), reply_markup=keyboard)
 
         @self.dp.callback_query_handler(lambda c: c.data.startswith("timeframe:"), state=SignalState.choosing_timeframe)
         async def select_timeframe(callback: types.CallbackQuery, state: FSMContext):
@@ -140,55 +155,69 @@ class TelegramNotifier:
             await self.send_symbol_buttons(callback.message, callback.from_user.id, page=1)
             await callback.answer()
 
+        @self.dp.callback_query_handler(lambda c: c.data == "back_symbols", state=SignalState.choosing_symbol)
+        async def back_symbols(callback: types.CallbackQuery, state: FSMContext):
+            # Voltar para escolha de timeframe
+            await state.set_state(SignalState.choosing_timeframe.state)
+            kb = InlineKeyboardMarkup(row_width=3)
+            buttons = [InlineKeyboardButton(tf, callback_data=f"timeframe:{tf}") for tf in CONFIG["timeframes"]]
+            kb.add(*buttons)
+            kb.add(InlineKeyboardButton(get_text("back", chat_id=callback.from_user.id), callback_data="back_mainmenu"))
+            await callback.message.edit_text(get_text("choose_timeframe", chat_id=callback.from_user.id), reply_markup=kb)
+            await callback.answer()
+
         @self.dp.callback_query_handler(lambda c: c.data.startswith("symbol:"), state=SignalState.choosing_symbol)
         async def select_symbol(callback: types.CallbackQuery, state: FSMContext):
-            await callback.answer()  # ✅ Avoid InvalidQueryID
+            await callback.answer()
             try:
                 symbol = callback.data.split(":")[1].replace(" OTC", "")
                 await state.update_data(symbol=symbol)
                 user_data = await state.get_data()
                 timeframe = user_data["timeframe"]
+                kb = InlineKeyboardMarkup()
+                kb.add(InlineKeyboardButton(get_text("back", chat_id=callback.from_user.id), callback_data="back_symbols"))
+                # Barra de progresso
+                progress_bar = get_text("progress_generating", chat_id=callback.from_user.id)
                 await callback.message.edit_text(
-                    f"⏱ Timeframe: `{timeframe}`\n💱 Symbol: `{symbol}`\n\n{get_text('generating', chat_id=callback.from_user.id)}",
-                    parse_mode="Markdown"
+                    f"⏱ {get_text('timeframe', chat_id=callback.from_user.id)}: `{timeframe}`\n"
+                    f"💱 {get_text('pair', chat_id=callback.from_user.id)}: `{symbol}`\n\n"
+                    f"{get_text('generating', chat_id=callback.from_user.id)}\n{progress_bar}",
+                    parse_mode="Markdown",
+                    reply_markup=kb
                 )
 
                 candles = self.data_client.fetch_candles(symbol, interval=self._map_timeframe(timeframe))
                 if not candles or "history" not in candles:
-                    await safe_send(self.bot, callback.from_user.id, "⚠️ Failed to retrieve price data.")
+                    await safe_send(self.bot, callback.from_user.id, get_text("failed_price_data", chat_id=callback.from_user.id))
                     return
 
                 signal_data = self.strategy.generate_signal(candles, timeframe=self._map_timeframe(timeframe))
                 if not signal_data:
                     await safe_send(self.bot, callback.from_user.id, get_text("no_signal", chat_id=callback.from_user.id))
                 else:
-                    # ====== ALTERAÇÃO FUSO HORÁRIO E ENTRADA REAL ======
-                    # Pega o close_time do último candle (UTC), converte para Maputo
                     try:
                         latest_candle = candles["history"][-1]
                         candle_close_utc = pd.to_datetime(latest_candle.get('close_time') or latest_candle.get('timestamp'), utc=True)
                         recommended_entry_time = to_maputo_time(candle_close_utc)
                     except Exception:
                         recommended_entry_time = to_maputo_time(pd.Timestamp.utcnow())
-
                     signal_data["recommended_entry_time"] = recommended_entry_time.strftime("%Y-%m-%d %H:%M:%S")
                     expire_entry_time = recommended_entry_time + pd.Timedelta(minutes=1)
                     signal_data["expire_entry_time"] = expire_entry_time.strftime("%Y-%m-%d %H:%M:%S")
-                    # ==================================================
                     signal_context[callback.from_user.id] = {"symbol": symbol, "timeframe": timeframe}
                     await self.send_trade_signal(callback.from_user.id, symbol, signal_data)
 
             except Exception as e:
-                await safe_send(self.bot, callback.from_user.id, f"❌ Error: {str(e)}")
+                await safe_send(self.bot, callback.from_user.id, f"❌ {get_text('error', chat_id=callback.from_user.id)}: {str(e)}")
 
             await state.finish()
 
         @self.dp.callback_query_handler(lambda c: c.data == "refresh_signal")
         async def refresh(callback: types.CallbackQuery):
             uid = callback.from_user.id
-            await callback.answer()  # ✅ fix timeout
+            await callback.answer()
             if uid not in signal_context:
-                await callback.answer("⚠️ No previous signal to refresh.", show_alert=True)
+                await callback.answer(get_text("no_previous_signal", chat_id=uid), show_alert=True)
                 return
 
             ctx = signal_context[uid]
@@ -200,18 +229,15 @@ class TelegramNotifier:
 
             signal_data = self.strategy.generate_signal(candles, timeframe=self._map_timeframe(ctx["timeframe"]))
             if signal_data:
-                # ====== ALTERAÇÃO FUSO HORÁRIO E ENTRADA REAL ======
                 try:
                     latest_candle = candles["history"][-1]
                     candle_close_utc = pd.to_datetime(latest_candle.get('close_time') or latest_candle.get('timestamp'), utc=True)
                     recommended_entry_time = to_maputo_time(candle_close_utc)
                 except Exception:
                     recommended_entry_time = to_maputo_time(pd.Timestamp.utcnow())
-
                 signal_data["recommended_entry_time"] = recommended_entry_time.strftime("%Y-%m-%d %H:%M:%S")
                 expire_entry_time = recommended_entry_time + pd.Timedelta(minutes=1)
                 signal_data["expire_entry_time"] = expire_entry_time.strftime("%Y-%m-%d %H:%M:%S")
-                # ==================================================
                 await self.send_trade_signal(uid, ctx["symbol"], signal_data)
 
     async def send_symbol_buttons(self, message, user_id, page=0):
@@ -220,7 +246,8 @@ class TelegramNotifier:
         buttons = [InlineKeyboardButton(sym, callback_data=f"symbol:{sym}") for sym in symbols]
         kb.add(*buttons)
         if page == 0:
-            kb.add(InlineKeyboardButton("➡️ More", callback_data="more_symbols"))
+            kb.add(InlineKeyboardButton("➡️ " + get_text("more", chat_id=user_id), callback_data="more_symbols"))
+        kb.add(InlineKeyboardButton(get_text("back", chat_id=user_id), callback_data="back_mainmenu"))
         await message.edit_text(get_text("choose_symbol", chat_id=message.chat.id), reply_markup=kb)
 
     def _map_timeframe(self, tf):
@@ -232,10 +259,7 @@ class TelegramNotifier:
     async def send_trade_signal(self, chat_id, asset, signal_data):
         signal_data["symbol"] = asset
         signal_data["user"] = chat_id
-        # ====== ALTERAÇÃO FUSO HORÁRIO ======
-        # timestamp real em Maputo
         signal_data["timestamp"] = to_maputo_time(pd.Timestamp.utcnow()).strftime("%Y-%m-%d %H:%M:%S")
-        # =====================================
         signal_data["recommend_entry"] = signal_data.get("recommended_entry_time")
 
         log_signal(chat_id, asset, signal_data.get("timeframe"), signal_data)
@@ -251,11 +275,11 @@ class TelegramNotifier:
         msg = (
             f"📡 *{get_text('signal_title', chat_id=chat_id)}*\n\n"
             f"📌 *{get_text('pair', chat_id=chat_id)}:* `{asset}`\n"
-            f"📈 *{get_text('direction', chat_id=chat_id)}:* `{signal_data['signal'].upper()}`\n"
-            f"💪 *{get_text('strength', chat_id=chat_id)}:* `{signal_data['strength'].upper()}`\n"
+            f"📈 *{get_text('direction', chat_id=chat_id)}:* `{get_text(signal_data['signal'].lower(), chat_id=chat_id)}`\n"
+            f"💪 *{get_text('strength', chat_id=chat_id)}:* `{get_text(signal_data['strength'].lower(), chat_id=chat_id)}`\n"
             f"🎯 *{get_text('confidence', chat_id=chat_id)}:* `{signal_data['confidence']}%`\n\n"
             f"💰 *{get_text('entry', chat_id=chat_id)}:* `{signal_data['price']}`\n"
-            f"🕒 *{get_text('recommend', chat_id=chat_id)}:* `{signal_data['recommended_entry_time']}`\n"
+            f"🕒 *{get_text('recommend_entry', chat_id=chat_id)}:* `{signal_data['recommended_entry_time']}`\n"
             f"⏳ *{get_text('expire_entry', chat_id=chat_id)}:* `{signal_data['expire_entry_time']}`\n"
             f"📈 *{get_text('high', chat_id=chat_id)}:* `{signal_data['high']}`\n"
             f"📉 *{get_text('low', chat_id=chat_id)}:* `{signal_data['low']}`\n"
@@ -265,7 +289,7 @@ class TelegramNotifier:
         )
 
         keyboard = InlineKeyboardMarkup()
-        keyboard.add(InlineKeyboardButton("🔁 Refresh", callback_data="refresh_signal"))
+        keyboard.add(InlineKeyboardButton("🔁 " + get_text("refresh", chat_id=chat_id), callback_data="refresh_signal"))
         await safe_send(self.bot, chat_id, msg, parse_mode="Markdown", reply_markup=keyboard)
 
     @property
