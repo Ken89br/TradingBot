@@ -1,5 +1,4 @@
 #messaging/telegram_bot.py
-
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
@@ -11,6 +10,7 @@ from config import CONFIG
 from utils.signal_logger import log_signal
 from utils.telegram_safe import safe_send
 from strategy.train_model_historic import main as run_training
+
 import pandas as pd
 import os
 import time
@@ -18,23 +18,20 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class SignalState(StatesGroup):
     choosing_mode = State()
     choosing_timeframe = State()
     choosing_symbol = State()
 
+
 REGISTERED_USERS = set()
 signal_context = {}
 user_languages = {}
 
-SYMBOL_PAGES = [
-    CONFIG["symbols"][:8],
-    CONFIG["symbols"][8:]
-]
-SYMBOL_PAGES_OTC = [
-    CONFIG["otc_symbols"][:8],
-    CONFIG["otc_symbols"][8:]
-]
+SYMBOL_PAGES = [CONFIG["symbols"][:8], CONFIG["symbols"][8:]]
+SYMBOL_PAGES_OTC = [CONFIG["otc_symbols"][:8], CONFIG["otc_symbols"][8:]]
+
 
 def get_text(key, lang=None, chat_id=None):
     if chat_id:
@@ -42,13 +39,14 @@ def get_text(key, lang=None, chat_id=None):
     lang = lang or "en"
     return CONFIG["languages"].get(lang, CONFIG["languages"]["en"]).get(key, key)
 
+
 class TelegramNotifier:
     def __init__(self, token, strategy, data_client):
         self.bot = Bot(token=token)
         self.dp = Dispatcher(self.bot, storage=MemoryStorage())
         self.strategy = strategy
         self.data_client = data_client
-        self.mode_map = {}  # user_id => "normal" or "otc"
+        self.mode_map = {}
 
         @self.dp.message_handler(commands=["start"])
         async def start_cmd(msg: types.Message):
@@ -87,7 +85,7 @@ class TelegramNotifier:
         @self.dp.message_handler(lambda msg: msg.text.lower() in ["/retrain", "retrain"])
         async def retrain_force(msg: types.Message):
             await safe_send(self.bot, msg.chat.id, "🔁 Force retraining initiated (manual override).")
-            run_training()  # ✅ Force retrain regardless of CSV row count
+            run_training()
 
         @self.dp.message_handler(lambda msg: msg.text == "🌐 Language")
         async def toggle_lang(msg: types.Message):
@@ -133,6 +131,7 @@ class TelegramNotifier:
 
         @self.dp.callback_query_handler(lambda c: c.data.startswith("symbol:"), state=SignalState.choosing_symbol)
         async def select_symbol(callback: types.CallbackQuery, state: FSMContext):
+            await callback.answer()  # ✅ Avoid InvalidQueryID
             try:
                 symbol = callback.data.split(":")[1].replace(" OTC", "")
                 await state.update_data(symbol=symbol)
@@ -142,39 +141,44 @@ class TelegramNotifier:
                     f"⏱ Timeframe: `{timeframe}`\n💱 Symbol: `{symbol}`\n\n{get_text('generating', chat_id=callback.from_user.id)}",
                     parse_mode="Markdown"
                 )
+
                 candles = self.data_client.fetch_candles(symbol, interval=self._map_timeframe(timeframe))
                 if not candles or "history" not in candles:
                     await safe_send(self.bot, callback.from_user.id, "⚠️ Failed to retrieve price data.")
                     return
-                signal_data = self.strategy.generate_signal(candles)
+
+                signal_data = self.strategy.generate_signal(candles, timeframe=self._map_timeframe(timeframe))
                 if not signal_data:
                     await safe_send(self.bot, callback.from_user.id, get_text("no_signal", chat_id=callback.from_user.id))
                 else:
                     signal_data["expire_entry_time"] = pd.Timestamp.now() + pd.Timedelta(seconds=30)
                     signal_context[callback.from_user.id] = {"symbol": symbol, "timeframe": timeframe}
                     await self.send_trade_signal(callback.from_user.id, symbol, signal_data)
+
             except Exception as e:
                 await safe_send(self.bot, callback.from_user.id, f"❌ Error: {str(e)}")
+
             await state.finish()
-            await callback.answer()
 
         @self.dp.callback_query_handler(lambda c: c.data == "refresh_signal")
         async def refresh(callback: types.CallbackQuery):
             uid = callback.from_user.id
+            await callback.answer()  # ✅ fix timeout
             if uid not in signal_context:
                 await callback.answer("⚠️ No previous signal to refresh.", show_alert=True)
                 return
+
             ctx = signal_context[uid]
             candles = self.data_client.fetch_candles(ctx["symbol"], interval=self._map_timeframe(ctx["timeframe"]))
+
             if not candles or "history" not in candles:
                 await safe_send(self.bot, uid, get_text("no_signal", chat_id=uid))
                 return
-                
-            signal_data = self.strategy.generate_signal(candle, timeframe=self._map_timeframe(timeframe))
+
+            signal_data = self.strategy.generate_signal(candles, timeframe=self._map_timeframe(ctx["timeframe"]))
             if signal_data:
                 signal_data["expire_entry_time"] = pd.Timestamp.now() + pd.Timedelta(seconds=30)
                 await self.send_trade_signal(uid, ctx["symbol"], signal_data)
-            await callback.answer("🔁 Refreshed.")
 
     async def send_symbol_buttons(self, message, user_id, page=0):
         kb = InlineKeyboardMarkup(row_width=2)
@@ -196,7 +200,9 @@ class TelegramNotifier:
         signal_data["user"] = chat_id
         signal_data["timestamp"] = pd.Timestamp.now()
         signal_data["recommend_entry"] = signal_data.get("recommended_entry_time")
+
         log_signal(chat_id, asset, signal_data.get("timeframe"), signal_data)
+
         SIGNAL_CSV_PATH = "signals.csv"
         df = pd.DataFrame([signal_data])
         if os.path.exists(SIGNAL_CSV_PATH):
@@ -238,3 +244,4 @@ class TelegramNotifier:
         Dispatcher.set_current(self.dp)
         await self.dp.process_update(update)
         return web.Response()
+    
