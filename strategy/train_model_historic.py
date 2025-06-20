@@ -5,11 +5,10 @@ import pandas as pd
 import joblib
 from xgboost import XGBClassifier
 from sklearn.metrics import classification_report
+from sklearn.model_selection import train_test_split  # <--- coloque aqui
 from datetime import datetime
 
 from strategy.ml_utils import add_indicators
-
-# Google Drive integration
 from data.google_drive_client import upload_file, download_file, find_file_id
 
 # Directories
