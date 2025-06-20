@@ -51,6 +51,7 @@ CONFIG = {
             "choose_timeframe": "⏱ Choose a timeframe:",
             "choose_symbol": "💱 Choose a currency pair:",
             "generating": "📡 Generating signal...",
+            "progress_generating": "⏳ Please wait, analyzing the market...",
             "no_signal": "⚠️ No signal at this moment.",
             "signal_title": "📡 New Forex Signal Alert!",
             "pair": "Pair",
@@ -65,14 +66,33 @@ CONFIG = {
             "volume": "Volume",
             "payout": "Simulated Payout (92%)",
             "timer": "Action Window: Execute within 1 minute!",
-            "refresh": "Refresh"
+            "refresh": "Refresh",
+            "main_menu": "Main menu. Tap 📈 Start to generate a signal.",
+            "back": "Back",
+            "more": "More",
+            "failed_price_data": "⚠️ Failed to retrieve price data.",
+            "error": "Error",
+            "no_previous_signal": "⚠️ No previous signal to refresh.",
+            "bot_running": "✅ Bot is running.\n\n🕐 Timeframe: `{timeframe}`\n💱 Symbol: `{symbol}`",
+            "bot_running_no_ctx": "✅ Bot is running.\nℹ️ No signal context found. Use 📈 Start to begin.",
+            "force_retraining": "🔁 Force retraining initiated (manual override).",
+            "language_set": "🌐 Language set to English ✅",
+            "support_contact": "Contact support:",
+            # Directions
+            "up": "Alta",
+            "down": "Baixa",
+            "neutral": "Neutro",
+            # Strengths
+            "strong": "Forte",
+            "weak": "Fraco"
         },
         "pt": {
-            "start": "Bem-vindo! Toque 📈 Start para gerar um sinal.",
+            "start": "Bem-vindo! Toque 📈 Iniciar para gerar um sinal.",
             "choose_mode": "🧭 Escolha o modo de negociação:",
             "choose_timeframe": "⏱ Escolha o timeframe:",
             "choose_symbol": "💱 Escolha o par de moedas:",
             "generating": "📡 Gerando sinal...",
+            "progress_generating": "⏳ Aguarde, analisando o mercado...",
             "no_signal": "⚠️ Nenhum sinal neste momento.",
             "signal_title": "📡 Novo Alerta de Sinal Forex!",
             "pair": "Par",
@@ -87,10 +107,24 @@ CONFIG = {
             "volume": "Volume",
             "payout": "Lucro Simulado (92%)",
             "timer": "⏱ Execute dentro de 1 minuto!",
-            "refresh": "Atualizar"
+            "refresh": "Atualizar",
+            "main_menu": "Menu principal. Toque 📈 Iniciar para gerar um sinal.",
+            "back": "Voltar",
+            "more": "Mais",
+            "failed_price_data": "⚠️ Falha ao obter dados de preço.",
+            "error": "Erro",
+            "no_previous_signal": "⚠️ Nenhum sinal anterior para atualizar.",
+            "bot_running": "✅ Bot em execução.\n\n🕐 Timeframe: `{timeframe}`\n💱 Par: `{symbol}`",
+            "bot_running_no_ctx": "✅ Bot em execução.\nℹ️ Nenhum contexto de sinal encontrado. Use 📈 Iniciar para começar.",
+            "force_retraining": "🔁 Retreinamento forçado iniciado (sob demanda).",
+            "language_set": "🌐 Idioma definido para Português ✅",
+            "support_contact": "Contato do suporte:",
+            # Direções
+            "up": "Alta",
+            "down": "Baixa",
+            "neutral": "Neutro",
+            # Força do sinal
+            "strong": "Forte",
+            "weak": "Fraco"
         }
     }
-}
-
-# ✅ Logger
-logging.basicConfig(level=getattr(logging, CONFIG["log_level"].upper(), logging.INFO))
