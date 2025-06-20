@@ -89,6 +89,21 @@ def upload_models_to_github():
         else:
             print(f"📤 Uploaded: {file_name}")
 
+def upload_csvs_to_github():
+    for csv_file in glob.glob(f"{DATA_DIR}/*.csv"):
+        file_name = os.path.basename(csv_file)
+        success = upload_to_github(
+            csv_file,
+            REPO_NAME,
+            f"data/{file_name}",
+            GITHUB_TOKEN,
+            commit_msg=f"Update {file_name}"
+        )
+        if not success:
+            print(f"❌ Failed to upload {file_name}")
+        else:
+            print(f"📤 Uploaded: {file_name}")
+
 def main():
     if not os.path.exists(BOOTSTRAP_FLAG):
         bootstrap_initial_data()
@@ -101,6 +116,8 @@ def main():
         for symbol in SYMBOLS:
             for tf in TIMEFRAMES:
                 fetch_and_save(symbol, from_dt, now, tf)
+
+        upload_csvs_to_github()
 
         if should_retrain():
             print("🧠 Triggering retraining...")
