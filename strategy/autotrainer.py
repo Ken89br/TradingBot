@@ -3,10 +3,12 @@ import time
 import json
 import subprocess
 import glob
+from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from strategy.train_model_historic import main as run_training
 from config import CONFIG
 from utils.github_uploader import upload_to_github
+load_dotenv()
 
 SYMBOLS = CONFIG["symbols"] + CONFIG.get("otc_symbols", [])
 TIMEFRAMES = CONFIG["timeframes"]  # e.g. ["S1", "M1", "M5", ...]
