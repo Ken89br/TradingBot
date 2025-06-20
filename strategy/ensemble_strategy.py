@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 from config import CONFIG
 
+from strategy.candlestick_strategy import CandlestickStrategy
 from strategy.rsi_ma import AggressiveRSIMA
 from strategy.bollinger_breakout import BollingerBreakoutStrategy
 from strategy.wick_reversal import WickReversalStrategy
@@ -15,9 +16,19 @@ from strategy.ml_predictor import MLPredictor
 from strategy.price_action import PriceActionStrategy
 from strategy.ema_strategy import EMAStrategy
 
+        self.strategies = [
+            # ...suas outras estratégias...
+              # <-- adicione aqui!
+        ]
+        # ...restante do código...
+
+
+
+
 class EnsembleStrategy:
     def __init__(self):
         self.strategies = [
+            CandlestickStrategy(),
             AggressiveRSIMA(CONFIG),
             BollingerBreakoutStrategy(CONFIG),
             WickReversalStrategy(CONFIG),
