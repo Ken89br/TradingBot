@@ -5,28 +5,30 @@ services:
     region: oregon
     plan: free
     buildCommand: |
-    pip install -r requirements.txt
-    npm install --prefix scripts dukascopy-node --save
-    npm install --prefix data dukascopy-node --save
-
+      apt-get update && apt-get install -y curl
+      curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+      apt-get install -y nodejs
+      pip install -r requirements.txt
+      npm install --prefix scripts dukascopy-node --save
+      npm install --prefix data dukascopy-node --save
     startCommand: |
       python -m strategy.train_model_historic && python server.py
     envVars:
       - key: TELEGRAM_BOT_TOKEN
-        value: 7651666306:AAHPdLdPclIxIsriSmswT6N7x5REwvuQBdw
+        value: "7651666306:AAHPdLdPclIxIsriSmswT6N7x5REwvuQBdw"
       - key: TELEGRAM_CHAT_ID
-        value: 8137693719
+        value: "8137693719"
       - key: TELEGRAM_ADMIN_ID
-        value: 8137693719
+        value: "8137693719"
       - key: POLYGON_API_KEY
-        value: WM3qHfs_R2VILyPyuXnUp2ZRrfcV6i5g
+        value: "WM3qHfs_R2VILyPyuXnUp2ZRrfcV6i5g"
       - key: WEBHOOK_URL
-        value: https://tradingbot-5wgk.onrender.com
+        value: "https://tradingbot-5wgk.onrender.com"
       - key: GITHUB_TOKEN
-        value: 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
+        value: "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"
       - key: PORT
-        value: 10000
+        value: "10000"
       - key: TWELVEDATA_API_KEY
-        value: 2e08f48192c14bee8d4ecefc763a2a37
+        value: "2e08f48192c14bee8d4ecefc763a2a37"
       - key: TIINGO_API_KEY
-        value: 4672b0ac473424934228d0ad0ad1e8500a78f190
+        value: "4672b0ac473424934228d0ad0ad1e8500a78f190"
