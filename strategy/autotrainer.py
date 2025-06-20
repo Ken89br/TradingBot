@@ -25,7 +25,7 @@ def fetch_and_save(symbol, from_dt, to_dt, tf):
             symbol.lower().replace(" ", ""), tf.lower(),
             from_dt.isoformat(), to_dt.isoformat()
         ]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=90)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
         if result.returncode != 0:
             raise RuntimeError(result.stderr)
 
