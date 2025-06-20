@@ -8,6 +8,7 @@ from data.twelvedata_data import TwelveDataClient
 from data.tiingo_data import TiingoClient
 from data.polygon_data import PolygonClient
 from strategy.train_model_historic import main as run_training
+from data.google_drive_client import upload_file, download_file, find_file_id
 
 LAST_RETRAIN_PATH = "last_retrain.txt"
 
@@ -40,6 +41,7 @@ class FallbackDataClient:
                 result = provider.fetch_candles(symbol, interval=interval, limit=limit)
                 if result and "history" in result:
                     print(f"✅ Success from fallback: {provider.__class__.__name__}")
+                    self._save_to_csv(symbol, interval, result["history"])
                     return result
             except Exception as e:
                 print(f"❌ Fallback #{i+1} error: {e}")
@@ -49,7 +51,18 @@ class FallbackDataClient:
     def _fetch_from_dukascopy(self, symbol, interval):
         now = datetime.utcnow()
 
-        # If it's the first call since start, fetch 7 days
+        # Se for a primeira chamada, tenta baixar arquivo do Google Drive antes de criar novo
+        filename = f"{symbol.lower()}_{self._convert_tf(interval)}.csv"
+        filepath = f"data/{filename}"
+        if not os.path.exists(filepath):
+            try:
+                print(f"⬇️ Baixando {filename} do Google Drive...")
+                download_file(filename, filepath)
+                print(f"✅ Baixado {filename} do Google Drive.")
+            except Exception as e:
+                print(f"⚠️ Não foi possível baixar {filename}: {e}")
+
+        # Se for a primeira chamada desde o start, busca 7 dias
         if not self.initialized:
             from_dt = now - timedelta(days=7)
             self.initialized = True
@@ -75,7 +88,8 @@ class FallbackDataClient:
     def _save_to_csv(self, symbol, interval, candles):
         if not candles:
             return
-        path = f"data/{symbol.lower()}_{self._convert_tf(interval)}.csv"
+        filename = f"{symbol.lower()}_{self._convert_tf(interval)}.csv"
+        path = f"data/{filename}"
         header = not os.path.exists(path)
         with open(path, "a") as f:
             if header:
@@ -83,6 +97,11 @@ class FallbackDataClient:
             for c in candles:
                 line = f"{c['timestamp']},{c['open']},{c['high']},{c['low']},{c['close']},{c['volume']}\n"
                 f.write(line)
+        try:
+            upload_file(path)
+            print(f"☁️ Arquivo {filename} enviado ao Google Drive!")
+        except Exception as e:
+            print(f"⚠️ Falha ao enviar {filename} ao Google Drive: {e}")
 
     def _maybe_retrain(self):
         now = datetime.utcnow()
@@ -93,6 +112,12 @@ class FallbackDataClient:
             self._store_last_retrain_time(now)
 
     def _load_last_retrain_time(self):
+        # Tenta pegar do Google Drive primeiro
+        try:
+            if not os.path.exists(LAST_RETRAIN_PATH):
+                download_file(LAST_RETRAIN_PATH, LAST_RETRAIN_PATH)
+        except Exception as e:
+            pass
         if not os.path.exists(LAST_RETRAIN_PATH):
             return None
         try:
@@ -105,6 +130,10 @@ class FallbackDataClient:
     def _store_last_retrain_time(self, dt):
         with open(LAST_RETRAIN_PATH, "w") as f:
             f.write(dt.isoformat())
+        try:
+            upload_file(LAST_RETRAIN_PATH)
+        except Exception as e:
+            print(f"⚠️ Falha ao enviar {LAST_RETRAIN_PATH} ao Google Drive: {e}")
 
     def _convert_tf(self, interval):
         return {
@@ -112,4 +141,3 @@ class FallbackDataClient:
             "30min": "m30", "1h": "h1",
             "4h": "h4", "1day": "d1", "s1": "s1"
         }.get(interval.lower(), "m1")
-    
