@@ -5,10 +5,12 @@ import pandas as pd
 import joblib
 from xgboost import XGBClassifier
 from sklearn.metrics import classification_report
-from sklearn.model_selection import train_test_split  # <--- coloque aqui
+from sklearn.model_selection import train_test_split
 from datetime import datetime
 
 from strategy.ml_utils import add_indicators
+
+# Google Drive integration
 from data.google_drive_client import upload_file, download_file, find_file_id
 
 # Directories
@@ -27,7 +29,7 @@ RETRAIN_INTERVALS = {
     "h4": 14400     # every 4 hours
 }
 
-# Store last retrain time for each timeframe
+# Store last retrain time for each symbol/timeframe
 LAST_RETRAIN_TIMES = {}
 
 def get_symbol_and_timeframe_from_filename(filename):
@@ -82,10 +84,19 @@ def train_model_for_symbol_timeframe(symbol, tf, df):
     X = df[features]
     y = df["target"]
 
-    model = XGBClassifier(eval_metric="logloss")
-    model.fit(X, y)
+    # Split em treino e teste apenas para avaliação honesta
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.25, shuffle=False
+    )
 
-    print(classification_report(y, model.predict(X)))
+    model = XGBClassifier(eval_metric="logloss")
+    model.fit(X_train, y_train)
+
+    # Avaliação em dados de teste
+    y_pred = model.predict(X_test)
+    print("Relatório de classificação nos dados de teste:")
+    print(classification_report(y_test, y_pred))
+
     filename = f"model_{symbol.lower()}_{tf}.pkl"
     path = os.path.join(MODEL_DIR, filename)
     joblib.dump(model, path)
