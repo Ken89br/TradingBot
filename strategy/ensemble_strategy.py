@@ -16,15 +16,6 @@ from strategy.ml_predictor import MLPredictor
 from strategy.price_action import PriceActionStrategy
 from strategy.ema_strategy import EMAStrategy
 
-        self.strategies = [
-            # ...suas outras estratégias...
-              # <-- adicione aqui!
-        ]
-        # ...restante do código...
-
-
-
-
 class EnsembleStrategy:
     def __init__(self):
         self.strategies = [
