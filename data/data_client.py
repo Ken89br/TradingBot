@@ -62,7 +62,7 @@ class FallbackDataClient:
             from_dt.isoformat(), now.isoformat()
         ]
 
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
         if result.returncode != 0:
             raise RuntimeError(result.stderr)
 
