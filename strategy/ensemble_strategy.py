@@ -12,6 +12,8 @@ from strategy.bbands import BollingerStrategy
 from strategy.sma_cross import SMACrossStrategy
 from strategy.ai_filter import SmartAIFilter
 from strategy.ml_predictor import MLPredictor
+from strategy.price_action import PriceActionStrategy
+from strategy.ema_strategy import EMAStrategy
 
 class EnsembleStrategy:
     def __init__(self):
@@ -22,7 +24,9 @@ class EnsembleStrategy:
             MACDReversalStrategy(CONFIG),
             RSIStrategy(),
             SMACrossStrategy(),
-            BollingerStrategy()
+            BollingerStrategy(),
+            PriceActionStrategy(),   # Nova estratégia
+            EMAStrategy(),           # Nova estratégia
         ]
         self.filter = SmartAIFilter()
         self.ml = MLPredictor()
