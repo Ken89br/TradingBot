@@ -10,7 +10,7 @@ class DukascopyClient:
             now = pd.Timestamp.utcnow()
             from_time = now - pd.Timedelta(minutes=limit)
             tf_map = {
-                "1min": "m1", "5min": "m5", "15min": "m15",
+                "1s": "s1", "1min": "m1", "5min": "m5", "15min": "m15",
                 "30min": "m30", "1h": "h1", "4h": "h4", "1day": "d1"
             }
 
