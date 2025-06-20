@@ -128,3 +128,5 @@ CONFIG = {
             "weak": "Fraco"
         }
     }
+
+logging.basicConfig(level=getattr(logging, CONFIG["log_level"].upper(), logging.INFO))
