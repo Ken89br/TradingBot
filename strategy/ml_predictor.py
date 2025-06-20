@@ -1,4 +1,3 @@
-#strategy/ml_preditor.py
 import os
 import joblib
 import pandas as pd
@@ -11,9 +10,10 @@ from strategy.ml_utils import (
 from data.google_drive_client import download_file
 
 class MLPredictor:
-    def __init__(self, model_dir="models"):
+    def __init__(self, model_dir="models", min_candles=70):
         self.model_dir = model_dir
         self.models_cache = {}
+        self.min_candles = min_candles
 
     def _normalize_timeframe(self, timeframe):
         tf = timeframe.lower()
@@ -50,14 +50,20 @@ class MLPredictor:
 
     def predict(self, symbol, timeframe, candles: list):
         if not candles:
+            print(f"⚠️ Lista de candles vazia!")
             return None
+
+        if len(candles) < self.min_candles:
+            print(f"⚠️ Aviso: Foram fornecidos apenas {len(candles)} candles, mínimo recomendado é {self.min_candles} para máxima precisão.")
+
+        # Garante o uso das últimas min_candles linhas, se houver mais
+        candles_to_use = candles[-self.min_candles:] if len(candles) >= self.min_candles else candles
 
         model = self._load_model(symbol, timeframe)
         if not model:
             return None
 
-        # Cria DataFrame de todos os candles recebidos
-        df = pd.DataFrame(candles)
+        df = pd.DataFrame(candles_to_use)
         # Adiciona indicadores se necessário
         if not {"sma_5", "sma_10", "rsi_14", "macd", "macd_signal"}.issubset(df.columns):
             df = add_indicators(df)
@@ -67,7 +73,6 @@ class MLPredictor:
             "open", "high", "low", "close", "volume",
             "sma_5", "sma_10", "rsi_14", "macd", "macd_signal"
         ]
-        # Usa sempre a última linha para prever
         try:
             last_row = df.iloc[[-1]][features]
             prediction = model.predict(last_row)[0]
