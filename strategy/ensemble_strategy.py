@@ -1,3 +1,11 @@
+#Função: Estratégia “conselho de especialistas” (ensemble).
+#O que faz:
+#Reúne várias estratégias (incluindo suas próprias, ML, etc).
+#Cada uma vota no sinal (“up” ou “down”).
+#Decide a direção final baseada na maioria dos votos, ou usa ML em caso de empate.
+#Calcula indicadores ricos (RSI, MACD, ATR, ADX, etc) com o arquivo indicators.py e monta um dicionário de sinal completo.
+#Aplica um filtro inteligente (SmartAIFilter) antes de retornar o sinal.
+
 #strategy/ensemble_strategy.py
 import time
 from datetime import datetime
