@@ -26,7 +26,6 @@ from strategy.indicators import (
     calc_volume_status, calc_sentiment
 )
 
-
 class EnsembleStrategy:
     def __init__(self):
         self.strategies = [
