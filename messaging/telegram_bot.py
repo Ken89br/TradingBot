@@ -170,7 +170,7 @@ class TelegramNotifier:
         async def select_symbol(callback: types.CallbackQuery, state: FSMContext):
             try:
                 await callback.answer()
-                except Exception as e:
+            except Exception as e:
         # Log para análise
                 print(f"Erro ao responder callback: {e}")
                 symbol = callback.data.split(":")[1].replace(" OTC", "")
