@@ -1,3 +1,4 @@
+#serve para importar os dados do candlestick_patterns.py
 from strategy.candlestick_patterns import detect_candlestick_patterns
 
 class CandlestickStrategy:
