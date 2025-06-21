@@ -1,3 +1,10 @@
+#Função: Previsão de direção com modelo de machine learning treinado.
+#O que faz:
+#Carrega modelos ML já treinados (.pkl) do Google Drive.
+#Recebe candles, calcula indicadores (se necessário) e prevê se o próximo movimento é “up” ou “down”.
+#Mantém cache de modelos já carregados.
+
+#strategy/ml_predictor.py
 import os
 import joblib
 import pandas as pd
