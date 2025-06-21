@@ -6,7 +6,7 @@
 #Calcula indicadores ricos (RSI, MACD, ATR, ADX, etc) com o arquivo indicators.py e monta um dicionário de sinal completo.
 #Aplica um filtro inteligente (SmartAIFilter) antes de retornar o sinal.
 
-#strategy/ensemble_strategy.py
+# strategy/ensemble_strategy.py
 import time
 from datetime import datetime
 from config import CONFIG
@@ -26,7 +26,6 @@ from strategy.ema_strategy import EMAStrategy
 from strategy.atr_strategy import ATRStrategy
 from strategy.adx_strategy import ADXStrategy
 
-# === IMPORTS NOVOS PARA INDICADORES E PADRÕES ===
 from strategy.candlestick_patterns import detect_candlestick_patterns
 from strategy.indicators import (
     calc_rsi, calc_macd, calc_bollinger, calc_atr, calc_adx,
@@ -71,7 +70,7 @@ class EnsembleStrategy:
         up_votes = votes.count("up")
         down_votes = votes.count("down")
 
-        ml_direction = None  # ✅ Initialize to avoid reference errors
+        ml_direction = None
 
         if up_votes > down_votes:
             direction = "up"
@@ -80,7 +79,7 @@ class EnsembleStrategy:
         else:
             print("⚠️ Equal votes — using ML to break tie.")
             try:
-                ml_direction = self.ml.predict(data["history"], timeframe=timeframe)
+                ml_direction = self.ml.predict(data["symbol"], timeframe, data["history"])
                 if ml_direction:
                     direction = ml_direction
                 else:
@@ -99,14 +98,12 @@ class EnsembleStrategy:
         entry_dt = datetime.utcfromtimestamp(last_ts + 180)
         expire_dt = datetime.utcfromtimestamp(last_ts + 300)
 
-        # ===================== DADOS RICOS DE INDICADORES ==========================
         candles = data["history"]
         closes = [c["close"] for c in candles]
         highs = [c["high"] for c in candles]
         lows = [c["low"] for c in candles]
         volumes = [c.get("volume", 0) for c in candles]
 
-        # Indicadores técnicos principais
         rsi = calc_rsi(closes)
         macd_hist, macd_val, macd_signal = calc_macd(closes)
         bollinger_str, bb_width, bb_pos = calc_bollinger(closes)
@@ -129,8 +126,6 @@ class EnsembleStrategy:
         atr_str = f"{atr:.5f}"
         adx_str = f"{adx:.2f}"
 
-        # ===================== FIM DADOS RICOS DE INDICADORES ======================
-
         signal_data = {
             "signal": direction,
             "strength": strength,
@@ -142,7 +137,6 @@ class EnsembleStrategy:
             "low": min(c["low"] for c in data["history"]),
             "volume": sum(c["volume"] for c in data["history"]),
 
-            # ======== CAMPOS NOVOS (RICH SIGNAL) =========
             "variation": variation,
             "risk": "Low" if volatility == "Low" and adx < 25 else "High",
             "volatility": volatility,
@@ -158,11 +152,11 @@ class EnsembleStrategy:
             "bollinger": bollinger_str,
             "atr": atr_str,
             "adx": adx_str,
-            "patterns": patterns
+            "patterns": patterns  # <-- padrões já vão para o filtro
         }
 
         try:
-            ml_prediction = self.ml.predict(data["history"], timeframe=timeframe)
+            ml_prediction = self.ml.predict(data["symbol"], timeframe, data["history"])
             if ml_prediction and ml_prediction != signal_data["signal"]:
                 print("⚠️ ML disagrees — downgrading confidence")
                 signal_data["confidence"] = max(signal_data["confidence"] - 20, 10)
