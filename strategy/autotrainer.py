@@ -1,5 +1,5 @@
 #Função principal: Automatizar o fluxo completo de coleta de dados, disparo de treinamento, e upload para o Google Drive.
-O que faz:
+#O que faz:
 #Busca dados de candles para vários símbolos/timeframes utilizando um cliente externo (dukascopy_client.cjs).
 #Salva esses dados em CSV.
 #Faz upload dos CSVs e modelos para o Google Drive.
