@@ -1,4 +1,7 @@
 #strategy/adx_strategy.py
+import pandas as pd
+import ta
+
 class ADXStrategy:
     def calculate_adx(self, candles, period=14):
         plus_dm, minus_dm, trs = [], [], []
