@@ -16,6 +16,14 @@ from strategy.ml_predictor import MLPredictor
 from strategy.price_action import PriceActionStrategy
 from strategy.ema_strategy import EMAStrategy
 
+# === IMPORTS NOVOS PARA INDICADORES E PADRÕES ===
+from strategy.candlestick_patterns import detect_candlestick_patterns
+from strategy.indicators import (
+    calc_rsi, calc_macd, calc_bollinger, calc_atr, calc_adx,
+    calc_moving_averages, calc_oscillators, calc_volatility,
+    calc_volume_status, calc_sentiment
+)
+
 class EnsembleStrategy:
     def __init__(self):
         self.strategies = [
@@ -79,6 +87,38 @@ class EnsembleStrategy:
         entry_dt = datetime.utcfromtimestamp(last_ts + 180)
         expire_dt = datetime.utcfromtimestamp(last_ts + 300)
 
+        # ===================== DADOS RICOS DE INDICADORES ==========================
+        candles = data["history"]
+        closes = [c["close"] for c in candles]
+        highs = [c["high"] for c in candles]
+        lows = [c["low"] for c in candles]
+        volumes = [c.get("volume", 0) for c in candles]
+
+        # Indicadores técnicos principais
+        rsi = calc_rsi(closes)
+        macd_hist, macd_val, macd_signal = calc_macd(closes)
+        bollinger_str, bb_width, bb_pos = calc_bollinger(closes)
+        atr = calc_atr(highs, lows, closes)
+        adx = calc_adx(highs, lows, closes)
+        ma_rating = calc_moving_averages(closes)
+        osc_rating = calc_oscillators(rsi, macd_hist)
+        volatility = calc_volatility(closes)
+        volume_status = calc_volume_status(volumes)
+        sentiment = calc_sentiment(closes)
+        patterns = detect_candlestick_patterns(candles)
+
+        support = min(lows[-10:])
+        resistance = max(highs[-10:])
+
+        variation = f"{((closes[-1] - closes[-2]) / closes[-2]) * 100:.2f}%"
+
+        rsi_str = f"{rsi:.1f} ({'Overbought' if rsi > 70 else 'Oversold' if rsi < 30 else 'Neutral'})"
+        macd_str = f"{macd_val:.4f} (Hist: {macd_hist:.4f})"
+        atr_str = f"{atr:.5f}"
+        adx_str = f"{adx:.2f}"
+
+        # ===================== FIM DADOS RICOS DE INDICADORES ======================
+
         signal_data = {
             "signal": direction,
             "strength": strength,
@@ -89,6 +129,24 @@ class EnsembleStrategy:
             "high": max(c["high"] for c in data["history"]),
             "low": min(c["low"] for c in data["history"]),
             "volume": sum(c["volume"] for c in data["history"]),
+
+            # ======== CAMPOS NOVOS (RICH SIGNAL) =========
+            "variation": variation,
+            "risk": "Low" if volatility == "Low" and adx < 25 else "High",
+            "volatility": volatility,
+            "sentiment": sentiment,
+            "volume_status": volume_status,
+            "support": support,
+            "resistance": resistance,
+            "summary": "strong buy" if direction == "up" else "strong sell" if direction == "down" else "neutral",
+            "moving_averages": ma_rating,
+            "oscillators": osc_rating,
+            "rsi": rsi_str,
+            "macd": macd_str,
+            "bollinger": bollinger_str,
+            "atr": atr_str,
+            "adx": adx_str,
+            "patterns": patterns
         }
 
         try:
@@ -101,4 +159,3 @@ class EnsembleStrategy:
             print(f"⚠️ ML predictor failed: {e}")
 
         return self.filter.apply(signal_data, data["history"])
-        
