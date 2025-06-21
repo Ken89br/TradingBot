@@ -4,11 +4,17 @@
 #Recebe candles, calcula indicadores (se necessário) e prevê se o próximo movimento é “up” ou “down”.
 #Mantém cache de modelos já carregados.
 
-#strategy/ml_predictor.py
+# strategy/ml_predictor.py
 import os
 import joblib
 import pandas as pd
 from strategy.ml_utils import add_indicators
+from strategy.candlestick_patterns import detect_candlestick_patterns
+from strategy.indicators import (
+    calc_rsi, calc_macd, calc_bollinger, calc_atr, calc_adx,
+    calc_moving_averages, calc_oscillators, calc_volatility,
+    calc_volume_status, calc_sentiment
+)
 from data.google_drive_client import download_file
 
 class MLPredictor:
@@ -50,6 +56,63 @@ class MLPredictor:
             print(f"⚠️ Falha ao carregar modelo {filename}: {e}")
             return None
 
+    def add_candlestick_features(self, df):
+        pattern_list = [
+            "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji"
+        ]
+        for pattern in pattern_list:
+            df[pattern] = 0
+        for i in range(len(df)):
+            candles = df.iloc[max(i-3, 0):i+1][["open", "high", "low", "close", "volume"]].to_dict("records")
+            patterns = detect_candlestick_patterns(candles)
+            for pattern in pattern_list:
+                if pattern in patterns:
+                    df.at[df.index[i], pattern] = 1
+        return df
+
+    def enrich_indicators(self, df):
+        closes = df["close"].tolist()
+        highs = df["high"].tolist()
+        lows = df["low"].tolist()
+        volumes = df["volume"].tolist()
+
+        df["atr"] = calc_atr(highs, lows, closes)
+        df["adx"] = calc_adx(highs, lows, closes)
+        bb_res = calc_bollinger(closes)
+        if isinstance(bb_res, tuple) and len(bb_res) == 3:
+            _, df["bb_width"], df["bb_pos"] = bb_res
+        else:
+            df["bb_width"] = 0
+            df["bb_pos"] = 0
+
+        df["ma_rating"] = calc_moving_averages(closes)
+        macd_hist, macd_val, macd_signal = calc_macd(closes)
+        rsi_val = calc_rsi(closes)
+        df["osc_rating"] = calc_oscillators(rsi_val, macd_hist)
+        df["volatility"] = calc_volatility(closes)
+        df["volume_status"] = calc_volume_status(volumes)
+        df["sentiment"] = calc_sentiment(closes)
+        df["variation"] = ((df["close"] - df["close"].shift(1)) / df["close"].shift(1)) * 100
+
+        df["support"] = df["low"].rolling(window=10, min_periods=1).min()
+        df["resistance"] = df["high"].rolling(window=10, min_periods=1).max()
+        df["support_distance"] = df["close"] - df["support"]
+        df["resistance_distance"] = df["resistance"] - df["close"]
+
+        ma_mapping = {"buy": 1, "sell": -1, "neutral": 0}
+        osc_mapping = {"buy": 1, "sell": -1, "neutral": 0}
+        vol_mapping = {"High": 1, "Low": 0}
+        volstat_mapping = {"Spiked": 2, "Normal": 1, "Low": 0}
+        sentiment_mapping = {"Optimistic": 1, "Neutral": 0, "Pessimistic": -1}
+
+        df["ma_rating"] = df["ma_rating"].map(ma_mapping)
+        df["osc_rating"] = df["osc_rating"].map(osc_mapping)
+        df["volatility"] = df["volatility"].map(vol_mapping)
+        df["volume_status"] = df["volume_status"].map(volstat_mapping)
+        df["sentiment"] = df["sentiment"].map(sentiment_mapping)
+
+        return df
+
     def predict(self, symbol, timeframe, candles: list):
         if not candles:
             print(f"⚠️ Lista de candles vazia!")
@@ -58,7 +121,6 @@ class MLPredictor:
         if len(candles) < self.min_candles:
             print(f"⚠️ Aviso: Foram fornecidos apenas {len(candles)} candles, mínimo recomendado é {self.min_candles} para máxima precisão.")
 
-        # Garante o uso das últimas min_candles linhas, se houver mais
         candles_to_use = candles[-self.min_candles:] if len(candles) >= self.min_candles else candles
 
         model = self._load_model(symbol, timeframe)
@@ -66,15 +128,23 @@ class MLPredictor:
             return None
 
         df = pd.DataFrame(candles_to_use)
-        # Adiciona indicadores se necessário
         if not {"sma_5", "sma_10", "rsi_14", "macd", "macd_signal"}.issubset(df.columns):
             df = add_indicators(df)
+        df = self.enrich_indicators(df)
+        df = self.add_candlestick_features(df)
         df.dropna(inplace=True)
 
         features = [
             "open", "high", "low", "close", "volume",
-            "sma_5", "sma_10", "rsi_14", "macd", "macd_signal"
+            "sma_5", "sma_10", "rsi_14", "macd", "macd_signal",
+            "atr", "adx", "bb_width", "bb_pos",
+            "ma_rating", "osc_rating",
+            "volatility", "volume_status", "sentiment",
+            "support_distance", "resistance_distance", "variation",
+            "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji"
         ]
+        features = [f for f in features if f in df.columns]
+
         try:
             last_row = df.iloc[[-1]][features]
             prediction = model.predict(last_row)[0]
@@ -82,13 +152,3 @@ class MLPredictor:
         except Exception as e:
             print(f"⚠️ ML prediction failed: {e}")
             return None
-
-    # Funções auxiliares de indicadores
-    def add_macd(self, df):
-        return add_macd(df)
-
-    def add_rsi(self, df, period=14):
-        return add_rsi(df, period=period)
-
-    def add_sma(self, df, period):
-        return add_sma(df, period=period)
