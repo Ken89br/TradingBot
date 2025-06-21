@@ -15,6 +15,8 @@ from strategy.ai_filter import SmartAIFilter
 from strategy.ml_predictor import MLPredictor
 from strategy.price_action import PriceActionStrategy
 from strategy.ema_strategy import EMAStrategy
+from strategy.atr_strategy import ATRStrategy
+from strategy.adx_strategy import ADXStrategy
 
 # === IMPORTS NOVOS PARA INDICADORES E PADRÕES ===
 from strategy.candlestick_patterns import detect_candlestick_patterns
@@ -23,6 +25,7 @@ from strategy.indicators import (
     calc_moving_averages, calc_oscillators, calc_volatility,
     calc_volume_status, calc_sentiment
 )
+
 
 class EnsembleStrategy:
     def __init__(self):
@@ -35,8 +38,10 @@ class EnsembleStrategy:
             RSIStrategy(),
             SMACrossStrategy(),
             BollingerStrategy(),
-            PriceActionStrategy(),   # Nova estratégia
-            EMAStrategy(),           # Nova estratégia
+            PriceActionStrategy(),
+            EMAStrategy(),
+            ATRStrategy(),
+            ADXStrategy(),
         ]
         self.filter = SmartAIFilter()
         self.ml = MLPredictor()
