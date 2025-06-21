@@ -1,3 +1,9 @@
+#O arquivo indicators.py serve como central de utilidades para cálculo de indicadores técnicos clássicos (RSI, MACD, ATR, ADX, médias móveis, volatilidade, volume, etc), normalmente usando bibliotecas como pandas e ta. Ele é ideal para:
+
+#Calcular rapidamente indicadores para serem usados em várias estratégias diferentes (reutilização).
+#Manter o código limpo, sem duplicidade de lógica de cálculo.
+#Permitir que o ensemble ou qualquer estratégia complexa monte um "snapshot" completo do mercado, com todos os indicadores prontos.
+
 import pandas as pd
 import ta
 
