@@ -1,3 +1,13 @@
+#AI Filter
+#Evita sinais ruins: Exemplo, operar em mercados parados, com pouco volume, ou quando o candle é muito pequeno (falso rompimento).
+#Padroniza qualidade: Mesmo que as estratégias gerem sinais diferentes, o filtro garante que só sinais “decentes” cheguem ao usuário.
+#Protege contra ruído: Reduz o número de operações em períodos de baixa qualidade, ajudando a evitar prejuízo
+
+#Fluxo típico de uso:
+#Estratégias produzem sinais (signal_data).
+#O ensemble escolhe o melhor sinal.
+#O filtro AI analisa esse sinal e decide se ele pode ser enviado (ou não) para o Telegram.
+
 # strategy/ai_filter.py
 
 class SmartAIFilter:
