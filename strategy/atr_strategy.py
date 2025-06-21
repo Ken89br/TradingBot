@@ -1,4 +1,7 @@
 #strategy/atr_strategy.py
+import pandas as pd
+import ta
+
 class ATRStrategy:
     def calculate_atr(self, candles, period=14):
         trs = []
