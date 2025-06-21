@@ -87,7 +87,7 @@ CONFIG = {
             "weak": "Fraco"
         },
         "pt": {
-            "start": "Bem-vindo! Toque 📈 Iniciar para gerar um sinal.",
+            "start": "Bem-vindo! Toque 📈 Start para gerar um sinal.",
             "choose_mode": "🧭 Escolha o modo de negociação:",
             "choose_timeframe": "⏱ Escolha o timeframe:",
             "choose_symbol": "💱 Escolha o par de moedas:",
@@ -108,7 +108,7 @@ CONFIG = {
             "payout": "Lucro Simulado (92%)",
             "timer": "⏱ Execute dentro de 1 minuto!",
             "refresh": "Atualizar",
-            "main_menu": "Menu principal. Toque 📈 Iniciar para gerar um sinal.",
+            "main_menu": "Menu principal. Toque 📈 Start para gerar um sinal.",
             "back": "Voltar",
             "more": "Mais",
             "failed_price_data": "⚠️ Falha ao obter dados de preço.",
