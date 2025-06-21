@@ -1,3 +1,12 @@
+#Função principal: Treinar o(s) modelo(s) de machine learning com os dados históricos.
+#O que faz:
+#Lê CSVs de dados de candles do diretório de dados.
+#Adiciona colunas de indicadores técnicos (através do add_indicators).
+#Prepara os dados, define os alvos, divide em treino/teste.
+#Treina um modelo XGBoost para cada símbolo e timeframe.
+#Avalia o modelo e salva o arquivo .pkl do modelo treinado.
+#Faz upload do modelo para o Google Drive.
+
 # strategy/train_model_historic.py
 import os
 import glob
