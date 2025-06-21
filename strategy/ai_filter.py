@@ -1,5 +1,4 @@
 # strategy/ai_filter.py
-# AI Filter aprimorado para sinais ricos, com análise de todos os principais campos, padrões de candle e regras quantitativas defensivas.
 
 class SmartAIFilter:
     def __init__(
