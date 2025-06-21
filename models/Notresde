@@ -1,1 +1,35 @@
+async def send_trade_signal(self, chat_id, asset, signal_data):
+        signal_data["symbol"] = asset
+        signal_data["user"] = chat_id
+        signal_data["timestamp"] = to_maputo_time(pd.Timestamp.utcnow()).strftime("%Y-%m-%d %H:%M:%S")
+        signal_data["recommend_entry"] = signal_data.get("recommended_entry_time")
 
+        log_signal(chat_id, asset, signal_data.get("timeframe"), signal_data)
+
+        SIGNAL_CSV_PATH = "signals.csv"
+        df = pd.DataFrame([signal_data])
+        if os.path.exists(SIGNAL_CSV_PATH):
+            df.to_csv(SIGNAL_CSV_PATH, mode="a", header=False, index=False)
+        else:
+            df.to_csv(SIGNAL_CSV_PATH, index=False)
+
+        payout = round(signal_data['price'] * 0.92, 5)
+        msg = (
+            f"📡 *{get_text('signal_title', chat_id=chat_id)}*\n\n"
+            f"📌 *{get_text('pair', chat_id=chat_id)}:* `{asset}`\n"
+            f"📈 *{get_text('direction', chat_id=chat_id)}:* `{get_text(signal_data['signal'].lower(), chat_id=chat_id)}`\n"
+            f"💪 *{get_text('strength', chat_id=chat_id)}:* `{get_text(signal_data['strength'].lower(), chat_id=chat_id)}`\n"
+            f"🎯 *{get_text('confidence', chat_id=chat_id)}:* `{signal_data['confidence']}%`\n\n"
+            f"💰 *{get_text('entry', chat_id=chat_id)}:* `{signal_data['price']}`\n"
+            f"🕒 *{get_text('recommend_entry', chat_id=chat_id)}:* `{signal_data['recommended_entry_time']}`\n"
+            f"⏳ *{get_text('expire_entry', chat_id=chat_id)}:* `{signal_data['expire_entry_time']}`\n"
+            f"📈 *{get_text('high', chat_id=chat_id)}:* `{signal_data['high']}`\n"
+            f"📉 *{get_text('low', chat_id=chat_id)}:* `{signal_data['low']}`\n"
+            f"📦 *{get_text('volume', chat_id=chat_id)}:* `{signal_data['volume']}`\n\n"
+            f"💸 *{get_text('payout', chat_id=chat_id)}:* `{payout}`\n"
+            f"⏱ *{get_text('timer', chat_id=chat_id)}*"
+        )
+
+        keyboard = InlineKeyboardMarkup()
+        keyboard.add(InlineKeyboardButton("🔁 " + get_text("refresh", chat_id=chat_id), callback_data="refresh_signal"))
+        await safe_send(self.bot, chat_id, msg, parse_mode="Markdown", reply_markup=keyboard)
