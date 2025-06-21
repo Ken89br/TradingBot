@@ -163,7 +163,7 @@ class TelegramNotifier:
             buttons = [InlineKeyboardButton(tf, callback_data=f"timeframe:{tf}") for tf in CONFIG["timeframes"]]
             kb.add(*buttons)
             kb.add(InlineKeyboardButton(get_text("back", chat_id=callback.from_user.id), callback_data="back_mainmenu"))
-            await callback.message.edit_text(get_text("choose_timeframe", chat_id=callback.from_user.idd),)replymarkup=kb)
+            await callback.message.edit_text(get_text("choose_timeframe", chat_id=callback.from_user.id), reply_markup=kb)
             await callback.answer()
 
         @self.dp.callback_query_handler(lambda c: c.data.startswith("symbol:"), state=SignalState.choosing_symbol)
