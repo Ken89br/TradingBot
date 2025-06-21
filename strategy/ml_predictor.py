@@ -1,12 +1,7 @@
 import os
 import joblib
 import pandas as pd
-from strategy.ml_utils import (
-    add_indicators,
-    add_macd,
-    add_rsi,
-    add_sma
-)
+from strategy.ml_utils import add_indicators
 from data.google_drive_client import download_file
 
 class MLPredictor:
