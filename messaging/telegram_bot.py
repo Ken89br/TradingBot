@@ -275,20 +275,35 @@ class TelegramNotifier:
             df.to_csv(SIGNAL_CSV_PATH, index=False)
 
         payout = round(signal_data['price'] * 0.92, 5)
+        patterns_list = signal_data.get("patterns", [])
+        patterns_str = ", ".join([get_text(p, chat_id=chat_id) for p in patterns_list]) if patterns_list else "-"
+
         msg = (
             f"📡 *{get_text('signal_title', chat_id=chat_id)}*\n\n"
-            f"📌 *{get_text('pair', chat_id=chat_id)}:* `{asset}`\n"
-            f"📈 *{get_text('direction', chat_id=chat_id)}:* `{get_text(signal_data['signal'].lower(), chat_id=chat_id)}`\n"
-            f"💪 *{get_text('strength', chat_id=chat_id)}:* `{get_text(signal_data['strength'].lower(), chat_id=chat_id)}`\n"
-            f"🎯 *{get_text('confidence', chat_id=chat_id)}:* `{signal_data['confidence']}%`\n\n"
-            f"💰 *{get_text('entry', chat_id=chat_id)}:* `{signal_data['price']}`\n"
-            f"🕒 *{get_text('recommend_entry', chat_id=chat_id)}:* `{signal_data['recommended_entry_time']}`\n"
-            f"⏳ *{get_text('expire_entry', chat_id=chat_id)}:* `{signal_data['expire_entry_time']}`\n"
-            f"📈 *{get_text('high', chat_id=chat_id)}:* `{signal_data['high']}`\n"
-            f"📉 *{get_text('low', chat_id=chat_id)}:* `{signal_data['low']}`\n"
-            f"📦 *{get_text('volume', chat_id=chat_id)}:* `{signal_data['volume']}`\n\n"
-            f"💸 *{get_text('payout', chat_id=chat_id)}:* `{payout}`\n"
-            f"⏱ *{get_text('timer', chat_id=chat_id)}*"
+            f"🪙 *{asset}* | *{get_text(signal_data.get('signal', '').lower(), chat_id=chat_id).upper()}* {signal_data.get('variation', '')}\n"
+            f"{get_text('forecast', chat_id=chat_id)}: *{get_text(signal_data.get('signal', '').lower(), chat_id=chat_id)}* ({signal_data.get('variation', '')})\n"
+            f"{get_text('risk', chat_id=chat_id)}: *{signal_data.get('risk', get_text('low_risk', chat_id=chat_id))}*\n\n"
+            f"__*{get_text('market_overview', chat_id=chat_id)}*__\n"
+            f"• {get_text('volatility', chat_id=chat_id)}: *{signal_data.get('volatility', '-') }*\n"
+            f"• {get_text('sentiment', chat_id=chat_id)}: *{signal_data.get('sentiment', '-') }*\n"
+            f"• {get_text('volume', chat_id=chat_id)}: *{signal_data.get('volume', '-') }*\n"
+            f"• {get_text('volume_status', chat_id=chat_id)}: *{signal_data.get('volume_status', '-') }*\n\n"
+            f"__*{get_text('market_snapshot', chat_id=chat_id)}*__\n"
+            f"• {get_text('current_value', chat_id=chat_id)}: `{signal_data.get('price', '-')}`\n"
+            f"• {get_text('support', chat_id=chat_id)}: `{signal_data.get('support', '-')}`\n"
+            f"• {get_text('resistance', chat_id=chat_id)}: `{signal_data.get('resistance', '-')}`\n\n"
+            f"__*{get_text('tradingview_rating', chat_id=chat_id)}*__\n"
+            f"• {get_text('summary', chat_id=chat_id)}: *{get_text(signal_data.get('summary', '-').lower(), chat_id=chat_id)}*\n"
+            f"• {get_text('moving_averages', chat_id=chat_id)}: *{get_text(signal_data.get('moving_averages', '-').lower(), chat_id=chat_id)}*\n"
+            f"• {get_text('oscillators', chat_id=chat_id)}: *{get_text(signal_data.get('oscillators', '-').lower(), chat_id=chat_id)}*\n\n"
+            f"__*{get_text('technical_analysis', chat_id=chat_id)}*__\n"
+            f"• RSI: *{signal_data.get('rsi', '-') }*\n"
+            f"• MACD: *{signal_data.get('macd', '-') }*\n"
+            f"• {get_text('bollinger_bands', chat_id=chat_id)}: *{signal_data.get('bollinger', '-') }*\n"
+            f"• {get_text('atr', chat_id=chat_id)}: *{signal_data.get('atr', '-') }*\n"
+            f"• {get_text('adx', chat_id=chat_id)}: *{signal_data.get('adx', '-') }*\n"
+            f"• {get_text('patterns', chat_id=chat_id)}: *{patterns_str}*\n\n"
+            f"💸 *{get_text('payout', chat_id=chat_id)}:* `{payout}`"
         )
 
         keyboard = InlineKeyboardMarkup()
