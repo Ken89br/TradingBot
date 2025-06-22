@@ -182,7 +182,7 @@ def train_model_for_symbol_timeframe(symbol, tf, df):
 
     try:
         upload_file(path)
-        print(f"☁️ Arquivo {filename} enviado ao Google Drive!")
+        print(f"☁️ Arquivo {filename} enviado ao Google Drive! ID: {file_id}")
     except Exception as e:
         print(f"⚠️ Falha ao enviar {filename} ao Google Drive: {e}")
 
