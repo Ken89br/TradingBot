@@ -58,7 +58,7 @@ def fetch_and_save(symbol, from_dt, to_dt, tf):
         # Upload CSV to Google Drive
         try:
             upload_file(filepath)
-            print(f"☁️ Arquivo {filename} enviado ao Google Drive!")
+            print(f"☁️ Arquivo {filename} enviado ao Google Drive! ID: {file_id}")
         except Exception as e:
             print(f"⚠️ Falha ao enviar {filename} ao Google Drive: {e}")
 
