@@ -1,11 +1,5 @@
 # strategy/train_model_historic.py
 # Função principal: Treinar o(s) modelo(s) de machine learning com os dados históricos.
-# Lê CSVs de dados de candles do diretório de dados.
-# Adiciona colunas de indicadores técnicos (através do add_indicators e indicadores extras).
-# Prepara os dados, define os alvos, divide em treino/teste.
-# Treina um modelo XGBoost para cada símbolo e timeframe.
-# Avalia o modelo e salva o arquivo .pkl do modelo treinado.
-# Faz upload do modelo para o Google Drive.
 
 import os
 import glob
@@ -24,7 +18,7 @@ from strategy.indicators import (
     calc_volume_status, calc_sentiment
 )
 
-from data.google_drive_client import upload_file, download_file, find_file_id
+from data.google_drive_client import upload_file, download_file, find_file_id, get_folder_id_for_file
 
 DATA_DIR = "data"
 MODEL_DIR = "models"
@@ -55,7 +49,7 @@ def ensure_local_file(filename, folder="data"):
     if not os.path.exists(local_path):
         try:
             print(f"⬇️ Baixando {filename} do Google Drive...")
-            download_file(filename, local_path)
+            download_file(filename, local_path, drive_folder_id=get_folder_id_for_file(filename))
             print(f"✅ Baixado {filename} do Google Drive.")
         except Exception as e:
             print(f"⚠️ Não foi possível baixar {filename}: {e}")
@@ -181,7 +175,7 @@ def train_model_for_symbol_timeframe(symbol, tf, df):
     print(f"✅ Saved model to: {path}")
 
     try:
-        upload_file(path)
+        file_id = upload_file(path)
         print(f"☁️ Arquivo {filename} enviado ao Google Drive! ID: {file_id}")
     except Exception as e:
         print(f"⚠️ Falha ao enviar {filename} ao Google Drive: {e}")
@@ -192,7 +186,7 @@ def ensure_latest_model(symbol, tf):
     if not os.path.exists(path):
         try:
             print(f"⬇️ Baixando modelo {filename} do Google Drive...")
-            download_file(filename, path)
+            download_file(filename, path, drive_folder_id=get_folder_id_for_file(filename))
             print(f"✅ Modelo {filename} baixado do Google Drive.")
         except Exception as e:
             print(f"⚠️ Não foi possível baixar {filename}: {e}")
