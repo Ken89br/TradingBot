@@ -8,7 +8,7 @@ from data.twelvedata_data import TwelveDataClient
 from data.tiingo_data import TiingoClient
 from data.polygon_data import PolygonClient
 from strategy.train_model_historic import main as run_training
-from data.google_drive_client import upload_file, download_file, find_file_id
+from data.google_drive_client import upload_file, download_file, find_file_id, get_folder_id_for_file
 
 LAST_RETRAIN_PATH = "last_retrain.txt"
 
@@ -57,7 +57,7 @@ class FallbackDataClient:
         if not os.path.exists(filepath):
             try:
                 print(f"⬇️ Baixando {filename} do Google Drive...")
-                download_file(filename, filepath)
+                download_file(filename, filepath, drive_folder_id=get_folder_id_for_file(filename))
                 print(f"✅ Baixado {filename} do Google Drive.")
             except Exception as e:
                 print(f"⚠️ Não foi possível baixar {filename}: {e}")
@@ -98,7 +98,7 @@ class FallbackDataClient:
                 line = f"{c['timestamp']},{c['open']},{c['high']},{c['low']},{c['close']},{c['volume']}\n"
                 f.write(line)
         try:
-            upload_file(path)
+            file_id = upload_file(path)
             print(f"☁️ Arquivo {filename} enviado ao Google Drive! ID: {file_id}")
         except Exception as e:
             print(f"⚠️ Falha ao enviar {filename} ao Google Drive: {e}")
@@ -115,7 +115,7 @@ class FallbackDataClient:
         # Tenta pegar do Google Drive primeiro
         try:
             if not os.path.exists(LAST_RETRAIN_PATH):
-                download_file(LAST_RETRAIN_PATH, LAST_RETRAIN_PATH)
+                download_file(LAST_RETRAIN_PATH, LAST_RETRAIN_PATH, drive_folder_id=get_folder_id_for_file(LAST_RETRAIN_PATH))
         except Exception as e:
             pass
         if not os.path.exists(LAST_RETRAIN_PATH):
