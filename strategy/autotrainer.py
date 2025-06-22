@@ -6,7 +6,7 @@
 #Periodicamente dispara o treinamento do modelo histórico (train_model_historic.main()).
 #Roda em loop continuamente, mantendo os dados e modelos sempre atualizados.
 
-#strategy/autotrainer.py
+# strategy/autotrainer.py
 import os
 import time
 import json
@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from strategy.train_model_historic import main as run_training
 from config import CONFIG
-from data.google_drive_client import upload_file  # Google Drive integration
+from data.google_drive_client import upload_file, get_folder_id_for_file
 load_dotenv()
 
 SYMBOLS = CONFIG["symbols"] + CONFIG.get("otc_symbols", [])
@@ -57,7 +57,7 @@ def fetch_and_save(symbol, from_dt, to_dt, tf):
 
         # Upload CSV to Google Drive
         try:
-            upload_file(filepath)
+            file_id = upload_file(filepath)
             print(f"☁️ Arquivo {filename} enviado ao Google Drive! ID: {file_id}")
         except Exception as e:
             print(f"⚠️ Falha ao enviar {filename} ao Google Drive: {e}")
@@ -100,8 +100,8 @@ def upload_models_to_drive():
     for model_file in glob.glob(f"{MODEL_DIR}/model_*.pkl"):
         file_name = os.path.basename(model_file)
         try:
-            upload_file(model_file)
-            print(f"☁️ Arquivo {file_name} enviado ao Google Drive!")
+            file_id = upload_file(model_file)
+            print(f"☁️ Arquivo {file_name} enviado ao Google Drive! ID: {file_id}")
         except Exception as e:
             print(f"❌ Falha ao enviar {file_name} ao Google Drive: {e}")
 
@@ -109,8 +109,8 @@ def upload_csvs_to_drive():
     for csv_file in glob.glob(f"{DATA_DIR}/*.csv"):
         file_name = os.path.basename(csv_file)
         try:
-            upload_file(csv_file)
-            print(f"☁️ Arquivo {file_name} enviado ao Google Drive!")
+            file_id = upload_file(csv_file)
+            print(f"☁️ Arquivo {file_name} enviado ao Google Drive! ID: {file_id}")
         except Exception as e:
             print(f"❌ Falha ao enviar {file_name} ao Google Drive: {e}")
 
