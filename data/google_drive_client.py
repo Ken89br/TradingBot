@@ -14,6 +14,10 @@ SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), '..', 'credential
 GOOGLE_CREDENTIALS_ENV = "GOOGLE_CREDENTIALS_JSON"
 DEFAULT_SHARE_EMAIL = "kendeabreu24@gmail.com"
 
+# IDs das pastas no seu Google Drive
+CSV_FOLDER_ID = "1-2NSyy8C4kuBt_Rb6KKB42CVOxJLzTq8"
+PKL_FOLDER_ID = "1-9FzKbCYdYuS2peZ5WlCTdtR7ayJZPH9"
+
 def get_drive_service():
     creds = None
     # 1. Tenta arquivo físico (dev local)
@@ -41,7 +45,17 @@ def share_file_with_user(file_id, user_email=DEFAULT_SHARE_EMAIL):
     except Exception as e:
         print(f"⚠️ Falha ao compartilhar arquivo {file_id} com {user_email}: {e}")
 
+def get_folder_id_for_file(filename):
+    if filename.lower().endswith('.csv'):
+        return CSV_FOLDER_ID
+    elif filename.lower().endswith('.pkl'):
+        return PKL_FOLDER_ID
+    return None  # Ou pode definir uma pasta padrão se quiser
+
 def upload_file(filepath, drive_folder_id=None, share_with_email=DEFAULT_SHARE_EMAIL):
+    # Se não passar pasta explicitamente, decide automaticamente pela extensão
+    if drive_folder_id is None:
+        drive_folder_id = get_folder_id_for_file(filepath)
     service = get_drive_service()
     filename = os.path.basename(filepath)
     file_metadata = {'name': filename}
