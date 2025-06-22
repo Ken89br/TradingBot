@@ -171,47 +171,43 @@ class TelegramNotifier:
             try:
                 await callback.answer()
             except Exception as e:
-        # Log para análise
                 print(f"Erro ao responder callback: {e}")
-                symbol = callback.data.split(":")[1].replace(" OTC", "")
-                await state.update_data(symbol=symbol)
-                user_data = await state.get_data()
-                timeframe = user_data["timeframe"]
-                kb = InlineKeyboardMarkup()
-                kb.add(InlineKeyboardButton(get_text("back", chat_id=callback.from_user.id), callback_data="back_symbols"))
-                # Barra de progresso
-                progress_bar = get_text("progress_generating", chat_id=callback.from_user.id)
-                await callback.message.edit_text(
-                    f"⏱ {get_text('timeframe', chat_id=callback.from_user.id)}: `{timeframe}`\n"
-                    f"💱 {get_text('pair', chat_id=callback.from_user.id)}: `{symbol}`\n\n"
-                    f"{get_text('generating', chat_id=callback.from_user.id)}\n{progress_bar}",
-                    parse_mode="Markdown",
-                    reply_markup=kb
-                )
+            symbol = callback.data.split(":")[1].replace(" OTC", "")
+            await state.update_data(symbol=symbol)
+            user_data = await state.get_data()
+            timeframe = user_data["timeframe"]
+            kb = InlineKeyboardMarkup()
+            kb.add(InlineKeyboardButton(get_text("back", chat_id=callback.from_user.id), callback_data="back_symbols"))
+            # Barra de progresso
+            progress_bar = get_text("progress_generating", chat_id=callback.from_user.id)
+            await callback.message.edit_text(
+                f"⏱ {get_text('timeframe', chat_id=callback.from_user.id)}: `{timeframe}`\n"
+                f"💱 {get_text('pair', chat_id=callback.from_user.id)}: `{symbol}`\n\n"
+                f"{get_text('generating', chat_id=callback.from_user.id)}\n{progress_bar}",
+                parse_mode="Markdown",
+                reply_markup=kb
+            )
 
-                candles = self.data_client.fetch_candles(symbol, interval=self._map_timeframe(timeframe))
-                if not candles or "history" not in candles:
-                    await safe_send(self.bot, callback.from_user.id, get_text("failed_price_data", chat_id=callback.from_user.id))
-                    return
+            candles = self.data_client.fetch_candles(symbol, interval=self._map_timeframe(timeframe))
+            if not candles or "history" not in candles:
+                await safe_send(self.bot, callback.from_user.id, get_text("failed_price_data", chat_id=callback.from_user.id))
+                return
 
-                signal_data = self.strategy.generate_signal(candles, timeframe=self._map_timeframe(timeframe))
-                if not signal_data:
-                    await safe_send(self.bot, callback.from_user.id, get_text("no_signal", chat_id=callback.from_user.id))
-                else:
-                    try:
-                        latest_candle = candles["history"][-1]
-                        candle_close_utc = pd.to_datetime(latest_candle.get('close_time') or latest_candle.get('timestamp'), utc=True)
-                        recommended_entry_time = to_maputo_time(candle_close_utc)
-                    except Exception:
-                        recommended_entry_time = to_maputo_time(pd.Timestamp.utcnow())
-                    signal_data["recommended_entry_time"] = recommended_entry_time.strftime("%Y-%m-%d %H:%M:%S")
-                    expire_entry_time = recommended_entry_time + pd.Timedelta(minutes=1)
-                    signal_data["expire_entry_time"] = expire_entry_time.strftime("%Y-%m-%d %H:%M:%S")
-                    signal_context[callback.from_user.id] = {"symbol": symbol, "timeframe": timeframe}
-                    await self.send_trade_signal(callback.from_user.id, symbol, signal_data)
-
-            except Exception as e:
-                await safe_send(self.bot, callback.from_user.id, f"❌ {get_text('error', chat_id=callback.from_user.id)}: {str(e)}")
+            signal_data = self.strategy.generate_signal(candles, timeframe=self._map_timeframe(timeframe))
+            if not signal_data:
+                await safe_send(self.bot, callback.from_user.id, get_text("no_signal", chat_id=callback.from_user.id))
+            else:
+                try:
+                    latest_candle = candles["history"][-1]
+                    candle_close_utc = pd.to_datetime(latest_candle.get('close_time') or latest_candle.get('timestamp'), utc=True)
+                    recommended_entry_time = to_maputo_time(candle_close_utc)
+                except Exception:
+                    recommended_entry_time = to_maputo_time(pd.Timestamp.utcnow())
+                signal_data["recommended_entry_time"] = recommended_entry_time.strftime("%Y-%m-%d %H:%M:%S")
+                expire_entry_time = recommended_entry_time + pd.Timedelta(minutes=1)
+                signal_data["expire_entry_time"] = expire_entry_time.strftime("%Y-%m-%d %H:%M:%S")
+                signal_context[callback.from_user.id] = {"symbol": symbol, "timeframe": timeframe}
+                await self.send_trade_signal(callback.from_user.id, symbol, signal_data)
 
             await state.finish()
 
@@ -274,36 +270,70 @@ class TelegramNotifier:
         else:
             df.to_csv(SIGNAL_CSV_PATH, index=False)
 
-        payout = round(signal_data['price'] * 0.92, 5)
+        payout = round(signal_data.get('price', 0) * 0.92, 5)
         patterns_list = signal_data.get("patterns", [])
         patterns_str = ", ".join([get_text(p, chat_id=chat_id) for p in patterns_list]) if patterns_list else "-"
 
+        par = asset
+        timer = signal_data.get('timer', get_text('timer', chat_id=chat_id))
+        direction = get_text(signal_data.get('signal', '').lower(), chat_id=chat_id)
+        strength = get_text(signal_data.get('strength', '-').lower(), chat_id=chat_id)
+        confidence = signal_data.get('confidence', '-')
+        entry = signal_data.get('price', '-')
+        recommend_entry = signal_data.get('recommended_entry_time', '-')
+        expire_entry = signal_data.get('expire_entry_time', '-')
+        high = signal_data.get('high', '-')
+        low = signal_data.get('low', '-')
+        volume = signal_data.get('volume', '-')
+        volatility = signal_data.get('volatility', '-')
+        sentiment = signal_data.get('sentiment', '-')
+        variation = signal_data.get('variation', '-')
+        risk = signal_data.get('risk', get_text('low_risk', chat_id=chat_id))
+        support = signal_data.get('support', '-')
+        resistance = signal_data.get('resistance', '-')
+        summary = get_text(signal_data.get('summary', '-').lower(), chat_id=chat_id)
+        ma = get_text(signal_data.get('moving_averages', '-').lower(), chat_id=chat_id)
+        osc = get_text(signal_data.get('oscillators', '-').lower(), chat_id=chat_id)
+        rsi = signal_data.get('rsi', '-')
+        macd = signal_data.get('macd', '-')
+        bollinger = signal_data.get('bollinger', '-')
+        atr = signal_data.get('atr', '-')
+        adx = signal_data.get('adx', '-')
+        volume_status = get_text(signal_data.get('volume_status', '-').lower(), chat_id=chat_id)
+
         msg = (
             f"📡 *{get_text('signal_title', chat_id=chat_id)}*\n\n"
-            f"🪙 *{asset}* | *{get_text(signal_data.get('signal', '').lower(), chat_id=chat_id).upper()}* {signal_data.get('variation', '')}\n"
-            f"{get_text('forecast', chat_id=chat_id)}: *{get_text(signal_data.get('signal', '').lower(), chat_id=chat_id)}* ({signal_data.get('variation', '')})\n"
-            f"{get_text('risk', chat_id=chat_id)}: *{signal_data.get('risk', get_text('low_risk', chat_id=chat_id))}*\n\n"
+            f"📌 *{get_text('pair', chat_id=chat_id)}:* `{par}`\n"
+            f"⏱ *{get_text('timer', chat_id=chat_id)}:* {timer}\n"
+            f"🕒 *{get_text('recommend_entry', chat_id=chat_id)}:* `{recommend_entry}`\n"
+            f"⏳ *{get_text('expire_entry', chat_id=chat_id)}:* `{expire_entry}`\n\n"
+            f"📈 *{get_text('direction', chat_id=chat_id)}:* `{direction}`\n"
+            f"💪 *{get_text('strength', chat_id=chat_id)}:* `{strength}`\n"
+            f"🎯 *{get_text('confidence', chat_id=chat_id)}:* `{confidence}%`\n"
+            f"💰 *{get_text('entry', chat_id=chat_id)}:* `{entry}`\n"
+            f"📈 *{get_text('high', chat_id=chat_id)}:* `{high}`\n"
+            f"📉 *{get_text('low', chat_id=chat_id)}:* `{low}`\n"
+            f"📦 *{get_text('volume', chat_id=chat_id)}:* `{volume}`\n"
+            f"💸 *{get_text('payout', chat_id=chat_id)}:* `{payout}`\n\n"
             f"__*{get_text('market_overview', chat_id=chat_id)}*__\n"
-            f"• {get_text('volatility', chat_id=chat_id)}: *{signal_data.get('volatility', '-') }*\n"
-            f"• {get_text('sentiment', chat_id=chat_id)}: *{signal_data.get('sentiment', '-') }*\n"
-            f"• {get_text('volume', chat_id=chat_id)}: *{signal_data.get('volume', '-') }*\n"
-            f"• {get_text('volume_status', chat_id=chat_id)}: *{signal_data.get('volume_status', '-') }*\n\n"
-            f"__*{get_text('market_snapshot', chat_id=chat_id)}*__\n"
-            f"• {get_text('current_value', chat_id=chat_id)}: `{signal_data.get('price', '-')}`\n"
-            f"• {get_text('support', chat_id=chat_id)}: `{signal_data.get('support', '-')}`\n"
-            f"• {get_text('resistance', chat_id=chat_id)}: `{signal_data.get('resistance', '-')}`\n\n"
+            f"• {get_text('volatility', chat_id=chat_id)}: *{volatility}*\n"
+            f"• {get_text('sentiment', chat_id=chat_id)}: *{sentiment}*\n"
+            f"• {get_text('variation', chat_id=chat_id)}: *{variation}*\n"
+            f"• {get_text('risk', chat_id=chat_id)}: *{risk}*\n"
+            f"• {get_text('support', chat_id=chat_id)}: `{support}`\n"
+            f"• {get_text('resistance', chat_id=chat_id)}: `{resistance}`\n\n"
             f"__*{get_text('tradingview_rating', chat_id=chat_id)}*__\n"
-            f"• {get_text('summary', chat_id=chat_id)}: *{get_text(signal_data.get('summary', '-').lower(), chat_id=chat_id)}*\n"
-            f"• {get_text('moving_averages', chat_id=chat_id)}: *{get_text(signal_data.get('moving_averages', '-').lower(), chat_id=chat_id)}*\n"
-            f"• {get_text('oscillators', chat_id=chat_id)}: *{get_text(signal_data.get('oscillators', '-').lower(), chat_id=chat_id)}*\n\n"
+            f"• {get_text('summary', chat_id=chat_id)}: *{summary}*\n"
+            f"• {get_text('moving_averages', chat_id=chat_id)}: *{ma}*\n"
+            f"• {get_text('oscillators', chat_id=chat_id)}: *{osc}*\n\n"
             f"__*{get_text('technical_analysis', chat_id=chat_id)}*__\n"
-            f"• RSI: *{signal_data.get('rsi', '-') }*\n"
-            f"• MACD: *{signal_data.get('macd', '-') }*\n"
-            f"• {get_text('bollinger_bands', chat_id=chat_id)}: *{signal_data.get('bollinger', '-') }*\n"
-            f"• {get_text('atr', chat_id=chat_id)}: *{signal_data.get('atr', '-') }*\n"
-            f"• {get_text('adx', chat_id=chat_id)}: *{signal_data.get('adx', '-') }*\n"
-            f"• {get_text('patterns', chat_id=chat_id)}: *{patterns_str}*\n\n"
-            f"💸 *{get_text('payout', chat_id=chat_id)}:* `{payout}`"
+            f"• RSI: *{rsi}*\n"
+            f"• MACD: *{macd}*\n"
+            f"• {get_text('bollinger_bands', chat_id=chat_id)}: *{bollinger}*\n"
+            f"• {get_text('atr', chat_id=chat_id)}: *{atr}*\n"
+            f"• {get_text('adx', chat_id=chat_id)}: *{adx}*\n"
+            f"• {get_text('patterns', chat_id=chat_id)}: *{patterns_str}*\n"
+            f"• {get_text('volume_status', chat_id=chat_id)}: *{volume_status}*\n"
         )
 
         keyboard = InlineKeyboardMarkup()
