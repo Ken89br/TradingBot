@@ -6,8 +6,8 @@ import os
 
 # ==== CONFIGURE AQUI ====
 SERVICE_ACCOUNT_FILE = 'credentials.json'
-FOLDER_ID = 'PASTE_YOUR_FOLDER_ID_HERE'  # Substitua pelo ID da pasta no Drive
-DEST_DIR = './downloads'                 # Pasta local onde salvar os arquivos
+FOLDER_ID = '100jmIAcNh5ZqnjXDORwPeNcAop5MCs5W'  # Substitua pelo ID da pasta no Drive
+DEST_DIR = './downloads/csvdoservice'                 # Pasta local onde salvar os arquivos
 # ========================
 
 creds = service_account.Credentials.from_service_account_file(
