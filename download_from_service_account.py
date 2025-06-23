@@ -6,7 +6,7 @@ import os
 
 # ==== CONFIGURE AQUI ====
 SERVICE_ACCOUNT_FILE = 'credentials.json'
-FOLDER_ID = '100jmIAcNh5ZqnjXDORwPeNcAop5MCs5W'  # Substitua pelo ID da pasta no Drive
+FOLDER_ID = '1-2NSyy8C4kuBt_Rb6KKB42CVOxJLzTq8'  # Substitua pelo ID da pasta no Drive
 DEST_DIR = './downloads/csvdoservice'                 # Pasta local onde salvar os arquivos
 # ========================
 
