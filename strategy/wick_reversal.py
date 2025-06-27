@@ -1,9 +1,15 @@
 class WickReversalStrategy:
     def __init__(self, config=None):
-        self.wick_ratio = config.get('wick_ratio', 2.0) if config else 2.0
-        self.min_body_ratio = config.get('min_body_ratio', 0.1) if config else 0.1
-        self.volume_multiplier = config.get('volume_multiplier', 1.5) if config else 1.5
-        self.trend_confirmation = config.get('trend_confirmation', True) if config else True
+        # Se config vier do ensemble, ele é o dict global CONFIG.
+        # Se vier de uso manual, pode ser None, ou o próprio dict de parâmetros.
+        if config and "wick_reversal" in config:
+            cfg = config["wick_reversal"]
+        else:
+            cfg = config or {}
+        self.wick_ratio = cfg.get('wick_ratio', 2.0)
+        self.min_body_ratio = cfg.get('min_body_ratio', 0.1)
+        self.volume_multiplier = cfg.get('volume_multiplier', 1.5)
+        self.trend_confirmation = cfg.get('trend_confirmation', True)
 
     def generate_signal(self, data):
         try:
