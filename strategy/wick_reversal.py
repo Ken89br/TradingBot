@@ -1,35 +1,80 @@
-#strategy/wick_reversal.py
 class WickReversalStrategy:
-    def __init__(self, config):
-        self.wick_ratio = 2.0
+    def __init__(self, config=None):
+        self.wick_ratio = config.get('wick_ratio', 2.0) if config else 2.0
+        self.min_body_ratio = config.get('min_body_ratio', 0.1) if config else 0.1
+        self.volume_multiplier = config.get('volume_multiplier', 1.5) if config else 1.5
+        self.trend_confirmation = config.get('trend_confirmation', True) if config else True
 
-    def generate_signal(self, candle):
-        latest = candle["history"][-1]
-        open_price = float(latest["open"])
-        close_price = float(latest["close"])
-        high = float(latest["high"])
-        low = float(latest["low"])
+    def generate_signal(self, data):
+        try:
+            history = data.get("history", [])
+            if len(history) < 3:
+                return None
 
-        body = abs(close_price - open_price)
-        upper_wick = high - max(open_price, close_price)
-        lower_wick = min(open_price, close_price) - low
+            latest = history[-1]
+            prev = history[-2]
 
-        if body == 0:
+            # Convert values to float
+            latest = {k: float(latest.get(k, 0)) for k in ["open", "close", "high", "low", "volume"]}
+            prev = {k: float(prev.get(k, 0)) for k in ["open", "close", "high", "low", "volume"]}
+
+            # Calculate wick and body metrics
+            body_size = abs(latest["close"] - latest["open"])
+            upper_wick = latest["high"] - max(latest["open"], latest["close"])
+            lower_wick = min(latest["open"], latest["close"]) - latest["low"]
+
+            # Validation
+            if body_size == 0 or (upper_wick + lower_wick) == 0:
+                return None
+
+            # Volume confirmation
+            volume_ok = latest["volume"] > prev["volume"] * self.volume_multiplier
+
+            # Trend confirmation (optional)
+            trend_aligned = True
+            if self.trend_confirmation:
+                prev_trend = prev["close"] - prev["open"]
+                # Se for sinal de alta, o candle anterior deve ser de baixa; se for baixa, anterior de alta
+                trend_aligned = (
+                    (lower_wick > body_size * self.wick_ratio and prev_trend < 0) or
+                    (upper_wick > body_size * self.wick_ratio and prev_trend > 0)
+                )
+
+            # Sinal de alta (martelo)
+            if lower_wick > body_size * self.wick_ratio and body_size / (upper_wick + 1e-8) > self.min_body_ratio:
+                if volume_ok and trend_aligned:
+                    strength = "high"
+                else:
+                    strength = "medium"
+                return self._package("up", history, strength)
+            # Sinal de baixa (estrela cadente)
+            elif upper_wick > body_size * self.wick_ratio and body_size / (lower_wick + 1e-8) > self.min_body_ratio:
+                if volume_ok and trend_aligned:
+                    strength = "high"
+                else:
+                    strength = "medium"
+                return self._package("down", history, strength)
+
             return None
 
-        if lower_wick > body * self.wick_ratio:
-            return self._package("call", candle["history"], "medium")
-        elif upper_wick > body * self.wick_ratio:
-            return self._package("put", candle["history"], "medium")
-
-        return None
+        except Exception as e:
+            print(f"Error in WickReversalStrategy: {e}")
+            return None
 
     def _package(self, signal, history, strength):
-        confidence = {"high": 95, "medium": 80, "low": 65}.get(strength, 50)
+        latest = history[-1]
         closes = [float(c["close"]) for c in history]
         highs = [float(c["high"]) for c in history]
         lows = [float(c["low"]) for c in history]
         volumes = [float(c.get("volume", 0)) for c in history]
+
+        # Dynamic confidence calculation
+        base_confidence = {"high": 90, "medium": 75, "low": 60}.get(strength, 50)
+        if len(volumes) >= 4 and sum(volumes[-4:-1]) > 0:
+            volume_boost = min(10, max(0, (volumes[-1] - sum(volumes[-4:-1])/3) / (sum(volumes[-4:-1])/3 + 1e-8) * 10))
+        else:
+            volume_boost = 0
+        confidence = min(100, base_confidence + volume_boost)
 
         return {
             "signal": signal,
@@ -38,7 +83,14 @@ class WickReversalStrategy:
             "low": lows[-1],
             "volume": volumes[-1],
             "recommend_entry": (highs[-1] + lows[-1]) / 2,
+            "recommend_stop": lows[-1] if signal == "up" else highs[-1],
             "strength": strength,
-            "confidence": confidence
+            "confidence": confidence,
+            "wick_ratio": self.wick_ratio,
+            "pattern": "hammer" if signal == "up" else "shooting_star",
+            "candle_size": highs[-1] - lows[-1],
+            "context": {
+                "prev_trend": closes[-2] - closes[-3] if len(history) >= 3 else 0,
+                "volume_change": volumes[-1] / volumes[-2] if len(history) >= 2 and volumes[-2] > 0 else 1
             }
-            
+            }
