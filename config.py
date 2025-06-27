@@ -44,6 +44,14 @@ CONFIG = {
 
     "log_level": "INFO",
 
+    # WICK REVERSAL STRATEGY CONFIGURATION CENTRALIZED HERE
+    "wick_reversal": {
+        "wick_ratio": 2.0,
+        "min_body_ratio": 0.1,
+        "volume_multiplier": 1.5,
+        "trend_confirmation": True
+    },
+
     "languages": {
         "en": {
             "start": "Welcome! Tap 📈 Start to generate a signal.",
