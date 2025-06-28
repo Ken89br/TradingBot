@@ -90,7 +90,29 @@ CONFIG = {
         "min_confidence": 70
         "enable_pattern_boost": True
     },
-
+    
+    "candlestick_patterns": {
+    "reversal_up": [
+        "hammer", "bullish_engulfing", "piercing_line", "morning_star",
+        "tweezer_bottom", "bullish_harami", "kicker_bullish", "three_inside_up",
+        "three_outside_up", "gap_up", "dragonfly_doji", "three_white_soldiers"
+    ],
+    "reversal_down": [
+        "hanging_man", "bearish_engulfing", "dark_cloud_cover", "evening_star",
+        "tweezer_top", "bearish_harami", "kicker_bearish", "three_inside_down",
+        "three_outside_down", "gap_down", "gravestone_doji", "three_black_crows"
+    ],
+    "trend_up": [
+        "marubozu", "three_white_soldiers", "upside_tasuki_gap", "separating_lines"
+    ],
+    "trend_down": [
+        "marubozu", "three_black_crows", "downside_tasuki_gap", "separating_lines"
+    ],
+    "neutral": [
+        "doji", "spinning_top", "long_legged_doji", "on_neckline"
+    ]
+},
+    
     "languages": {
         "en": {
             "start": "Welcome! Tap 📈 Start to generate a signal.",
