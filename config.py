@@ -88,6 +88,7 @@ CONFIG = {
         "volume_threshold": 1.3,
         "candle_lookback": 25,
         "min_confidence": 70
+        "enable_pattern_boost": True
     },
 
     "languages": {
