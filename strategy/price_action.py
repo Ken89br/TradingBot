@@ -1,7 +1,7 @@
 import numpy as np
 from collections import deque
 
-class EnhancedPriceActionStrategy:
+class PriceActionStrategy:
     def __init__(self, config=None):
         # Configurações básicas
         self.min_wick_ratio = config.get('min_wick_ratio', 2.0) if config else 2.0
