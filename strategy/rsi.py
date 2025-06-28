@@ -1,153 +1,120 @@
 #strategy/rsi py
 import numpy as np
 from collections import deque
+from strategy.candlestick_patterns import PATTERN_STRENGTH, detect_patterns
 
-class RSIStrategy:
+class ProfessionalRSIStrategy:
     def __init__(self, config=None):
-        # Parâmetros com valores padrão otimizados
-        self.overbought = config.get('overbought', 70) if config else 70  # Mais conservador
-        self.oversold = config.get('oversold', 30) if config else 30      # Mais conservador
+        # Configuração básica do RSI
+        self.overbought = config.get('overbought', 70) if config else 70
+        self.oversold = config.get('oversold', 30) if config else 30
         self.window = config.get('window', 14) if config else 14
-        self.min_data_points = self.window + 2  # Buffer de segurança
         
-        # Configurações avançadas
-        self.require_confirmation = config.get('confirmation', True) if config else True
-        self.trend_filter = config.get('trend_filter', False) if config else False
-        self.volume_threshold = config.get('volume_threshold', 1.3) if config else 1.3
+        # Configurações de confirmação
+        self.candle_lookback = config.get('candle_lookback', 3) if config else 3
+        self.volume_threshold = config.get('volume_threshold', 1.5) if config else 1.5
+        self.min_confidence = config.get('min_confidence', 65) if config else 65
         
-        # Estado interno para cálculo incremental
+        # Estado interno
         self.price_buffer = deque(maxlen=self.window * 3)
         self.prev_avg_gain = 0
         self.prev_avg_loss = 0
-        self.last_rsi = None
 
     def _calculate_rsi(self):
-        """Cálculo RSI profissional com:
-        - EMA em vez de SMA
-        - Tratamento de bordas
-        - Suavização"""
-        if len(self.price_buffer) < self.min_data_points:
+        """Cálculo otimizado do RSI com suavização"""
+        if len(self.price_buffer) < self.window + 1:
             return None
 
-        prices = np.array(self.price_buffer, dtype=np.float64)
-        deltas = np.diff(prices)
-        
+        deltas = np.diff(np.array(self.price_buffer, dtype=np.float64))
         gains = deltas.clip(min=0)
         losses = -deltas.clip(max=0)
-        
+
         # Primeiro cálculo (SMA)
         if self.prev_avg_gain == 0:
-            self.prev_avg_gain = np.mean(gains[:self.window])
-            self.prev_avg_loss = np.mean(losses[:self.window])
+            self.prev_avg_gain = gains[:self.window].mean()
+            self.prev_avg_loss = losses[:self.window].mean()
         # Cálculos subsequentes (EMA)
         else:
             self.prev_avg_gain = (self.prev_avg_gain * (self.window - 1) + gains[-1]) / self.window
             self.prev_avg_loss = (self.prev_avg_loss * (self.window - 1) + losses[-1]) / self.window
 
-        # Evita divisão por zero e valores extremos
         rs = self.prev_avg_gain / (self.prev_avg_loss + 1e-10)
-        rsi = 100 - (100 / (1 + rs))
-        
-        # Suavização para evitar flutuações bruscas
-        if self.last_rsi:
-            rsi = 0.7 * rsi + 0.3 * self.last_rsi  # Filtro de suavização
-            
-        self.last_rsi = rsi
-        return np.clip(rsi, 0, 100)
+        return 100 - (100 / (1 + rs))
 
-    def _get_trend(self, candles):
-        """Determina tendência com base em EMAs rápidas e lentas"""
-        if len(candles) < 20:
-            return None
-            
-        closes = [c['close'] for c in candles[-20:]]
-        ema_fast = sum(closes[-5:]) / 5
-        ema_slow = sum(closes[-20:]) / 20
-        return 'up' if ema_fast > ema_slow else 'down'
+    def _apply_pattern_boost(self, signal, patterns):
+        """Aumenta confiança baseado em padrões de velas"""
+        if not signal:
+            return signal
+
+        direction = signal["signal"]
+        pattern_strength = 0
+        
+        # Padrões de confirmação (por direção)
+        confirm_patterns = {
+            "up": ["hammer", "bullish_engulfing", "piercing_line", "morning_star"],
+            "down": ["hanging_man", "bearish_engulfing", "dark_cloud", "evening_star"]
+        }[direction]
+
+        # Soma a força dos padrões relevantes
+        for pattern in patterns:
+            if pattern in confirm_patterns:
+                pattern_strength += PATTERN_STRENGTH.get(pattern, 0)
+
+        # Boost de confiança proporcional
+        if pattern_strength > 0:
+            signal["confidence"] = min(95, signal["confidence"] + (pattern_strength * 15))
+            signal["patterns"] = patterns
+            signal["pattern_strength"] = pattern_strength
+
+        return signal
 
     def generate_signal(self, data):
-        """Geração de sinal profissional com múltiplas camadas de confirmação"""
+        """Gera sinais com confirmação de padrões de velas"""
         try:
-            if not data or "history" not in data:
+            candles = data.get("history", [])
+            if len(candles) < max(self.window + 1, self.candle_lookback):
                 return None
 
-            candles = data["history"]
-            if len(candles) < self.min_data_points:
-                return None
-
-            # Atualiza buffer e calcula RSI
-            current_close = float(candles[-1]["close"])
-            self.price_buffer.append(current_close)
+            # Atualiza preços e calcula RSI
+            current_candle = candles[-1]
+            self.price_buffer.append(float(current_candle["close"]))
             rsi = self._calculate_rsi()
             
             if rsi is None:
                 return None
 
-            # Confirmações adicionais
-            current_volume = candles[-1].get("volume", 0)
-            prev_volume = candles[-2].get("volume", 1) if len(candles) > 1 else 1
-            volume_ok = current_volume > prev_volume * self.volume_threshold
-            
-            trend = self._get_trend(candles[:-1]) if self.trend_filter else None
-            
-            # Lógica de sinal aprimorada
+            # Detecta padrões nos últimos candles
+            patterns = detect_patterns(candles[-self.candle_lookback:])
+            volume_ok = current_candle.get("volume", 0) > np.mean(
+                [c.get("volume", 0) for c in candles[-self.candle_lookback:-1]] or [0]) * self.volume_threshold
+
+            # Lógica principal
             signal = None
-            strength = "medium"
-            
-            # Condição de compra com confirmações
             if rsi < self.oversold:
-                if (not self.require_confirmation or 
-                    (volume_ok and (not self.trend_filter or trend == 'down'))):
-                    strength = "high" if volume_ok and rsi < (self.oversold - 5) else "medium"
-                    signal = {
-                        "signal": "up",
-                        "rsi": rsi,
-                        "confidence": self._calculate_confidence(rsi, 'up', volume_ok, trend),
-                        "price": current_close,
-                        "indicators": {
-                            "trend": trend,
-                            "volume_ratio": current_volume / prev_volume
-                        }
-                    }
-
-            # Condição de venda com confirmações
+                signal = {
+                    "signal": "up",
+                    "rsi": rsi,
+                    "confidence": 60 + min(30, (self.oversold - rsi) / 2),  # 60-75
+                    "price": float(current_candle["close"]),
+                    "volume_ok": volume_ok
+                }
             elif rsi > self.overbought:
-                if (not self.require_confirmation or 
-                    (volume_ok and (not self.trend_filter or trend == 'up'))):
-                    strength = "high" if volume_ok and rsi > (self.overbought + 5) else "medium"
-                    signal = {
-                        "signal": "down",
-                        "rsi": rsi,
-                        "confidence": self._calculate_confidence(rsi, 'down', volume_ok, trend),
-                        "price": current_close,
-                        "indicators": {
-                            "trend": trend,
-                            "volume_ratio": current_volume / prev_volume
-                        }
-                    }
+                signal = {
+                    "signal": "down",
+                    "rsi": rsi,
+                    "confidence": 65 + min(30, (rsi - self.overbought) / 2),  # 65-80
+                    "price": float(current_candle["close"]),
+                    "volume_ok": volume_ok
+                }
 
-            return signal
-
-        except Exception as e:
-            print(f"ProfessionalRSI error: {e}")
+            # Aplica boost de padrões de velas
+            signal = self._apply_pattern_boost(signal, patterns)
+            
+            # Filtro final de confiança
+            if signal and signal.get("confidence", 0) >= self.min_confidence:
+                return signal
             return None
 
-    def _calculate_confidence(self, rsi, direction, volume_ok, trend):
-        """Cálculo sofisticado de confiança"""
-        # Fator de distância do RSI
-        rsi_factor = abs(rsi - 50) / 50  # 0-1
-        
-        # Fator de volume
-        volume_factor = 0.2 if volume_ok else 0
-        
-        # Fator de tendência
-        trend_factor = 0.15 if (
-            (trend == 'up' and direction == 'up') or 
-            (trend == 'down' and direction == 'down')
-        ) else 0
-        
-        # Base + fatores ajustados
-        base = 60 if direction == 'up' else 65  # Viés conservador para vendas
-        confidence = base + (rsi_factor * 30) + (volume_factor * 15) + (trend_factor * 10)
-        
-        return min(95, max(50, int(confidence)))  # Mantém entre 50-95
+        except Exception as e:
+            print(f"RSIStrategy error: {e}")
+            return None
