@@ -85,7 +85,9 @@ CONFIG = {
         "window": 14,
         "confirmation": True,
         "trend_filter": True,
-        "volume_threshold": 1.3
+        "volume_threshold": 1.3,
+        "candle_lookback": 3,
+        "min_confidence": 70
     },
 
     "languages": {
