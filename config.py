@@ -44,12 +44,22 @@ CONFIG = {
 
     "log_level": "INFO",
 
-    # WICK REVERSAL STRATEGY CONFIGURATION CENTRALIZED HERE
+    # RSI_MA STRATEGY CONFIGURATION CENTRALIZED HERE
     "wick_reversal": {
         "wick_ratio": 2.0,
         "min_body_ratio": 0.1,
         "volume_multiplier": 1.5,
         "trend_confirmation": True
+    },
+    
+    # WICK REVERSAL STRATEGY CONFIGURATION CENTRALIZED HERE
+    "rsi_ma": {
+        "rsi_period': 10,
+        "ma_period': 3,
+        "overbought': 70,
+        "oversold': 30,
+        "confirmation': True,
+        "volume_threshold': 1.5
     },
 
     "languages": {
