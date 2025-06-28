@@ -52,6 +52,14 @@ CONFIG = {
         "trend_confirmation": True
     },
     
+    # MACD REVERSAL STRATEGY CONFIGURATION CENTRALIZED HERE
+    "macd_reversal": {
+        "fast": 10,
+        "slow": 21,
+        "signal": 7,
+        "threshold": 0.15
+    },
+    
     # RSI_MA STRATEGY CONFIGURATION CENTRALIZED HERE
     "rsi_ma": {
         "rsi_period": 10,
