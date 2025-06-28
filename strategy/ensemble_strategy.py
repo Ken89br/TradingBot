@@ -41,7 +41,7 @@ class EnsembleStrategy:
             BollingerBreakoutStrategy(CONFIG),
             WickReversalStrategy(CONFIG["wick_reversal"]),
             MACDReversal(CONFIG["macd_reversal"]),
-            RSIStrategy(),
+            RSIStrategy(CONFIG["rsi"]),
             SMACrossStrategy(),
             BollingerStrategy(),
             EnhancedPriceActionStrategy(CONFIG["price_action"]),
