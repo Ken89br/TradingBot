@@ -54,12 +54,12 @@ CONFIG = {
     
     # WICK REVERSAL STRATEGY CONFIGURATION CENTRALIZED HERE
     "rsi_ma": {
-        "rsi_period': 10,
-        "ma_period': 3,
-        "overbought': 70,
-        "oversold': 30,
-        "confirmation': True,
-        "volume_threshold': 1.5
+        "rsi_period": 10,
+        "ma_period": 3,
+        "overbought": 70,
+        "oversold": 30,
+        "confirmation": True,
+        "volume_threshold": 1.5
     },
 
     "languages": {
