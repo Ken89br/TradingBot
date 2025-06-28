@@ -40,7 +40,7 @@ class EnsembleStrategy:
             AggressiveRSIMA(CONFIG["rsi_ma"]),
             BollingerBreakoutStrategy(CONFIG),
             WickReversalStrategy(CONFIG["wick_reversal"]),
-            MACDReversalStrategy(CONFIG),
+            MACDReversal(CONFIG["macd_reversal"]),
             RSIStrategy(),
             SMACrossStrategy(),
             BollingerStrategy(),
