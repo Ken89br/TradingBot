@@ -190,5 +190,5 @@ class PriceActionStrategy:
             return None
 
         except Exception as e:
-            print(f"Error in EnhancedPriceAction: {e}")
+            print(f"Error in PriceAction: {e}")
             return None
