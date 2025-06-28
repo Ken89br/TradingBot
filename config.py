@@ -78,6 +78,16 @@ CONFIG = {
         "trend_lookback": 5
     },
 
+    # RSI STRATEGY CONFIGURATION CENTRALIZED HERE
+    "rsi": {
+        "overbought": 70,
+        "oversold": 30,
+        "window": 14,
+        "confirmation": True,
+        "trend_filter": True,
+        "volume_threshold": 1.3
+    },
+
     "languages": {
         "en": {
             "start": "Welcome! Tap 📈 Start to generate a signal.",
