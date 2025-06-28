@@ -48,11 +48,6 @@ class EnsembleStrategy:
             EMAStrategy(),
             ATRStrategy(),
             ADXStrategy(),
-
-strategy = AggressiveRSIMA(CONFIG["rsi_ma"])
-signal = strategy.generate_signal(candle_data)
-
-
         ]
         self.filter = SmartAIFilter()
         self.ml = MLPredictor()
