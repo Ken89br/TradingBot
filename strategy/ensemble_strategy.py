@@ -37,9 +37,9 @@ class EnsembleStrategy:
     def __init__(self):
         self.strategies = [
             CandlestickStrategy(),
-            AggressiveRSIMA(CONFIG),
+            AggressiveRSIMA(CONFIG["rsi_ma"]),
             BollingerBreakoutStrategy(CONFIG),
-            WickReversalStrategy(CONFIG),
+            WickReversalStrategy(CONFIG["wick_reversal"]),
             MACDReversalStrategy(CONFIG),
             RSIStrategy(),
             SMACrossStrategy(),
@@ -48,6 +48,11 @@ class EnsembleStrategy:
             EMAStrategy(),
             ATRStrategy(),
             ADXStrategy(),
+
+strategy = AggressiveRSIMA(CONFIG["rsi_ma"])
+signal = strategy.generate_signal(candle_data)
+
+
         ]
         self.filter = SmartAIFilter()
         self.ml = MLPredictor()
