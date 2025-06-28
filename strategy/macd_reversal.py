@@ -2,7 +2,7 @@
 import numpy as np
 from collections import deque
 
-class EnhancedMACDReversal:
+class MACDReversal:
     def __init__(self, config=None):
         # Parâmetros configuráveis
         self.fast = config.get('fast', 12) if config else 12
