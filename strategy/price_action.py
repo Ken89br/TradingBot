@@ -1,12 +1,13 @@
 import numpy as np
 from collections import deque
 
-class PriceActionStrategy:
+class EnhancedPriceActionStrategy:
     def __init__(self, config=None):
-        # Configurações básicas
+        # Configurações básicas (NOMES PADRONIZADOS COM O CONFIG)
         self.min_wick_ratio = config.get('min_wick_ratio', 2.0) if config else 2.0
-        self.volume_threshold = config.get('volume_threshold', 1.5) if config else 1.5
-        self.trend_confirmation = config.get('trend_confirmation', True) if config else True
+        self.volume_threshold = config.get('volume_multiplier', 1.5) if config else 1.5
+        self.trend_confirmation = config.get('confirmation', True) if config else True
+        self.trend_lookback = config.get('trend_lookback', 3) if config else 3
 
         # Configurações para padrões complexos
         self.pattern_config = {
@@ -21,11 +22,12 @@ class PriceActionStrategy:
         self.candle_buffer = deque(maxlen=5)
 
     def _analyze_trend(self, candles):
-        """Análise de tendência com regressão linear"""
-        if len(candles) < 3:
+        """Análise de tendência com regressão linear em closes recentes."""
+        lookback = min(self.trend_lookback, len(candles))
+        if lookback < 3:
             return None
 
-        closes = [c['close'] for c in candles]
+        closes = [c['close'] for c in candles[-lookback:]]
         x = np.arange(len(closes))
         slope = np.polyfit(x, closes, 1)[0]
         return 'up' if slope > 0 else 'down'
@@ -41,16 +43,11 @@ class PriceActionStrategy:
 
         first, second, third = candles[-3], candles[-2], candles[-1]
 
-        # 1° candle: bearish forte
         cond1 = (first['close'] < first['open'] and
-                 (first['open'] - first['close']) / (first['high'] - first['low']) > 0.6)
-
-        # 2° candle: pequeno corpo (doji/star)
-        cond2 = abs(second['close'] - second['open']) / (second['high'] - second['low']) < 0.3
-
-        # 3° candle: bullish forte
+                 (first['open'] - first['close']) / (first['high'] - first['low'] + 1e-8) > 0.6)
+        cond2 = abs(second['close'] - second['open']) / (second['high'] - second['low'] + 1e-8) < 0.3
         cond3 = (third['close'] > third['open'] and
-                 (third['close'] - third['open']) / (third['high'] - third['low']) > 0.6 and
+                 (third['close'] - third['open']) / (third['high'] - third['low'] + 1e-8) > 0.6 and
                  third['close'] > first['close'])
 
         return cond1 and cond2 and cond3
@@ -61,16 +58,11 @@ class PriceActionStrategy:
             return False
 
         candles = candles[-3:]
-        bodies = [(c['close'] - c['open']) / (c['high'] - c['low']) for c in candles]
+        bodies = [(c['close'] - c['open']) / (c['high'] - c['low'] + 1e-8) for c in candles]
 
-        # Todos candles bullish com corpos grandes
         cond1 = all(c['close'] > c['open'] and b > 0.7 for c, b in zip(candles, bodies))
-
-        # Abertura dentro do corpo anterior
         cond2 = all(candles[i]['open'] > candles[i-1]['open'] and
                     candles[i]['open'] < candles[i-1]['close'] for i in range(1, 3))
-
-        # Fechamento progressivamente maior
         cond3 = candles[-1]['close'] > candles[-2]['close'] > candles[-3]['close']
 
         return cond1 and cond2 and cond3
@@ -95,14 +87,14 @@ class PriceActionStrategy:
             if morning_star:
                 trend = self._analyze_trend(candles[:-3])
                 volume_ok = candles[-1]['volume'] > avg_volume * self.volume_threshold
-                if not self.trend_confirmation or trend == 'down':
+                if not self.trend_confirmation or (trend == 'down'):
                     return {
                         "signal": "up",
                         "pattern": "morning_star",
                         "confidence": 85 if volume_ok else 70,
                         "context": {
                             "trend": trend,
-                            "volume_ratio": candles[-1]['volume'] / avg_volume
+                            "volume_ratio": candles[-1]['volume'] / avg_volume if avg_volume else 0
                         }
                     }
 
@@ -110,21 +102,21 @@ class PriceActionStrategy:
             if evening_star:
                 trend = self._analyze_trend(candles[:-3])
                 volume_ok = candles[-1]['volume'] > avg_volume * self.volume_threshold
-                if not self.trend_confirmation or trend == 'up':
+                if not self.trend_confirmation or (trend == 'up'):
                     return {
                         "signal": "down",
                         "pattern": "evening_star",
                         "confidence": 85 if volume_ok else 70,
                         "context": {
                             "trend": trend,
-                            "volume_ratio": candles[-1]['volume'] / avg_volume
+                            "volume_ratio": candles[-1]['volume'] / avg_volume if avg_volume else 0
                         }
                     }
 
             # Three White Soldiers
             if three_soldiers:
                 trend = self._analyze_trend(candles[:-3])
-                if not self.trend_confirmation or trend != 'down':
+                if not self.trend_confirmation or (trend != 'down'):
                     return {
                         "signal": "up",
                         "pattern": "three_white_soldiers",
@@ -138,7 +130,7 @@ class PriceActionStrategy:
             # Three Black Crows
             if three_crows:
                 trend = self._analyze_trend(candles[:-3])
-                if not self.trend_confirmation or trend != 'up':
+                if not self.trend_confirmation or (trend != 'up'):
                     return {
                         "signal": "down",
                         "pattern": "three_black_crows",
@@ -190,5 +182,5 @@ class PriceActionStrategy:
             return None
 
         except Exception as e:
-            print(f"Error in PriceAction: {e}")
+            print(f"Error in EnhancedPriceAction: {e}")
             return None
