@@ -86,7 +86,7 @@ CONFIG = {
         "confirmation": True,
         "trend_filter": True,
         "volume_threshold": 1.3,
-        "candle_lookback": 3,
+        "candle_lookback": 25,
         "min_confidence": 70
     },
 
