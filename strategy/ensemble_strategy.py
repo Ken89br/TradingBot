@@ -45,7 +45,7 @@ class EnsembleStrategy:
             SMACrossStrategy(),
             BollingerStrategy(CONFIG["bbands"]),
             EnhancedPriceActionStrategy(CONFIG["price_action"]),
-            EMAStrategy(),
+            EMAStrategy(CONFIG["ema"]),
             ATRStrategy(CONFIG["atr"]),
             ADXStrategy(CONFIG["adx"]),
         ]
