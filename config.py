@@ -78,7 +78,20 @@ CONFIG = {
         "trend_lookback": 5
     },
     
-    # PRICE ACTION STRATEGY CONFIGURATION CENTRALIZED HERE
+    # ADX STRATEGY CONFIGURATION CENTRALIZED HERE
+    "adx": {
+        "adx_period": 14,            # Período padrão para ADX e DI
+        "di_period": 14,
+        "adx_threshold": 20,         # Mais sensível (padrão conservador: 25~30)
+        "min_history": 20,
+        "candle_lookback": 3,
+        "pattern_boost": 0.2,
+        "min_confidence": 70,
+        "trend_confirmation": True,
+        "volume_threshold": 1.3,
+},
+    
+    # BOLLINGER STRATEGY CONFIGURATION CENTRALIZED HERE
     "bbands": {
         "period": 20,   
         "std_dev": 2.0,
