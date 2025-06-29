@@ -3,7 +3,7 @@ import numpy as np
 from collections import deque
 from strategy.candlestick_patterns import detect_patterns, PATTERN_STRENGTH
 
-class BollingerBreakout:
+class BollingerBreakoutStrategy:
     def __init__(self, config=None):
         # Parâmetros de Bollinger
         self.period = config.get('period', 20) if config else 20
