@@ -4,7 +4,7 @@ from collections import deque
 from config import CONFIG
 from strategy.candlestick_patterns import detect_patterns, PATTERN_STRENGTH
 
-class MACDReversal:
+class MACDReversalStrategy:
     def __init__(self, config=None):
         self.fast = config.get('fast', 12) if config else 12
         self.slow = config.get('slow', 26) if config else 26
