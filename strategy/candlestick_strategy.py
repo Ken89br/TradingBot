@@ -1,54 +1,19 @@
 #serve para importar os dados do candlestick_patterns.py
-from strategy.candlestick_patterns import detect_candlestick_patterns
+from config import CONFIG
+from strategy.candlestick_patterns import detect_patterns
 
 class CandlestickStrategy:
-    def __init__(self):
-        # Padrões de reversão altista clássicos (buy)
-        self.bullish_patterns = [
-            "bullish_engulfing",
-            "hammer",
-            "morning_star",
-            "piercing_line",
-            "three_white_soldiers",
-            "bullish_harami",
-            "tweezer_bottom",
-            "marubozu",
-            "dragonfly_doji"  # Adicionado
-        ]
-        # Padrões de reversão baixista clássicos (sell)
-        self.bearish_patterns = [
-            "bearish_engulfing",
-            "shooting_star",
-            "hanging_man",
-            "evening_star",
-            "dark_cloud_cover",
-            "three_black_crows",
-            "bearish_harami",
-            "tweezer_top",
-            "marubozu"
-        ]
-        # Indecisão (alerta, normalmente não opera)
-        self.indecision_patterns = [
-            "doji",
-            "spinning_top"  # Adicionado (Peão)
-        ]
-
     def generate_signal(self, data):
         candles = data.get("history", [])
         if len(candles) < 3:
             return None
 
-        patterns = detect_candlestick_patterns(candles)
-        # Sinal de compra
+        patterns = detect_patterns(candles)
         for pattern in reversed(patterns):
-            if pattern in self.bullish_patterns:
+            if pattern in CONFIG["candlestick_patterns"]["reversal_up"]:
                 return {"signal": "up", "pattern": pattern}
-        # Sinal de venda
-        for pattern in reversed(patterns):
-            if pattern in self.bearish_patterns:
+            if pattern in CONFIG["candlestick_patterns"]["reversal_down"]:
                 return {"signal": "down", "pattern": pattern}
-        # Indecisão
-        for pattern in reversed(patterns):
-            if pattern in self.indecision_patterns:
+            if pattern in CONFIG["candlestick_patterns"]["neutral"]:
                 return {"signal": "neutral", "pattern": pattern}
         return None
