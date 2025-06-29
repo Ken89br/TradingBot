@@ -95,6 +95,8 @@ def upload_or_update_file(filepath, drive_folder_id=None, share_with_email=DEFAU
         if share_with_email:
             share_file_with_user(file_id, share_with_email)
         return file_id
+        
+upload_file = upload_or_update_file
 
 def upload_or_update_all_files_in_directory(local_dir, share_with_email=DEFAULT_SHARE_EMAIL, extensions=('.csv', '.pkl')):
     """
