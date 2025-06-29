@@ -19,7 +19,7 @@ from hashlib import md5
 
 from strategy.train_model_historic import main as run_training
 from config import CONFIG
-from data.google_drive_client import upload_file, get_folder_id_for_file
+from data.google_drive_client import upload_or_update_file as upload_file, get_folder_id_for_file
 
 load_dotenv()
 
