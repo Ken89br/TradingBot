@@ -60,7 +60,7 @@ CONFIG = {
         "threshold": 0.15
     },
     
-    # RSI_MA STRATEGY CONFIGURATION CENTRALIZED HERE
+    # RSI MA STRATEGY CONFIGURATION CENTRALIZED HERE
     "rsi_ma": {
         "rsi_period": 10,
         "ma_period": 3,
@@ -90,6 +90,18 @@ CONFIG = {
         "trend_confirmation": True,
         "volume_threshold": 1.3,
 },
+
+    # ATR STRATEGY CONFIGURATION CENTRALIZED HERE
+    "atr": {
+        "atr_period": 14,            # Período para cálculo do ATR
+        "multiplier": 1.2,           # Multiplicador do ATR para validar corpo do candle (ajuste para mais sensibilidade/assertividade)
+        "min_history": 20,           # Histórico mínimo de candles para cálculo seguro
+        "require_volume": True,      # Só valida sinal se volume acima do threshold
+        "volume_threshold": 1.5,     # Volume atual deve ser 50% maior que a média
+        "min_confidence": 70,        # Confiança mínima para emitir sinal (ajuste para seu perfil)
+        "candle_lookback": 3,        # Quantidade de candles para buscar padrões de vela
+        "pattern_boost": 0.2         # Fator de boost na confiança ao detectar padrão relevante
+    },
     
     # BOLLINGER STRATEGY CONFIGURATION CENTRALIZED HERE
     "bbands": {
