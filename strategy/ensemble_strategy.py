@@ -46,8 +46,8 @@ class EnsembleStrategy:
             BollingerStrategy(CONFIG["bbands"]),
             EnhancedPriceActionStrategy(CONFIG["price_action"]),
             EMAStrategy(),
-            ATRStrategy(),
-            ADXStrategy(),
+            ATRStrategy(CONFIG["atx"]),
+            ADXStrategy(CONFIG["adx"]),
         ]
         self.filter = SmartAIFilter()
         self.ml = MLPredictor()
