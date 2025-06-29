@@ -27,7 +27,7 @@ from strategy.indicators import (
 )
 
 # Google Drive utilities
-from data.google_drive_client import upload_file, download_file, find_file_id, get_folder_id_for_file
+from data.google_drive_client import upload_or_update_file as upload_file, download_file, find_file_id, get_folder_id_for_file
 
 # Logging estruturado
 logging.basicConfig(
