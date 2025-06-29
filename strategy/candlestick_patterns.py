@@ -462,3 +462,5 @@ def detect_candlestick_patterns(candles):
         patterns.append("abandoned_baby_bearish")
 
     return patterns
+    
+detect_patterns = detect_candlestick_patterns
