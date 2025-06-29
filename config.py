@@ -77,7 +77,21 @@ CONFIG = {
         "confirmation": True,
         "trend_lookback": 5
     },
-
+    
+    # PRICE ACTION STRATEGY CONFIGURATION CENTRALIZED HERE
+    "bbands": {
+        "period": 20,   
+        "std_dev": 2.0,
+        "candle_lookback": 3,
+        "min_confidence": 75,
+        "pattern_boost": 0.22,
+        "min_history": 25,
+        "volume_threshold": 1.5,         # Opcional, se usado no seu código
+        "signal_direction_filter": "both", # 'up', 'down' ou 'both'
+        "allow_neutral_signals": False,
+}
+    },
+    
     # RSI STRATEGY CONFIGURATION CENTRALIZED HERE
     "rsi": {
         "overbought": 70,
