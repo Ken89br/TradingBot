@@ -70,6 +70,15 @@ CONFIG = {
         "volume_threshold": 1.5
     },
     
+    # EMA STRATEGY CONFIGURATION CENTRALIZED HERE
+    "ema": {
+        "short_period": 9,
+        "long_period": 21,
+        "candle_lookback": 3,
+        "pattern_boost": 0.2,
+        "min_confidence": 70
+    },
+    
     # PRICE ACTION STRATEGY CONFIGURATION CENTRALIZED HERE
     "price_action": {
         "min_wick_ratio": 2.5,
