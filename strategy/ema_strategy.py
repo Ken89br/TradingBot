@@ -1,14 +1,18 @@
+#strategy/ema_strategy.pu
 import numpy as np
 from config import CONFIG
 from strategy.candlestick_patterns import detect_patterns, PATTERN_STRENGTH
 
 class EMAStrategy:
-    def __init__(self, short_period=9, long_period=21, candle_lookback=3, pattern_boost=0.2):
-        self.short_period = short_period
-        self.long_period = long_period
-        self.min_data_points = max(short_period, long_period) + 1
-        self.candle_lookback = candle_lookback
-        self.pattern_boost = pattern_boost
+    def __init__(self, config=None):
+        if config is None:
+            config = {}
+        self.short_period = config.get("short_period", 9)
+        self.long_period = config.get("long_period", 21)
+        self.candle_lookback = config.get("candle_lookback", 3)
+        self.pattern_boost = config.get("pattern_boost", 0.2)
+        self.min_confidence = config.get("min_confidence", 70)
+        self.min_data_points = max(self.short_period, self.long_period) + 1
 
     def calculate_ema(self, prices, period):
         if len(prices) < period:
@@ -59,7 +63,9 @@ class EMAStrategy:
             if signal:
                 patterns = detect_patterns(candles[-self.candle_lookback:])
                 signal = self._apply_pattern_boost(signal, patterns)
-                return signal
+                # Só retorna se atingir min_confidence
+                if signal.get("confidence", 0) >= self.min_confidence:
+                    return signal
 
             return None
 
