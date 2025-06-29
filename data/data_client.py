@@ -9,7 +9,7 @@ from data.twelvedata_data import TwelveDataClient
 from data.tiingo_data import TiingoClient
 from data.polygon_data import PolygonClient
 from strategy.train_model_historic import main as run_training
-from data.google_drive_client import upload_file, download_file, find_file_id, get_folder_id_for_file
+from data.google_drive_client import upload_or_update_file as upload_file, download_file, find_file_id, get_folder_id_for_file
 
 LAST_RETRAIN_PATH = "last_retrain.txt"
 
