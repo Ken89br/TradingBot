@@ -43,7 +43,7 @@ class EnsembleStrategy:
             MACDReversal(CONFIG["macd_reversal"]),
             RSIStrategy(CONFIG["rsi"]),
             SMACrossStrategy(),
-            BollingerStrategy(),
+            BollingerStrategy(CONFIG["bbands"]),
             EnhancedPriceActionStrategy(CONFIG["price_action"]),
             EMAStrategy(),
             ATRStrategy(),
