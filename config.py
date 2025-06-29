@@ -114,7 +114,18 @@ CONFIG = {
         "volume_threshold": 1.5,         # Opcional, se usado no seu código
         "signal_direction_filter": "both", # 'up', 'down' ou 'both'
         "allow_neutral_signals": False,
-}
+    },
+    # BOLLINGER BREAKOUT STRATEGY CONFIGURATION CENTRALIZED HERE
+    "bollinger_breakout": {
+        "period": 20,                # Período da média móvel (padrão clássico)
+        "std_dev": 2.0,              # Desvio padrão para bandas (2.0 é o padrão técnico)
+        "candle_lookback": 3,        # Candles para buscar padrões de vela
+        "pattern_boost": 0.2,        # Boost de confiança por padrão detectado
+        "min_confidence": 70,        # Confiança mínima para sinal
+        "min_history": 23,           # Histórico mínimo (período + lookback)
+        "volume_threshold": 1.5,     # Opcional: volume acima da média para validar sinal
+        "signal_direction_filter": "both", # 'call', 'put' ou 'both' (filtra por direção se desejar)
+        "allow_neutral_signals": False,    # Permite sinais neutros? (normalmente False)
     },
     
     # RSI STRATEGY CONFIGURATION CENTRALIZED HERE
@@ -126,7 +137,7 @@ CONFIG = {
         "trend_filter": True,
         "volume_threshold": 1.3,
         "candle_lookback": 25,
-        "min_confidence": 70
+        "min_confidence": 70,
         "enable_pattern_boost": True
     },
     
