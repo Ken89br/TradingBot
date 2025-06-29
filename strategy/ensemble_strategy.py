@@ -38,7 +38,7 @@ class EnsembleStrategy:
         self.strategies = [
             CandlestickStrategy(),
             AggressiveRSIMA(CONFIG["rsi_ma"]),
-            BollingerBreakoutStrategy(CONFIG),
+            BollingerBreakoutStrategy(CONFIG["bollinger_breakout"]),
             WickReversalStrategy(CONFIG["wick_reversal"]),
             MACDReversal(CONFIG["macd_reversal"]),
             RSIStrategy(CONFIG["rsi"]),
