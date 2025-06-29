@@ -18,7 +18,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class RobustAIFilter:
+class AIFilter:
     def __init__(
         self,
         min_confidence: int = 40,
