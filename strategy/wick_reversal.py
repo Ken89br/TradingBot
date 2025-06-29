@@ -1,7 +1,8 @@
+from config import CONFIG
+from strategy.candlestick_patterns import detect_patterns, PATTERN_STRENGTH
+
 class WickReversalStrategy:
     def __init__(self, config=None):
-        # Se config vier do ensemble, ele é o dict global CONFIG.
-        # Se vier de uso manual, pode ser None, ou o próprio dict de parâmetros.
         if config and "wick_reversal" in config:
             cfg = config["wick_reversal"]
         else:
@@ -10,62 +11,85 @@ class WickReversalStrategy:
         self.min_body_ratio = cfg.get('min_body_ratio', 0.1)
         self.volume_multiplier = cfg.get('volume_multiplier', 1.5)
         self.trend_confirmation = cfg.get('trend_confirmation', True)
+        self.pattern_boost = cfg.get("pattern_boost", 0.2)  # Novo parâmetro (ajuste conforme desejar)
+        self.candle_lookback = cfg.get("candle_lookback", 3)
 
     def generate_signal(self, data):
         try:
             history = data.get("history", [])
-            if len(history) < 3:
+            if len(history) < max(3, self.candle_lookback):
                 return None
 
             latest = history[-1]
             prev = history[-2]
 
-            # Convert values to float
             latest = {k: float(latest.get(k, 0)) for k in ["open", "close", "high", "low", "volume"]}
             prev = {k: float(prev.get(k, 0)) for k in ["open", "close", "high", "low", "volume"]}
 
-            # Calculate wick and body metrics
             body_size = abs(latest["close"] - latest["open"])
             upper_wick = latest["high"] - max(latest["open"], latest["close"])
             lower_wick = min(latest["open"], latest["close"]) - latest["low"]
 
-            # Validation
             if body_size == 0 or (upper_wick + lower_wick) == 0:
                 return None
 
-            # Volume confirmation
             volume_ok = latest["volume"] > prev["volume"] * self.volume_multiplier
 
-            # Trend confirmation (optional)
             trend_aligned = True
             if self.trend_confirmation:
                 prev_trend = prev["close"] - prev["open"]
-                # Se for sinal de alta, o candle anterior deve ser de baixa; se for baixa, anterior de alta
                 trend_aligned = (
                     (lower_wick > body_size * self.wick_ratio and prev_trend < 0) or
                     (upper_wick > body_size * self.wick_ratio and prev_trend > 0)
                 )
 
-            # Sinal de alta (martelo)
+            # Detecta padrões de vela nos últimos candles
+            patterns = detect_patterns(history[-self.candle_lookback:])
+            wick_signal = None
+
             if lower_wick > body_size * self.wick_ratio and body_size / (upper_wick + 1e-8) > self.min_body_ratio:
-                if volume_ok and trend_aligned:
-                    strength = "high"
-                else:
-                    strength = "medium"
-                return self._package("up", history, strength)
-            # Sinal de baixa (estrela cadente)
+                wick_signal = "up"
             elif upper_wick > body_size * self.wick_ratio and body_size / (lower_wick + 1e-8) > self.min_body_ratio:
+                wick_signal = "down"
+
+            if wick_signal:
                 if volume_ok and trend_aligned:
                     strength = "high"
                 else:
                     strength = "medium"
-                return self._package("down", history, strength)
+
+                signal = self._package(wick_signal, history, strength)
+                signal = self._apply_pattern_boost(signal, patterns)
+                return signal
 
             return None
 
         except Exception as e:
             print(f"Error in WickReversalStrategy: {e}")
             return None
+
+    def _apply_pattern_boost(self, signal, patterns):
+        if not signal or not patterns:
+            return signal
+        direction = signal["signal"]
+        # Usa padrões de reversão e indecisão
+        if direction == "up":
+            confirm_patterns = CONFIG["candlestick_patterns"]["reversal_up"] + CONFIG["candlestick_patterns"]["neutral"]
+        else:
+            confirm_patterns = CONFIG["candlestick_patterns"]["reversal_down"] + CONFIG["candlestick_patterns"]["neutral"]
+
+        pattern_strength = 0
+        for pattern in patterns:
+            if pattern in confirm_patterns:
+                pattern_strength += PATTERN_STRENGTH.get(pattern, 0.1)
+
+        if pattern_strength > 0:
+            boost = int(pattern_strength * 20 * self.pattern_boost)  # até 20%
+            signal["confidence"] = min(100, signal["confidence"] + boost)
+            signal["patterns"] = patterns
+            signal["pattern_strength"] = pattern_strength
+
+        return signal
 
     def _package(self, signal, history, strength):
         latest = history[-1]
@@ -74,7 +98,6 @@ class WickReversalStrategy:
         lows = [float(c["low"]) for c in history]
         volumes = [float(c.get("volume", 0)) for c in history]
 
-        # Dynamic confidence calculation
         base_confidence = {"high": 90, "medium": 75, "low": 60}.get(strength, 50)
         if len(volumes) >= 4 and sum(volumes[-4:-1]) > 0:
             volume_boost = min(10, max(0, (volumes[-1] - sum(volumes[-4:-1])/3) / (sum(volumes[-4:-1])/3 + 1e-8) * 10))
@@ -93,10 +116,9 @@ class WickReversalStrategy:
             "strength": strength,
             "confidence": confidence,
             "wick_ratio": self.wick_ratio,
-            "pattern": "hammer" if signal == "up" else "shooting_star",
             "candle_size": highs[-1] - lows[-1],
             "context": {
                 "prev_trend": closes[-2] - closes[-3] if len(history) >= 3 else 0,
                 "volume_change": volumes[-1] / volumes[-2] if len(history) >= 2 and volumes[-2] > 0 else 1
             }
-            }
+        }
