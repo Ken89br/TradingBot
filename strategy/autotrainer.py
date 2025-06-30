@@ -19,7 +19,7 @@ from hashlib import md5
 from strategy.train_model_historic import main as run_training
 from config import CONFIG
 from data.google_drive_client import upload_or_update_file as upload_file, get_folder_id_for_file
-from data.data_client import FallbackDataClient  # NOVO IMPORT
+from data.data_client import FallbackDataClient
 
 load_dotenv()
 
@@ -78,21 +78,42 @@ def save_uploaded_hashes(hashes):
 
 uploaded_hashes = load_uploaded_hashes()
 
-# Instancia global para não iniciar providers toda vez
 data_client = FallbackDataClient()
+
+def merge_and_save_csv(filepath, new_candles):
+    """
+    Mescla candles novos ao histórico local, remove duplicatas e salva ordenado por timestamp.
+    """
+    import pandas as pd
+    # Carrega dados existentes, se houver
+    if os.path.exists(filepath):
+        df_old = pd.read_csv(filepath)
+    else:
+        df_old = pd.DataFrame()
+
+    df_new = pd.DataFrame(new_candles)
+    if df_new.empty:
+        return  # Não há o que salvar
+
+    # Concatena, remove duplicatas por timestamp
+    if not df_old.empty:
+        df_all = pd.concat([df_old, df_new], ignore_index=True)
+    else:
+        df_all = df_new
+    df_all.drop_duplicates(subset=['timestamp'], keep='last', inplace=True)
+    df_all.sort_values('timestamp', inplace=True)
+    df_all.to_csv(filepath, index=False)
 
 def fetch_and_save(symbol: str, from_dt: datetime, to_dt: datetime, tf: str) -> bool:
     """
-    Busca dados via FallbackDataClient (Dukascopy, depois outros se falhar), salva CSV, loga e retorna sucesso.
+    Busca dados via FallbackDataClient (Dukascopy, depois outros se falhar), salva CSV via merge, loga e retorna sucesso.
     """
     try:
-        # FallbackDataClient espera intervalos tipo "m1", "m5", etc.
         tf_map = {
             "S1": "s1", "M1": "m1", "M5": "m5", "M15": "m15",
             "M30": "m30", "H1": "h1", "H4": "h4", "D1": "d1"
         }
         interval = tf_map.get(tf.upper(), tf.lower())
-        # Busca candles do provider (history é lista de dicts)
         candles_result = data_client.fetch_candles(symbol, interval=interval, limit=500)
         candles = candles_result["history"] if candles_result and "history" in candles_result else None
         if not candles:
@@ -102,14 +123,7 @@ def fetch_and_save(symbol: str, from_dt: datetime, to_dt: datetime, tf: str) -> 
         symbol_clean = symbol.lower().replace(" ", "").replace("/", "")
         filename = f"{symbol_clean}_{interval}.csv"
         filepath = os.path.join(DATA_DIR, filename)
-
-        write_header = not os.path.exists(filepath)
-        with open(filepath, "a") as f:
-            if write_header:
-                f.write("timestamp,open,high,low,close,volume\n")
-            for c in candles:
-                f.write(f"{c['timestamp']},{c['open']},{c['high']},{c['low']},{c['close']},{c['volume']}\n")
-
+        merge_and_save_csv(filepath, candles)
         logger.info(f"Saved {len(candles)} rows to {filename}")
         return True
 
