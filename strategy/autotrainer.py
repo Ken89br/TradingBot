@@ -1,12 +1,3 @@
-#Função principal: Automatizar o fluxo completo de coleta de dados, disparo de treinamento, e upload para o Google Drive.
-#O que faz:
-#Busca dados de candles para vários símbolos/timeframes utilizando um cliente externo (dukascopy_client.cjs).
-#Salva esses dados em CSV.
-#Faz upload dos CSVs e modelos para o Google Drive.
-#Periodicamente dispara o treinamento do modelo histórico (train_model_historic.main()).
-#Roda em loop continuamente, mantendo os dados e modelos sempre atualizados.
-
-# strategy/autotrainer.py
 import os
 import time
 import json
@@ -81,21 +72,14 @@ uploaded_hashes = load_uploaded_hashes()
 data_client = FallbackDataClient()
 
 def merge_and_save_csv(filepath, new_candles):
-    """
-    Mescla candles novos ao histórico local, remove duplicatas e salva ordenado por timestamp.
-    """
     import pandas as pd
-    # Carrega dados existentes, se houver
     if os.path.exists(filepath):
         df_old = pd.read_csv(filepath)
     else:
         df_old = pd.DataFrame()
-
     df_new = pd.DataFrame(new_candles)
     if df_new.empty:
-        return  # Não há o que salvar
-
-    # Concatena, remove duplicatas por timestamp
+        return
     if not df_old.empty:
         df_all = pd.concat([df_old, df_new], ignore_index=True)
     else:
@@ -104,17 +88,14 @@ def merge_and_save_csv(filepath, new_candles):
     df_all.sort_values('timestamp', inplace=True)
     df_all.to_csv(filepath, index=False)
 
-def fetch_and_save(symbol: str, from_dt: datetime, to_dt: datetime, tf: str) -> bool:
-    """
-    Busca dados via FallbackDataClient (Dukascopy, depois outros se falhar), salva CSV via merge, loga e retorna sucesso.
-    """
+def fetch_and_save(symbol: str, from_dt: datetime, to_dt: datetime, tf: str, prefer_pocket=False) -> bool:
     try:
         tf_map = {
             "S1": "s1", "M1": "m1", "M5": "m5", "M15": "m15",
             "M30": "m30", "H1": "h1", "H4": "h4", "D1": "d1"
         }
         interval = tf_map.get(tf.upper(), tf.lower())
-        candles_result = data_client.fetch_candles(symbol, interval=interval, limit=500)
+        candles_result = data_client.fetch_candles(symbol, interval=interval, limit=500, prefer_pocket=prefer_pocket)
         candles = candles_result["history"] if candles_result and "history" in candles_result else None
         if not candles:
             logger.warning(f"No candles for {symbol} @ {tf}")
@@ -131,13 +112,13 @@ def fetch_and_save(symbol: str, from_dt: datetime, to_dt: datetime, tf: str) -> 
         logger.error(f"Unexpected error with {symbol} @ {tf}: {str(e)}", exc_info=True)
     return False
 
-def fetch_all_symbols_timeframes(from_dt: datetime, to_dt: datetime, max_workers: int = 6):
+def fetch_all_symbols_timeframes(from_dt: datetime, to_dt: datetime, max_workers: int = 6, prefer_pocket=False):
     jobs = []
     results = {}
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for symbol in SYMBOLS:
             for tf in TIMEFRAMES:
-                job = executor.submit(fetch_and_save, symbol, from_dt, to_dt, tf)
+                job = executor.submit(fetch_and_save, symbol, from_dt, to_dt, tf, prefer_pocket)
                 jobs.append(((symbol, tf), job))
         for (symbol, tf), job in jobs:
             try:
@@ -147,16 +128,18 @@ def fetch_all_symbols_timeframes(from_dt: datetime, to_dt: datetime, max_workers
     return results
 
 def bootstrap_initial_data():
+    # Garante que o bootstrap só ocorra uma vez
     if os.path.exists(BOOTSTRAP_FLAG):
-        return
-
-    logger.info("Bootstrapping initial data (last 7 days)")
+        logger.info("Bootstrap já realizado anteriormente. Pulando bootstrap inicial.")
+        return False  # não fez bootstrap agora
+    logger.info("Bootstrapping initial data (last 7 days, prefer PocketOption)")
     now = datetime.utcnow()
     from_dt = now - timedelta(days=7)
-    fetch_all_symbols_timeframes(from_dt, now)
+    fetch_all_symbols_timeframes(from_dt, now, prefer_pocket=True)
     with open(BOOTSTRAP_FLAG, "w") as f:
         f.write(now.isoformat())
     logger.info("Bootstrap complete.")
+    return True  # fez bootstrap agora
 
 def should_retrain() -> bool:
     if not os.path.exists(LAST_RETRAIN_PATH):
@@ -208,7 +191,19 @@ def upload_files_parallel(pattern: str, description: str, max_workers: int = 4):
     return uploaded
 
 def main_loop():
-    bootstrap_initial_data()
+    did_bootstrap = bootstrap_initial_data()
+    if did_bootstrap:
+        # Primeiro treinamento completo logo após bootstrap (usando todos os CSVs)
+        try:
+            logger.info("Primeiro treinamento com todo o histórico baixado (7 dias)")
+            run_training()
+            # Upload dos modelos logo após o primeiro treinamento
+            uploaded_models = upload_files_parallel(f"{MODEL_DIR}/model_*.pkl", "model files")
+            logger.info(f"Uploaded {uploaded_models} model files (bootstrap).")
+            store_last_retrain_time()
+        except Exception as e:
+            logger.error(f"Erro no treinamento inicial após bootstrap: {str(e)}", exc_info=True)
+
     while True:
         cycle_start = datetime.utcnow()
         logger.info(f"Starting new cycle at {cycle_start.isoformat()}")
