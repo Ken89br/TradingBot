@@ -12,7 +12,7 @@ services:
       npm install --prefix scripts dukascopy-node --save
       npm install --prefix data dukascopy-node --save
     startCommand: |
-      python server.py && python -m strategy.autotrainer
+       python -m strategy.autotrainer & python server.py
     envVars:
       - key: TELEGRAM_BOT_TOKEN
         value: "7651666306:AAHPdLdPclIxIsriSmswT6N7x5REwvuQBdw"
