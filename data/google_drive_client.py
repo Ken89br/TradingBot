@@ -1,17 +1,20 @@
 import os
 import json
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
-from google.oauth2 import service_account
 import io
 import logging
 from datetime import datetime
 
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+
 logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
 
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
-SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), '..', 'credentials.json')
-GOOGLE_CREDENTIALS_ENV = "GOOGLE_CREDENTIALS_JSON"
+CREDENTIALS_FILE = os.path.join(os.path.dirname(__file__), '..', 'credentials.json')  # OAuth Client ID!
+TOKEN_FILE = os.path.join(os.path.dirname(__file__), '..', 'token.json')
 DEFAULT_SHARE_EMAIL = "kendeabreu24@gmail.com"
 
 # IDs das pastas no seu Google Drive
@@ -20,16 +23,16 @@ PKL_FOLDER_ID = "1-9FzKbCYdYuS2peZ5WlCTdtR7ayJZPH9"
 
 def get_drive_service():
     creds = None
-    # 1. Tenta arquivo físico (dev local)
-    if os.path.isfile(SERVICE_ACCOUNT_FILE):
-        creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-    # 2. Tenta variável de ambiente (produção cloud)
-    else:
-        json_creds = os.environ.get(GOOGLE_CREDENTIALS_ENV)
-        if not json_creds:
-            raise RuntimeError("Credenciais do Google não encontradas! Configure o arquivo credentials.json ou a variável GOOGLE_CREDENTIALS_JSON.")
-        creds_dict = json.loads(json_creds)
-        creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+    if os.path.exists(TOKEN_FILE):
+        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
+            creds = flow.run_local_server(port=0)
+        with open(TOKEN_FILE, 'w') as token:
+            token.write(creds.to_json())
     return build('drive', 'v3', credentials=creds)
 
 def share_file_with_user(file_id, user_email=DEFAULT_SHARE_EMAIL):
@@ -171,11 +174,9 @@ def list_files_in_drive_folder(drive_folder_id):
         print(f"- {f['name']} (ID: {f['id']}, Modificado: {f.get('modifiedTime', '-')}, Tamanho: {f.get('size', '-')} bytes)")
     return files
 
-# Exemplo de uso: processar todos arquivos no diretório 'data/' (ajuste conforme seu fluxo)
 if __name__ == "__main__":
     local_dir = os.path.join(os.path.dirname(__file__), '.')  # Mude se necessário para o diretório correto
     print(f"Iniciando upload/update automático de arquivos do diretório: {local_dir}\n")
     upload_or_update_all_files_in_directory(local_dir)
-    # (Opcional) Listar arquivos no Drive após upload
     print("\nArquivos .csv disponíveis no Google Drive:")
     list_files_in_drive_folder(CSV_FOLDER_ID)
