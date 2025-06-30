@@ -40,6 +40,7 @@ class FallbackDataClient:
     IN_ROWS_BEFORE_RETRAIN = 50
     def __init__(self):
         self.providers = [
+            PocketOptionClient(),
             TwelveDataClient(),
             TiingoClient(),
             PolygonClient()
