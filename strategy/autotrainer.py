@@ -10,20 +10,19 @@
 import os
 import time
 import json
-import subprocess
 import glob
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from hashlib import md5
 
 from strategy.train_model_historic import main as run_training
 from config import CONFIG
 from data.google_drive_client import upload_or_update_file as upload_file, get_folder_id_for_file
+from data.data_client import FallbackDataClient  # NOVO IMPORT
 
 load_dotenv()
 
-# Configurações
 SYMBOLS = CONFIG["symbols"] + CONFIG.get("otc_symbols", [])
 TIMEFRAMES = CONFIG["timeframes"]
 DATA_DIR = "data"
@@ -36,7 +35,6 @@ LAST_RETRAIN_PATH = os.path.join(DATA_DIR, "last_retrain.txt")
 LOG_FILE = os.path.join(DATA_DIR, "autotrainer.log")
 FILE_HASHES_PATH = os.path.join(DATA_DIR, "autotrainer_uploaded_hashes.json")
 
-# Logging estruturado
 def setup_logging():
     import logging
     logging.basicConfig(
@@ -51,7 +49,6 @@ def setup_logging():
 
 logger = setup_logging()
 
-# Utilitário para hash de arquivo
 def file_md5(path):
     hash_md5 = md5()
     try:
@@ -63,7 +60,6 @@ def file_md5(path):
         logger.error(f"Erro ao calcular hash de {path}: {str(e)}")
         return None
 
-# Carrega/Sava hashes de uploads para evitar uploads repetidos
 def load_uploaded_hashes():
     if os.path.exists(FILE_HASHES_PATH):
         try:
@@ -82,34 +78,31 @@ def save_uploaded_hashes(hashes):
 
 uploaded_hashes = load_uploaded_hashes()
 
+# Instancia global para não iniciar providers toda vez
+data_client = FallbackDataClient()
+
 def fetch_and_save(symbol: str, from_dt: datetime, to_dt: datetime, tf: str) -> bool:
-    """Busca e salva dados do Dukascopy com tratamento robusto de erros"""
+    """
+    Busca dados via FallbackDataClient (Dukascopy, depois outros se falhar), salva CSV, loga e retorna sucesso.
+    """
     try:
-        symbol_clean = symbol.lower().replace(" ", "").replace("/", "")
-        cmd = [
-            "node", "data/dukascopy_client.cjs",
-            symbol_clean, tf.lower(),
-            from_dt.isoformat(), to_dt.isoformat()
-        ]
-        logger.info(f"Fetching {symbol} {tf} from {from_dt} to {to_dt}")
-
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=120,
-            check=True
-        )
-
-        candles = json.loads(result.stdout)
+        # FallbackDataClient espera intervalos tipo "m1", "m5", etc.
+        tf_map = {
+            "S1": "s1", "M1": "m1", "M5": "m5", "M15": "m15",
+            "M30": "m30", "H1": "h1", "H4": "h4", "D1": "d1"
+        }
+        interval = tf_map.get(tf.upper(), tf.lower())
+        # Busca candles do provider (history é lista de dicts)
+        candles_result = data_client.fetch_candles(symbol, interval=interval, limit=500)
+        candles = candles_result["history"] if candles_result and "history" in candles_result else None
         if not candles:
             logger.warning(f"No candles for {symbol} @ {tf}")
             return False
 
-        filename = f"{symbol_clean}_{tf.lower()}.csv"
+        symbol_clean = symbol.lower().replace(" ", "").replace("/", "")
+        filename = f"{symbol_clean}_{interval}.csv"
         filepath = os.path.join(DATA_DIR, filename)
 
-        # Decide se escreve cabeçalho
         write_header = not os.path.exists(filepath)
         with open(filepath, "a") as f:
             if write_header:
@@ -120,19 +113,11 @@ def fetch_and_save(symbol: str, from_dt: datetime, to_dt: datetime, tf: str) -> 
         logger.info(f"Saved {len(candles)} rows to {filename}")
         return True
 
-    except subprocess.TimeoutExpired:
-        logger.error(f"Timeout fetching {symbol} @ {tf}")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Command failed for {symbol} @ {tf}: {e.stderr}")
-    except json.JSONDecodeError:
-        logger.error(f"Invalid JSON response for {symbol} @ {tf}")
     except Exception as e:
         logger.error(f"Unexpected error with {symbol} @ {tf}: {str(e)}", exc_info=True)
-
     return False
 
 def fetch_all_symbols_timeframes(from_dt: datetime, to_dt: datetime, max_workers: int = 6):
-    """Paraleliza a coleta usando ThreadPoolExecutor"""
     jobs = []
     results = {}
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -148,7 +133,6 @@ def fetch_all_symbols_timeframes(from_dt: datetime, to_dt: datetime, max_workers
     return results
 
 def bootstrap_initial_data():
-    """Carrega dados históricos iniciais"""
     if os.path.exists(BOOTSTRAP_FLAG):
         return
 
@@ -182,7 +166,6 @@ def store_last_retrain_time():
         logger.error(f"Failed to upload retrain time: {str(e)}")
 
 def upload_files_parallel(pattern: str, description: str, max_workers: int = 4):
-    """Upload paralelo e inteligente: só arquivos novos/alterados sobem"""
     files = glob.glob(pattern)
     jobs = []
     uploaded = 0
@@ -193,12 +176,11 @@ def upload_files_parallel(pattern: str, description: str, max_workers: int = 4):
             file_hash = file_md5(filepath)
             if not file_hash:
                 continue
-            # Só faz upload se mudou
             if uploaded_hashes.get(filename) == file_hash:
                 logger.info(f"Skip upload (not changed): {filename}")
                 continue
             jobs.append(executor.submit(upload_file, filepath))
-            uploaded_hashes[filename] = file_hash  # Marca como enviado
+            uploaded_hashes[filename] = file_hash
             changed_hashes = True
         for idx, job in enumerate(jobs):
             try:
@@ -212,24 +194,19 @@ def upload_files_parallel(pattern: str, description: str, max_workers: int = 4):
     return uploaded
 
 def main_loop():
-    """Loop principal de execução"""
     bootstrap_initial_data()
-
     while True:
         cycle_start = datetime.utcnow()
         logger.info(f"Starting new cycle at {cycle_start.isoformat()}")
 
-        # 1. Coleta de dados (paralelizada)
         fetch_start = cycle_start - timedelta(seconds=30)
         fetch_results = fetch_all_symbols_timeframes(fetch_start, cycle_start)
         success_count = sum(1 for v in fetch_results.values() if v)
         logger.info(f"Fetch complete: {success_count} datasets updated.")
 
-        # 2. Upload de dados (paralelo/inteligente)
         uploaded_csv = upload_files_parallel(f"{DATA_DIR}/*.csv", "CSV files")
         logger.info(f"Uploaded {uploaded_csv} CSV files.")
 
-        # 3. Treinamento condicional
         if should_retrain():
             try:
                 logger.info("Starting model training...")
@@ -242,7 +219,6 @@ def main_loop():
         else:
             logger.info("Skipping training - not time yet")
 
-        # 4. Controle de ciclo
         cycle_duration = (datetime.utcnow() - cycle_start).total_seconds()
         sleep_time = max(1, 30 - cycle_duration)
         logger.info(f"Cycle completed in {cycle_duration:.2f}s. Sleeping {sleep_time:.2f}s")
