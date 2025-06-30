@@ -5,6 +5,7 @@ import os
 import pandas as pd
 import joblib
 from datetime import datetime, timedelta
+from data.pocketoption_data import PocketOptionClient
 from data.twelvedata_data import TwelveDataClient
 from data.tiingo_data import TiingoClient
 from data.polygon_data import PolygonClient
