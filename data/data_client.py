@@ -13,6 +13,29 @@ from data.google_drive_client import upload_or_update_file as upload_file, downl
 
 LAST_RETRAIN_PATH = "last_retrain.txt"
 
+def merge_and_save_csv(filepath, new_candles):
+    """
+    Mescla candles novos ao histórico local, remove duplicatas e salva ordenado por timestamp.
+    """
+    # Carrega dados existentes, se houver
+    if os.path.exists(filepath):
+        df_old = pd.read_csv(filepath)
+    else:
+        df_old = pd.DataFrame()
+
+    df_new = pd.DataFrame(new_candles)
+    if df_new.empty:
+        return  # Não há o que salvar
+
+    # Concatena, remove duplicatas por timestamp
+    if not df_old.empty:
+        df_all = pd.concat([df_old, df_new], ignore_index=True)
+    else:
+        df_all = df_new
+    df_all.drop_duplicates(subset=['timestamp'], keep='last', inplace=True)
+    df_all.sort_values('timestamp', inplace=True)
+    df_all.to_csv(filepath, index=False)
+
 class FallbackDataClient:
     IN_ROWS_BEFORE_RETRAIN = 50
     def __init__(self):
@@ -21,12 +44,13 @@ class FallbackDataClient:
             TiingoClient(),
             PolygonClient()
         ]
-        self.initialized = False
+        # Não mais tracking de histórico inicial
+        # self.initialized = False
 
     def fetch_candles(self, symbol, interval="1min", limit=5):
         print(f"📡 Fetching from Dukascopy: {symbol} @ {interval}")
         try:
-            candles = self._fetch_from_dukascopy(symbol, interval)
+            candles = self._fetch_from_dukascopy(symbol, interval, limit)
             if candles and "history" in candles:
                 print("✅ Dukascopy succeeded.")
                 self._save_to_csv(symbol, interval, candles["history"])
@@ -49,12 +73,12 @@ class FallbackDataClient:
         print("❌ All providers failed.")
         return None
 
-    def _fetch_from_dukascopy(self, symbol, interval):
+    def _fetch_from_dukascopy(self, symbol, interval, limit):
         now = datetime.utcnow()
 
-        # Se for a primeira chamada, tenta baixar arquivo do Google Drive antes de criar novo
         filename = f"{symbol.lower()}_{self._convert_tf(interval)}.csv"
         filepath = f"data/{filename}"
+        # Só baixa do Drive se arquivo local não existir
         if not os.path.exists(filepath):
             try:
                 print(f"⬇️ Baixando {filename} do Google Drive...")
@@ -63,19 +87,13 @@ class FallbackDataClient:
             except Exception as e:
                 print(f"⚠️ Não foi possível baixar {filename}: {e}")
 
-        # Se for a primeira chamada desde o start, busca 7 dias
-        if not self.initialized:
-            from_dt = now - timedelta(days=7)
-            self.initialized = True
-        else:
-            from_dt = now - timedelta(seconds=30)
-
+        # Busca apenas os candles mais recentes (limit)
+        from_dt = now - timedelta(minutes=limit)
         cmd = [
             "node", "--max-old-space-size=1024", "data/dukascopy_client.cjs",
             symbol.lower(), self._convert_tf(interval),
             from_dt.isoformat(), now.isoformat()
         ]
-
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
         if result.returncode != 0:
             raise RuntimeError(result.stderr)
@@ -91,13 +109,8 @@ class FallbackDataClient:
             return
         filename = f"{symbol.lower()}_{self._convert_tf(interval)}.csv"
         path = f"data/{filename}"
-        header = not os.path.exists(path)
-        with open(path, "a") as f:
-            if header:
-                f.write("timestamp,open,high,low,close,volume\n")
-            for c in candles:
-                line = f"{c['timestamp']},{c['open']},{c['high']},{c['low']},{c['close']},{c['volume']}\n"
-                f.write(line)
+        # Mescla e salva de modo seguro
+        merge_and_save_csv(path, candles)
         try:
             file_id = upload_file(path)
             print(f"☁️ Arquivo {filename} enviado ao Google Drive! ID: {file_id}")
@@ -113,7 +126,6 @@ class FallbackDataClient:
             self._store_last_retrain_time(now)
 
     def _load_last_retrain_time(self):
-        # Tenta pegar do Google Drive primeiro
         try:
             if not os.path.exists(LAST_RETRAIN_PATH):
                 download_file(LAST_RETRAIN_PATH, LAST_RETRAIN_PATH, drive_folder_id=get_folder_id_for_file(LAST_RETRAIN_PATH))
