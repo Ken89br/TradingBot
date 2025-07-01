@@ -30,6 +30,77 @@ def merge_and_save_csv(filepath, new_candles):
     df_all.sort_values('timestamp', inplace=True)
     df_all.to_csv(filepath, index=False)
 
+def _map_symbol(symbol, provider):
+    """
+    Adapta o símbolo para o formato correto de cada provedor.
+    """
+    orig = symbol
+    if provider == "PocketOptionClient":
+        # Ex: EURUSD → eurusd, EURUSD OTC → eurusdotc (sem espaço/caixa baixa)
+        s = symbol.lower().replace(" ", "")
+        return s
+    elif provider == "TwelveDataClient":
+        # Ex: EURUSD → EUR/USD, EURUSD OTC → ignora OTC
+        if "OTC" in symbol:
+            # TwelveData não suporta OTC, devolve None
+            return None
+        if "/" in symbol:
+            return symbol.upper().replace(" OTC", "")
+        return f"{symbol[:3]}/{symbol[3:6]}"
+    elif provider == "TiingoClient":
+        # Ex: EURUSD → eurusd (sem OTC)
+        if "OTC" in symbol:
+            return None
+        return symbol.lower().replace(" ", "").replace("/", "")
+    elif provider == "PolygonClient":
+        # Ex: EURUSD → C:EURUSD, EURUSD OTC → ignora OTC
+        if "OTC" in symbol:
+            return None
+        base = symbol.replace(" ", "").replace("/", "")
+        if len(base) == 6:
+            return f"C:{base.upper()}"
+        return None
+    elif provider == "Dukascopy":
+        # Dukascopy aceita OTC (em algumas plataformas) como eurusdotc ou eurusd (deve testar)
+        return symbol.lower().replace(" ", "")
+    # Default: retorna como está
+    return symbol
+
+def _map_timeframe(interval, provider):
+    """
+    Adapta o timeframe/intervalo para cada provedor.
+    """
+    tf_map = {
+        "S1": "s1", "M1": "m1", "M5": "m5", "M15": "m15",
+        "M30": "m30", "H1": "h1", "H4": "h4", "D1": "d1",
+        "1min": "m1", "5min": "m5", "15min": "m15", "30min": "m30",
+        "1h": "h1", "4h": "h4", "1day": "d1"
+    }
+    if provider == "TwelveDataClient":
+        # TwelveData aceita "1min", "5min", etc
+        return {
+            "s1": "1min", "m1": "1min", "m5": "5min", "m15": "15min",
+            "m30": "30min", "h1": "1h", "h4": "4h", "d1": "1day"
+        }.get(tf_map.get(interval, interval), "1min")
+    elif provider == "TiingoClient":
+        # Aceita "1min", "5min", etc
+        return {
+            "s1": "1min", "m1": "1min", "m5": "5min", "m15": "15min",
+            "m30": "30min", "h1": "1h", "h4": "4h", "d1": "1day"
+        }.get(tf_map.get(interval, interval), "1min")
+    elif provider == "PolygonClient":
+        # Só aceita "1", "5", "15", "30", "60"
+        return {
+            "s1": "1", "m1": "1", "m5": "5", "m15": "15", "m30": "30",
+            "h1": "60", "h4": "240", "d1": "1440"
+        }.get(tf_map.get(interval, interval), "1")
+    elif provider == "PocketOptionClient":
+        # Aceita "m1", "m5", etc (já no formato)
+        return tf_map.get(interval, interval)
+    elif provider == "Dukascopy":
+        return tf_map.get(interval, interval)
+    return interval
+
 class FallbackDataClient:
     IN_ROWS_BEFORE_RETRAIN = 50
     def __init__(self):
@@ -41,25 +112,14 @@ class FallbackDataClient:
         ]
 
     def fetch_candles(self, symbol, interval="1min", limit=5, prefer_pocket=False):
-        # prefer_pocket: se True, tenta só os providers, pulando Dukascopy
-        if prefer_pocket:
-            for i, provider in enumerate(self.providers):
-                print(f"⚙️ Trying (prefer_pocket) #{i+1}: {provider.__class__.__name__}")
-                try:
-                    result = provider.fetch_candles(symbol, interval=interval, limit=limit)
-                    if result and "history" in result:
-                        print(f"✅ Success from prefer_pocket: {provider.__class__.__name__}")
-                        self._save_to_csv(symbol, interval, result["history"])
-                        return result
-                except Exception as e:
-                    print(f"❌ Prefer_pocket error #{i+1}: {e}")
-            print("❌ All prefer_pocket providers failed.")
-            return None
-
-        print(f"📡 Fetching from Dukascopy: {symbol} @ {interval}")
+        tested = set()
+        # 1. Sempre tente Dukascopy primeiro (até mesmo no prefer_pocket), se possível
+        dsymbol = _map_symbol(symbol, "Dukascopy")
+        dinterval = _map_timeframe(interval, "Dukascopy")
+        print(f"📡 [Dukascopy] Trying symbol={dsymbol}, interval={dinterval}, limit={limit}")
         try:
-            candles = self._fetch_from_dukascopy(symbol, interval, limit)
-            if candles and "history" in candles:
+            candles = self._fetch_from_dukascopy(dsymbol, dinterval, limit)
+            if candles and "history" in candles and candles["history"]:
                 print("✅ Dukascopy succeeded.")
                 self._save_to_csv(symbol, interval, candles["history"])
                 self._maybe_retrain()
@@ -67,22 +127,33 @@ class FallbackDataClient:
         except Exception as e:
             print(f"❌ Dukascopy failed: {e}")
 
+        # 2. Depois, tente os providers alternativos, respeitando OTC
         for i, provider in enumerate(self.providers):
-            print(f"⚙️ Trying fallback #{i+1}: {provider.__class__.__name__}")
+            name = provider.__class__.__name__
+            psymbol = _map_symbol(symbol, name)
+            if psymbol is None:
+                print(f"⚠️ [{name}] Não suporta esse símbolo: {symbol}")
+                continue
+            pinterval = _map_timeframe(interval, name)
+            if (name, psymbol, pinterval) in tested:
+                continue
+            print(f"⚙️ Trying {name} with symbol={psymbol}, interval={pinterval}, limit={limit}")
             try:
-                result = provider.fetch_candles(symbol, interval=interval, limit=limit)
-                if result and "history" in result:
-                    print(f"✅ Success from fallback: {provider.__class__.__name__}")
+                result = provider.fetch_candles(psymbol, interval=pinterval, limit=limit)
+                if result and "history" in result and result["history"]:
+                    print(f"✅ Success from {name}")
                     self._save_to_csv(symbol, interval, result["history"])
                     return result
             except Exception as e:
-                print(f"❌ Fallback #{i+1} error: {e}")
+                print(f"❌ {name} error: {e}")
+            tested.add((name, psymbol, pinterval))
+
         print("❌ All providers failed.")
         return None
 
     def _fetch_from_dukascopy(self, symbol, interval, limit):
         now = datetime.utcnow()
-        filename = f"{symbol.lower()}_{self._convert_tf(interval)}.csv"
+        filename = f"{symbol}_{interval}.csv"
         filepath = f"data/{filename}"
         if not os.path.exists(filepath):
             try:
@@ -94,7 +165,7 @@ class FallbackDataClient:
         from_dt = now - timedelta(minutes=limit)
         cmd = [
             "node", "--max-old-space-size=1024", "data/dukascopy_client.cjs",
-            symbol.lower(), self._convert_tf(interval),
+            symbol, interval,
             from_dt.isoformat(), now.isoformat()
         ]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
@@ -109,7 +180,7 @@ class FallbackDataClient:
     def _save_to_csv(self, symbol, interval, candles):
         if not candles:
             return
-        filename = f"{symbol.lower()}_{self._convert_tf(interval)}.csv"
+        filename = f"{symbol.lower().replace(' ', '').replace('/', '')}_{_map_timeframe(interval, 'Dukascopy')}.csv"
         path = f"data/{filename}"
         merge_and_save_csv(path, candles)
         try:
@@ -148,10 +219,3 @@ class FallbackDataClient:
             upload_file(LAST_RETRAIN_PATH)
         except Exception as e:
             print(f"⚠️ Falha ao enviar {LAST_RETRAIN_PATH} ao Google Drive: {e}")
-
-    def _convert_tf(self, interval):
-        return {
-            "1min": "m1", "5min": "m5", "15min": "m15",
-            "30min": "m30", "1h": "h1",
-            "4h": "h4", "1day": "d1", "s1": "s1"
-        }.get(interval.lower(), "m1")
