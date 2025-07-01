@@ -1,6 +1,12 @@
-# strategy/autotrainer.py
-# Automatiza coleta de dados, treinamento e upload para Google Drive.
-# Busca candles dos provedores e NUNCA usa CSV antigo do repo como fonte primária.
+#Função principal: Automatizar o fluxo completo de coleta de dados, disparo de treinamento, e upload para o Google Drive.
+#O que faz:
+#Busca dados de candles para vários símbolos/timeframes utilizando um cliente externo (dukascopy_client.cjs).
+#Salva esses dados em CSV.
+#Faz upload dos CSVs e modelos para o Google Drive.
+#Periodicamente dispara o treinamento do modelo histórico (train_model_historic.main()).
+#Roda em loop continuamente, mantendo os dados e modelos sempre atualizados.
+
+#strategy/autotrainer.py
 
 import os
 import time
