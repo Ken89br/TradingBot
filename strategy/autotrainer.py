@@ -1,12 +1,4 @@
-#Função principal: Automatizar o fluxo completo de coleta de dados, disparo de treinamento, e upload para o Google Drive.
-#O que faz:
-#Busca dados de candles para vários símbolos/timeframes utilizando um cliente externo (dukascopy_client.cjs).
-#Salva esses dados em CSV.
-#Faz upload dos CSVs e modelos para o Google Drive.
-#Periodicamente dispara o treinamento do modelo histórico (train_model_historic.main()).
-#Roda em loop continuamente, mantendo os dados e modelos sempre atualizados.
-
-#strategy/autotrainer.py
+# strategy/autotrainer.py
 
 import os
 import time
@@ -80,17 +72,28 @@ def save_uploaded_hashes(hashes):
 uploaded_hashes = load_uploaded_hashes()
 
 data_client = FallbackDataClient()
-MIN_CANDLES = 100  # Nunca aceita CSV velho/curto
+MIN_CANDLES = 100
 
 def merge_and_save_csv(filepath, new_candles):
     import pandas as pd
-    # Não importa conteúdo anterior, só sobrescreve (garante só dados frescos)
+    # Mantém histórico anterior e adiciona apenas candles novos, sem duplicar timestamp
+    if os.path.exists(filepath):
+        try:
+            df_old = pd.read_csv(filepath)
+        except Exception:
+            df_old = pd.DataFrame()
+    else:
+        df_old = pd.DataFrame()
     df_new = pd.DataFrame(new_candles)
     if df_new.empty:
         return
-    df_new.drop_duplicates(subset=['timestamp'], keep='last', inplace=True)
-    df_new.sort_values('timestamp', inplace=True)
-    df_new.to_csv(filepath, index=False)
+    if not df_old.empty:
+        df_all = pd.concat([df_old, df_new], ignore_index=True)
+    else:
+        df_all = df_new
+    df_all.drop_duplicates(subset=['timestamp'], keep='last', inplace=True)
+    df_all.sort_values('timestamp', inplace=True)
+    df_all.to_csv(filepath, index=False)
 
 def fetch_and_save(symbol: str, from_dt: datetime, to_dt: datetime, tf: str, prefer_pocket=False) -> bool:
     try:
@@ -99,7 +102,6 @@ def fetch_and_save(symbol: str, from_dt: datetime, to_dt: datetime, tf: str, pre
             "M30": "m30", "H1": "h1", "H4": "h4", "D1": "d1"
         }
         interval = tf_map.get(tf.upper(), tf.lower())
-        # Sempre busca candles FRESCOS dos provedores
         candles_result = data_client.fetch_candles(symbol, interval=interval, limit=500, prefer_pocket=prefer_pocket)
         candles = candles_result["history"] if candles_result and "history" in candles_result else None
         if not candles or len(candles) < MIN_CANDLES:
@@ -110,7 +112,7 @@ def fetch_and_save(symbol: str, from_dt: datetime, to_dt: datetime, tf: str, pre
         filename = f"{symbol_clean}_{interval}.csv"
         filepath = os.path.join(DATA_DIR, filename)
         merge_and_save_csv(filepath, candles)
-        logger.info(f"Saved {len(candles)} rows to {filename}")
+        logger.info(f"Saved/merged {len(candles)} rows to {filename}")
         return True
 
     except Exception as e:
@@ -133,10 +135,9 @@ def fetch_all_symbols_timeframes(from_dt: datetime, to_dt: datetime, max_workers
     return results
 
 def bootstrap_initial_data():
-    # Garante que o bootstrap só ocorra uma vez
     if os.path.exists(BOOTSTRAP_FLAG):
         logger.info("Bootstrap já realizado anteriormente. Pulando bootstrap inicial.")
-        return False  # não fez bootstrap agora
+        return False
     logger.info("Bootstrapping initial data (last 7 days, prefer PocketOption)")
     now = datetime.utcnow()
     from_dt = now - timedelta(days=7)
@@ -144,7 +145,7 @@ def bootstrap_initial_data():
     with open(BOOTSTRAP_FLAG, "w") as f:
         f.write(now.isoformat())
     logger.info("Bootstrap complete.")
-    return True  # fez bootstrap agora
+    return True
 
 def should_retrain() -> bool:
     if not os.path.exists(LAST_RETRAIN_PATH):
@@ -198,11 +199,9 @@ def upload_files_parallel(pattern: str, description: str, max_workers: int = 4):
 def main_loop():
     did_bootstrap = bootstrap_initial_data()
     if did_bootstrap:
-        # Primeiro treinamento completo logo após bootstrap (usando todos os CSVs)
         try:
             logger.info("Primeiro treinamento com todo o histórico baixado (7 dias)")
             run_training()
-            # Upload dos modelos logo após o primeiro treinamento
             uploaded_models = upload_files_parallel(f"{MODEL_DIR}/model_*.pkl", "model files")
             logger.info(f"Uploaded {uploaded_models} model files (bootstrap).")
             store_last_retrain_time()
