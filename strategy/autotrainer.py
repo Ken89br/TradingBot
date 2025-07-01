@@ -1,12 +1,7 @@
-#Função principal: Automatizar o fluxo completo de coleta de dados, disparo de treinamento, e upload para o Google Drive.
-#O que faz:
-#Busca dados de candles para vários símbolos/timeframes utilizando um cliente externo (dukascopy_client.cjs).
-#Salva esses dados em CSV.
-#Faz upload dos CSVs e modelos para o Google Drive.
-#Periodicamente dispara o treinamento do modelo histórico (train_model_historic.main()).
-#Roda em loop continuamente, mantendo os dados e modelos sempre atualizados.
+# strategy/autotrainer.py
+# Automatiza coleta de dados, treinamento e upload para Google Drive.
+# Busca candles dos provedores e NUNCA usa CSV antigo do repo como fonte primária.
 
-#strategy/autotrainer.py
 import os
 import time
 import json
@@ -79,23 +74,17 @@ def save_uploaded_hashes(hashes):
 uploaded_hashes = load_uploaded_hashes()
 
 data_client = FallbackDataClient()
+MIN_CANDLES = 100  # Nunca aceita CSV velho/curto
 
 def merge_and_save_csv(filepath, new_candles):
     import pandas as pd
-    if os.path.exists(filepath):
-        df_old = pd.read_csv(filepath)
-    else:
-        df_old = pd.DataFrame()
+    # Não importa conteúdo anterior, só sobrescreve (garante só dados frescos)
     df_new = pd.DataFrame(new_candles)
     if df_new.empty:
         return
-    if not df_old.empty:
-        df_all = pd.concat([df_old, df_new], ignore_index=True)
-    else:
-        df_all = df_new
-    df_all.drop_duplicates(subset=['timestamp'], keep='last', inplace=True)
-    df_all.sort_values('timestamp', inplace=True)
-    df_all.to_csv(filepath, index=False)
+    df_new.drop_duplicates(subset=['timestamp'], keep='last', inplace=True)
+    df_new.sort_values('timestamp', inplace=True)
+    df_new.to_csv(filepath, index=False)
 
 def fetch_and_save(symbol: str, from_dt: datetime, to_dt: datetime, tf: str, prefer_pocket=False) -> bool:
     try:
@@ -104,10 +93,11 @@ def fetch_and_save(symbol: str, from_dt: datetime, to_dt: datetime, tf: str, pre
             "M30": "m30", "H1": "h1", "H4": "h4", "D1": "d1"
         }
         interval = tf_map.get(tf.upper(), tf.lower())
+        # Sempre busca candles FRESCOS dos provedores
         candles_result = data_client.fetch_candles(symbol, interval=interval, limit=500, prefer_pocket=prefer_pocket)
         candles = candles_result["history"] if candles_result and "history" in candles_result else None
-        if not candles:
-            logger.warning(f"No candles for {symbol} @ {tf}")
+        if not candles or len(candles) < MIN_CANDLES:
+            logger.warning(f"Não foi possível obter candles válidos para {symbol} @ {tf} (obtidos: {0 if not candles else len(candles)})")
             return False
 
         symbol_clean = symbol.lower().replace(" ", "").replace("/", "")
