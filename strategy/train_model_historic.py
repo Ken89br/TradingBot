@@ -28,11 +28,8 @@ from strategy.indicators import (
 
 # Google Drive utilities
 from data.google_drive_client import upload_or_update_file as upload_file, download_file, find_file_id, get_folder_id_for_file
-
-# PATCH: FallbackDataClient para buscar candles frescos se CSV estiver ruim
 from data.data_client import FallbackDataClient
 
-# Logging estruturado
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -79,7 +76,6 @@ class DataProcessor:
 
     @staticmethod
     def load_and_validate_data(filepath: str) -> Optional[pd.DataFrame]:
-        """Carrega e valida dados históricos com tratamento de erros"""
         try:
             df = pd.read_csv(filepath)
             required_cols = {"timestamp", "open", "high", "low", "close", "volume"}
@@ -96,6 +92,27 @@ class DataProcessor:
             return None
 
     @staticmethod
+    def merge_and_save_candles(filepath, new_candles):
+        # Mantém histórico anterior e adiciona apenas candles novos, sem duplicar timestamp
+        if os.path.exists(filepath):
+            try:
+                df_old = pd.read_csv(filepath)
+            except Exception:
+                df_old = pd.DataFrame()
+        else:
+            df_old = pd.DataFrame()
+        df_new = pd.DataFrame(new_candles)
+        if df_new.empty:
+            return
+        if not df_old.empty:
+            df_all = pd.concat([df_old, df_new], ignore_index=True)
+        else:
+            df_all = df_new
+        df_all.drop_duplicates(subset=['timestamp'], keep='last', inplace=True)
+        df_all.sort_values('timestamp', inplace=True)
+        df_all.to_csv(filepath, index=False)
+
+    @staticmethod
     def create_target_variable(df: pd.DataFrame, future_bars: int = 1) -> pd.DataFrame:
         """Cria variável target para previsão de tendência"""
         df = df.copy()
@@ -106,7 +123,6 @@ class DataProcessor:
 
     @staticmethod
     def temporal_split(df: pd.DataFrame, test_size: float = 0.2) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        """Divisão temporal mantendo a ordem"""
         split_idx = int(len(df) * (1 - test_size))
         return df.iloc[:split_idx], df.iloc[split_idx:]
 
@@ -345,7 +361,7 @@ def train_pipeline(filepath: str) -> Optional[Dict]:
             logger.warning(f"Arquivo com nome inesperado: {filepath}")
             return None
 
-        # PATCH: Buscar candles frescos se o arquivo está inválido ou com poucos dados
+        # Busca candles frescos se o arquivo está inválido ou com poucos dados, mas faz merge para manter histórico!
         if df is None or len(df) < MIN_CANDLES:
             logger.warning(f"Arquivo {filepath} inválido ou com poucos dados ({0 if df is None else len(df)} linhas). Buscando candles frescos...")
             fallback_client = FallbackDataClient()
@@ -355,9 +371,8 @@ def train_pipeline(filepath: str) -> Optional[Dict]:
             if not candles or len(candles) < MIN_CANDLES:
                 logger.error(f"Não foi possível obter candles válidos para {symbol}/{tf}. Abortando.")
                 return None
-            # Sobrescreve o arquivo CSV com candles novos
-            pd.DataFrame(candles).to_csv(filepath, index=False)
-            df = pd.read_csv(filepath)
+            DataProcessor.merge_and_save_candles(filepath, candles)
+            df = DataProcessor.load_and_validate_data(filepath)
 
         logger.info(f"Processando dados para {symbol}/{tf} ({len(df)} registros)")
         # Engenharia de features
