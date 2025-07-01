@@ -11,7 +11,6 @@ class TwelveDataClient:
         self.base_url = "https://api.twelvedata.com"
 
     def fetch_candles(self, symbol, interval="1min", limit=5, retries=2):
-        # TwelveData format: e.g., EUR/USD -> "EUR/USD"
         formatted_symbol = symbol.upper() if "/" in symbol else f"{symbol[:3]}/{symbol[3:]}"
         
         url = f"{self.base_url}/time_series"
@@ -28,7 +27,7 @@ class TwelveDataClient:
 
         for attempt in range(retries + 1):
             try:
-                res = requests.get(url, params=params, timeout=5)
+                res = requests.get(url, params=params, timeout=10)
                 print(f"📥 Raw response: {res.status_code} {res.text}")
 
                 if res.status_code != 200:
@@ -43,8 +42,19 @@ class TwelveDataClient:
 
                 candles = []
                 for row in reversed(data["values"]):
+                    dt_raw = row["datetime"]
+                    ts = None
+                    try:
+                        # Primeiro tenta com hora, depois só data
+                        ts = int(datetime.strptime(dt_raw, "%Y-%m-%d %H:%M:%S").timestamp())
+                    except ValueError:
+                        try:
+                            ts = int(datetime.strptime(dt_raw, "%Y-%m-%d").timestamp())
+                        except Exception as err:
+                            print(f"⚠️ Erro ao converter data '{dt_raw}': {err}")
+                            continue
                     candles.append({
-                        "timestamp": int(datetime.strptime(row["datetime"], "%Y-%m-%d").timestamp()),
+                        "timestamp": ts,
                         "open": float(row["open"]),
                         "high": float(row["high"]),
                         "low": float(row["low"]),
@@ -63,4 +73,3 @@ class TwelveDataClient:
 
         print("⛔ Max retries reached.")
         return None
-                                     
