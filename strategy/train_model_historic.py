@@ -28,7 +28,6 @@ from strategy.indicators import (
 
 # Google Drive utilities
 from data.google_drive_client import upload_or_update_file as upload_file, download_file, find_file_id, get_folder_id_for_file
-from data.data_client import FallbackDataClient
 
 logging.basicConfig(
     level=logging.INFO,
@@ -352,6 +351,8 @@ def ensure_latest_model(symbol, tf):
 
 def train_pipeline(filepath: str) -> Optional[Dict]:
     """Pipeline completo para um arquivo de dados"""
+    
+    from data.data_client import FallbackDataClient
     try:
         logger.info(f"Iniciando processamento para: {filepath}")
         # Carregar e validar dados
