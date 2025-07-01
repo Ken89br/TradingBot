@@ -1,7 +1,9 @@
+#data/google_drive_client.py
 import os
 import json
 import io
 import logging
+import time
 from datetime import datetime
 
 from googleapiclient.discovery import build
@@ -66,10 +68,11 @@ def find_file_id(filename, drive_folder_id=None):
         return files[0]['id']
     return None
 
-def upload_or_update_file(filepath, drive_folder_id=None, share_with_email=DEFAULT_SHARE_EMAIL):
+def upload_or_update_file(filepath, drive_folder_id=None, share_with_email=DEFAULT_SHARE_EMAIL, retries=3):
     """
     Faz upload do arquivo, ou faz update do mesmo no Google Drive se ele já existir.
     Retorna o file_id do arquivo no Drive.
+    Robustez: tenta até 3x antes de falhar.
     """
     service = get_drive_service()
     filename = os.path.basename(filepath)
@@ -80,35 +83,47 @@ def upload_or_update_file(filepath, drive_folder_id=None, share_with_email=DEFAU
     if drive_folder_id:
         file_metadata['parents'] = [drive_folder_id]
     media = MediaFileUpload(filepath, resumable=True)
-    if file_id:
-        # Atualiza arquivo existente (commit/update)
-        updated_file = service.files().update(
-            fileId=file_id,
-            media_body=media
-        ).execute()
-        print(f"📝 Atualização concluída: {filename} (ID: {file_id})")
-        if share_with_email:
-            share_file_with_user(file_id, share_with_email)
-        return file_id
-    else:
-        # Faz upload novo se não existir
-        file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-        file_id = file.get('id')
-        print(f"✅ Upload concluído: {filename} (ID: {file_id})")
-        if share_with_email:
-            share_file_with_user(file_id, share_with_email)
-        return file_id
-        
+
+    last_exception = None
+    for attempt in range(1, retries + 1):
+        try:
+            if file_id:
+                # Atualiza arquivo existente (commit/update)
+                updated_file = service.files().update(
+                    fileId=file_id,
+                    media_body=media
+                ).execute()
+                print(f"📝 Atualização concluída: {filename} (ID: {file_id})")
+                if share_with_email:
+                    share_file_with_user(file_id, share_with_email)
+                return file_id
+            else:
+                # Faz upload novo se não existir
+                file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+                file_id = file.get('id')
+                print(f"✅ Upload concluído: {filename} (ID: {file_id})")
+                if share_with_email:
+                    share_file_with_user(file_id, share_with_email)
+                return file_id
+        except Exception as e:
+            print(f"⚠️ Tentativa {attempt}/{retries} falhou para upload/update de '{filename}': {e}")
+            last_exception = e
+            time.sleep(2)
+    print(f"❌ Falha definitiva ao enviar '{filename}' após {retries} tentativas: {last_exception}")
+    raise last_exception
+
 upload_file = upload_or_update_file
 
 def upload_or_update_all_files_in_directory(local_dir, share_with_email=DEFAULT_SHARE_EMAIL, extensions=('.csv', '.pkl')):
     """
     Processa todos arquivos do diretório especificado e faz upload/update no Drive.
     Gera log enriquecido com informações do arquivo.
+    Robustez: erros de upload de um arquivo não interrompem o processamento dos outros.
     """
     total = 0
     updated = 0
     uploaded = 0
+    failed = 0
     for fname in os.listdir(local_dir):
         if fname.lower().endswith(extensions):
             fpath = os.path.join(local_dir, fname)
@@ -117,32 +132,34 @@ def upload_or_update_all_files_in_directory(local_dir, share_with_email=DEFAULT_
             print(f"\n[INFO] Processando arquivo: {fname}")
             print(f"       Tamanho: {filesize/1024:.2f} KB")
             print(f"       Modificado em: {mtime}")
-            service = get_drive_service()
-            filename = os.path.basename(fpath)
-            if fname.lower().endswith('.csv'):
-                drive_folder_id = CSV_FOLDER_ID
-            elif fname.lower().endswith('.pkl'):
-                drive_folder_id = PKL_FOLDER_ID
-            else:
-                drive_folder_id = None
-            file_id = find_file_id(filename, drive_folder_id)
-            if file_id:
+            try:
+                if fname.lower().endswith('.csv'):
+                    drive_folder_id = CSV_FOLDER_ID
+                elif fname.lower().endswith('.pkl'):
+                    drive_folder_id = PKL_FOLDER_ID
+                else:
+                    drive_folder_id = None
+                file_id = find_file_id(fname, drive_folder_id)
                 upload_or_update_file(fpath, drive_folder_id, share_with_email)
-                updated += 1
-            else:
-                upload_or_update_file(fpath, drive_folder_id, share_with_email)
-                uploaded += 1
+                if file_id:
+                    updated += 1
+                else:
+                    uploaded += 1
+            except Exception as e:
+                print(f"❌ Falha ao processar '{fname}': {e}")
+                failed += 1
             total += 1
     print(f"\nResumo do processamento automático:")
     print(f"  Total de arquivos processados: {total}")
     print(f"  Arquivos atualizados (update): {updated}")
     print(f"  Arquivos enviados novos (upload): {uploaded}")
+    print(f"  Arquivos com falha definitiva: {failed}")
 
 def download_file(filename, destination_path, drive_folder_id=None, share_with_email=DEFAULT_SHARE_EMAIL):
     service = get_drive_service()
     file_id = find_file_id(filename, drive_folder_id)
     if not file_id:
-        raise FileNotFoundError(f"Arquivo '{filename}' não encontrado no Google Drive.")
+        raise FileNotFoundError(f"Arquivo '{filename}' não encontrado no Google Drive na pasta {drive_folder_id}.")
     request = service.files().get_media(fileId=file_id)
     fh = io.FileIO(destination_path, 'wb')
     downloader = MediaIoBaseDownload(fh, request)
