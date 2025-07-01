@@ -190,6 +190,7 @@ class FallbackDataClient:
             print(f"⚠️ Falha ao enviar {filename} ao Google Drive: {e}")
 
     def _maybe_retrain(self):
+        from strategy.train_model_historic import main as run_training
         now = datetime.utcnow()
         last = self._load_last_retrain_time()
         if not last or (now - last).total_seconds() >= 30:
