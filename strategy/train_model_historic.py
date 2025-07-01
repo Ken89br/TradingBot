@@ -29,6 +29,9 @@ from strategy.indicators import (
 # Google Drive utilities
 from data.google_drive_client import upload_or_update_file as upload_file, download_file, find_file_id, get_folder_id_for_file
 
+# PATCH: FallbackDataClient para buscar candles frescos se CSV estiver ruim
+from data.data_client import FallbackDataClient
+
 # Logging estruturado
 logging.basicConfig(
     level=logging.INFO,
@@ -49,6 +52,8 @@ RETRAIN_INTERVALS = {
     "s1": 30, "m1": 60, "m5": 300, "m15": 900, "m30": 1800, "h1": 3600, "h4": 14400
 }
 LAST_RETRAIN_TIMES = {}
+
+MIN_CANDLES = 100  # Patch: mínimo de candles válidos para treinar
 
 def get_symbol_and_timeframe_from_filename(filename):
     base = os.path.basename(filename).lower()
@@ -335,12 +340,25 @@ def train_pipeline(filepath: str) -> Optional[Dict]:
         logger.info(f"Iniciando processamento para: {filepath}")
         # Carregar e validar dados
         df = DataProcessor.load_and_validate_data(filepath)
-        if df is None:
-            return None
         symbol, tf = get_symbol_and_timeframe_from_filename(os.path.basename(filepath))
         if not symbol or not tf:
             logger.warning(f"Arquivo com nome inesperado: {filepath}")
             return None
+
+        # PATCH: Buscar candles frescos se o arquivo está inválido ou com poucos dados
+        if df is None or len(df) < MIN_CANDLES:
+            logger.warning(f"Arquivo {filepath} inválido ou com poucos dados ({0 if df is None else len(df)} linhas). Buscando candles frescos...")
+            fallback_client = FallbackDataClient()
+            interval = tf
+            candles_result = fallback_client.fetch_candles(symbol, interval=interval, limit=500)
+            candles = candles_result["history"] if candles_result and "history" in candles_result else None
+            if not candles or len(candles) < MIN_CANDLES:
+                logger.error(f"Não foi possível obter candles válidos para {symbol}/{tf}. Abortando.")
+                return None
+            # Sobrescreve o arquivo CSV com candles novos
+            pd.DataFrame(candles).to_csv(filepath, index=False)
+            df = pd.read_csv(filepath)
+
         logger.info(f"Processando dados para {symbol}/{tf} ({len(df)} registros)")
         # Engenharia de features
         df = FeatureEngineer.add_technical_indicators(df)
