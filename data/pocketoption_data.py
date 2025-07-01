@@ -1,3 +1,4 @@
+#data/pocketoption.py
 import requests
 import time
 from datetime import datetime
@@ -8,7 +9,6 @@ class PocketOptionClient:
         self.base_url = "https://api.pocketoption.com/api/v1/public/candles"
 
     def _to_tf(self, interval):
-        # Mapeia do padrão do projeto para o da API
         mapping = {
             "s1": 5,
             "m1": 60,
@@ -22,7 +22,6 @@ class PocketOptionClient:
         return mapping.get(interval.lower(), 60)
 
     def fetch_candles(self, symbol, interval="m1", limit=5, retries=2):
-        # Pocket Option usa "eurusd" minúsculo, sem OTC
         symbol_api = symbol.lower().replace(" ", "").replace("/", "")
         tf_sec = self._to_tf(interval)
         params = {
@@ -33,12 +32,15 @@ class PocketOptionClient:
         url = self.base_url
         for attempt in range(retries + 1):
             try:
-                res = requests.get(url, params=params, timeout=5)
+                res = requests.get(url, params=params, timeout=15)  # timeout aumentado!
                 if res.status_code != 200:
-                    time.sleep(1)
+                    print(f"❌ PocketOptionClient HTTP {res.status_code} - Tentativa {attempt+1}")
+                    time.sleep(2)
                     continue
                 data = res.json()
                 if not data or "data" not in data or not data["data"]:
+                    print(f"❌ PocketOptionClient resposta vazia ou inválida - Tentativa {attempt+1}")
+                    time.sleep(1)
                     continue
                 candles = []
                 for c in data["data"]:
@@ -55,7 +57,7 @@ class PocketOptionClient:
                     "close": candles[-1]["close"]
                 }
             except Exception as e:
-                print(f"❌ PocketOptionClient error: {e}")
-                time.sleep(1)
+                print(f"❌ PocketOptionClient error: {e} - Tentativa {attempt+1}")
+                time.sleep(2)
         print("⛔ PocketOption: Max retries reached.")
         return None
