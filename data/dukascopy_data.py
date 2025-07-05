@@ -1,5 +1,4 @@
-#data/dukascopy_data.py
-
+# data/dukascopy_data.py
 import dayjs
 import pandas as pd
 from dukascopy_node import getHistoricalRates
@@ -13,7 +12,6 @@ class DukascopyClient:
                 "1s": "s1", "1min": "m1", "5min": "m5", "15min": "m15",
                 "30min": "m30", "1h": "h1", "4h": "h4", "1day": "d1"
             }
-
             candles = getHistoricalRates({
                 "instrument": symbol.lower(),
                 "dates": {
@@ -24,18 +22,14 @@ class DukascopyClient:
                 "format": "json",
                 "volumes": True
             })
-
             if not candles:
                 return None
-
             return {
                 "symbol": symbol,
                 "interval": interval,
                 "history": candles,
                 "close": candles[-1]["close"]
             }
-
         except Exception as e:
             print(f"❌ DukascopyClient failed: {e}")
             return None
-          
