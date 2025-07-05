@@ -1,4 +1,4 @@
-#data/google_drive_client.py
+# data/google_drive_client.py
 import os
 import json
 import io
@@ -15,36 +15,39 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
 
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
-CREDENTIALS_FILE = os.path.join(os.path.dirname(__file__), '..', 'credentials.json')  # OAuth Client ID!
+CREDENTIALS_FILE = os.path.join(os.path.dirname(__file__), '..', 'credentials.json')
 TOKEN_FILE = os.path.join(os.path.dirname(__file__), '..', 'token.json')
 DEFAULT_SHARE_EMAIL = "kendeabreu24@gmail.com"
 
-# IDs das pastas no seu Google Drive
 CSV_FOLDER_ID = "1-2NSyy8C4kuBt_Rb6KKB42CVOxJLzTq8"
 PKL_FOLDER_ID = "1-9FzKbCYdYuS2peZ5WlCTdtR7ayJZPH9"
 
 def get_drive_service():
-    creds = None
-    if os.path.exists(TOKEN_FILE):
-        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
-            creds = flow.run_local_server(port=0)
-        with open(TOKEN_FILE, 'w') as token:
-            token.write(creds.to_json())
-    return build('drive', 'v3', credentials=creds)
+    try:
+        creds = None
+        if os.path.exists(TOKEN_FILE):
+            creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
+                creds = flow.run_local_server(port=0)
+            with open(TOKEN_FILE, 'w') as token:
+                token.write(creds.to_json())
+        return build('drive', 'v3', credentials=creds)
+    except Exception as e:
+        logging.error(f"Erro ao obter serviço do Google Drive: {e}")
+        raise
 
 def share_file_with_user(file_id, user_email=DEFAULT_SHARE_EMAIL):
-    service = get_drive_service()
-    permission = {
-        'type': 'user',
-        'role': 'writer',  # Pode ser 'reader' se quiser só leitura
-        'emailAddress': user_email
-    }
     try:
+        service = get_drive_service()
+        permission = {
+            'type': 'user',
+            'role': 'writer',
+            'emailAddress': user_email
+        }
         service.permissions().create(fileId=file_id, body=permission, sendNotificationEmail=False).execute()
         print(f"✅ Arquivo compartilhado com {user_email} (ID: {file_id})")
     except Exception as e:
@@ -55,25 +58,24 @@ def get_folder_id_for_file(filename):
         return CSV_FOLDER_ID
     elif filename.lower().endswith('.pkl'):
         return PKL_FOLDER_ID
-    return None  # Ou pode definir uma pasta padrão se quiser
-
-def find_file_id(filename, drive_folder_id=None):
-    service = get_drive_service()
-    query = f"name = '{filename}'"
-    if drive_folder_id:
-        query += f" and '{drive_folder_id}' in parents"
-    results = service.files().list(q=query, fields="files(id, name)").execute()
-    files = results.get('files', [])
-    if files:
-        return files[0]['id']
     return None
 
+def find_file_id(filename, drive_folder_id=None):
+    try:
+        service = get_drive_service()
+        query = f"name = '{filename}'"
+        if drive_folder_id:
+            query += f" and '{drive_folder_id}' in parents"
+        results = service.files().list(q=query, fields="files(id, name)").execute()
+        files = results.get('files', [])
+        if files:
+            return files[0]['id']
+        return None
+    except Exception as e:
+        logging.error(f"Erro ao buscar arquivo {filename} no Drive: {e}")
+        return None
+
 def upload_or_update_file(filepath, drive_folder_id=None, share_with_email=DEFAULT_SHARE_EMAIL, retries=3):
-    """
-    Faz upload do arquivo, ou faz update do mesmo no Google Drive se ele já existir.
-    Retorna o file_id do arquivo no Drive.
-    Robustez: tenta até 3x antes de falhar.
-    """
     service = get_drive_service()
     filename = os.path.basename(filepath)
     if drive_folder_id is None:
@@ -88,7 +90,6 @@ def upload_or_update_file(filepath, drive_folder_id=None, share_with_email=DEFAU
     for attempt in range(1, retries + 1):
         try:
             if file_id:
-                # Atualiza arquivo existente (commit/update)
                 updated_file = service.files().update(
                     fileId=file_id,
                     media_body=media
@@ -98,7 +99,6 @@ def upload_or_update_file(filepath, drive_folder_id=None, share_with_email=DEFAU
                     share_file_with_user(file_id, share_with_email)
                 return file_id
             else:
-                # Faz upload novo se não existir
                 file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
                 file_id = file.get('id')
                 print(f"✅ Upload concluído: {filename} (ID: {file_id})")
@@ -115,11 +115,6 @@ def upload_or_update_file(filepath, drive_folder_id=None, share_with_email=DEFAU
 upload_file = upload_or_update_file
 
 def upload_or_update_all_files_in_directory(local_dir, share_with_email=DEFAULT_SHARE_EMAIL, extensions=('.csv', '.pkl')):
-    """
-    Processa todos arquivos do diretório especificado e faz upload/update no Drive.
-    Gera log enriquecido com informações do arquivo.
-    Robustez: erros de upload de um arquivo não interrompem o processamento dos outros.
-    """
     total = 0
     updated = 0
     uploaded = 0
@@ -156,43 +151,51 @@ def upload_or_update_all_files_in_directory(local_dir, share_with_email=DEFAULT_
     print(f"  Arquivos com falha definitiva: {failed}")
 
 def download_file(filename, destination_path, drive_folder_id=None, share_with_email=DEFAULT_SHARE_EMAIL):
-    service = get_drive_service()
-    file_id = find_file_id(filename, drive_folder_id)
-    if not file_id:
-        raise FileNotFoundError(f"Arquivo '{filename}' não encontrado no Google Drive na pasta {drive_folder_id}.")
-    request = service.files().get_media(fileId=file_id)
-    fh = io.FileIO(destination_path, 'wb')
-    downloader = MediaIoBaseDownload(fh, request)
-    done = False
-    while not done:
-        status, done = downloader.next_chunk()
-    fh.close()
-    print(f"✅ Download concluído: {filename} (ID: {file_id})")
-    if share_with_email:
-        share_file_with_user(file_id, share_with_email)
+    try:
+        service = get_drive_service()
+        file_id = find_file_id(filename, drive_folder_id)
+        if not file_id:
+            raise FileNotFoundError(f"Arquivo '{filename}' não encontrado no Google Drive na pasta {drive_folder_id}.")
+        request = service.files().get_media(fileId=file_id)
+        fh = io.FileIO(destination_path, 'wb')
+        downloader = MediaIoBaseDownload(fh, request)
+        done = False
+        while not done:
+            status, done = downloader.next_chunk()
+        fh.close()
+        print(f"✅ Download concluído: {filename} (ID: {file_id})")
+        if share_with_email:
+            share_file_with_user(file_id, share_with_email)
+    except Exception as e:
+        print(f"❌ Erro ao baixar arquivo {filename}: {e}")
+        raise
 
 def list_files_in_drive_folder(drive_folder_id):
-    service = get_drive_service()
-    files = []
-    page_token = None
-    while True:
-        response = service.files().list(
-            q=f"'{drive_folder_id}' in parents and trashed = false",
-            spaces='drive',
-            fields='nextPageToken, files(id, name, mimeType, modifiedTime, size)',
-            pageToken=page_token
-        ).execute()
-        files.extend(response.get('files', []))
-        page_token = response.get('nextPageToken', None)
-        if page_token is None:
-            break
-    print(f"\nArquivos na pasta {drive_folder_id}:")
-    for f in files:
-        print(f"- {f['name']} (ID: {f['id']}, Modificado: {f.get('modifiedTime', '-')}, Tamanho: {f.get('size', '-')} bytes)")
-    return files
+    try:
+        service = get_drive_service()
+        files = []
+        page_token = None
+        while True:
+            response = service.files().list(
+                q=f"'{drive_folder_id}' in parents and trashed = false",
+                spaces='drive',
+                fields='nextPageToken, files(id, name, mimeType, modifiedTime, size)',
+                pageToken=page_token
+            ).execute()
+            files.extend(response.get('files', []))
+            page_token = response.get('nextPageToken', None)
+            if page_token is None:
+                break
+        print(f"\nArquivos na pasta {drive_folder_id}:")
+        for f in files:
+            print(f"- {f['name']} (ID: {f['id']}, Modificado: {f.get('modifiedTime', '-')}, Tamanho: {f.get('size', '-')} bytes)")
+        return files
+    except Exception as e:
+        print(f"❌ Erro ao listar arquivos na pasta {drive_folder_id}: {e}")
+        return []
 
 if __name__ == "__main__":
-    local_dir = os.path.join(os.path.dirname(__file__), '.')  # Mude se necessário para o diretório correto
+    local_dir = os.path.join(os.path.dirname(__file__), '.')
     print(f"Iniciando upload/update automático de arquivos do diretório: {local_dir}\n")
     upload_or_update_all_files_in_directory(local_dir)
     print("\nArquivos .csv disponíveis no Google Drive:")
