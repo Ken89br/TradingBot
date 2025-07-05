@@ -102,6 +102,14 @@ def merge_and_save_csv(filepath, new_candles):
     df_all.sort_values('timestamp', inplace=True)
     df_all.to_csv(filepath, index=False)
 
+def get_bootstrap_limit(tf):
+    tf_map = {
+        "s1": 1/60, "m1": 1, "m5": 5, "m15": 15, "m30": 30,
+        "h1": 60, "h4": 240, "d1": 1440
+    }
+    tf_minutes = tf_map.get(tf.lower(), 1)
+    return int(7 * 24 * 60 / tf_minutes)  # 7 dias
+
 def fetch_and_save(symbol: str, from_dt: datetime, to_dt: datetime, tf: str, prefer_pocket=False) -> bool:
     try:
         tf_map = {
@@ -109,8 +117,8 @@ def fetch_and_save(symbol: str, from_dt: datetime, to_dt: datetime, tf: str, pre
             "M30": "m30", "H1": "h1", "H4": "h4", "D1": "d1"
         }
         interval = tf_map.get(tf.upper(), tf.lower())
-        # Sempre busca candles FRESCOS dos provedores
-        candles_result = data_client.fetch_candles(symbol, interval=interval, limit=500, prefer_pocket=prefer_pocket)
+        limit = get_bootstrap_limit(interval)
+        candles_result = data_client.fetch_candles(symbol, interval=interval, limit=limit, prefer_pocket=prefer_pocket)
         candles = candles_result["history"] if candles_result and "history" in candles_result else None
         if not candles or len(candles) < MIN_CANDLES:
             logger.warning(f"Não foi possível obter candles válidos para {symbol} @ {tf} (obtidos: {0 if not candles else len(candles)})")
@@ -143,7 +151,6 @@ def fetch_all_symbols_timeframes(from_dt: datetime, to_dt: datetime, max_workers
     return results
 
 def bootstrap_initial_data():
-    # Garante que o bootstrap só ocorra uma vez
     if os.path.exists(BOOTSTRAP_FLAG):
         logger.info("Bootstrap já realizado anteriormente. Pulando bootstrap inicial.")
         return False  # não fez bootstrap agora
