@@ -150,7 +150,7 @@ class TelegramNotifier:
                 await SignalState.choosing_mode.set()
                 kb = InlineKeyboardMarkup(row_width=2)
                 kb.add(
-                    InlineKeyboardButton("🌍 Normal", callback_data="mode:normal"),
+                    InlineKeyboardButton("🌍 CoreFX", callback_data="mode:normal"),
                     InlineKeyboardButton("🕒 OTC", callback_data="mode:otc")
                 )
                 await safe_send(self.bot, msg.chat.id, get_text("choose_mode", chat_id=msg.chat.id), reply_markup=kb)
@@ -199,7 +199,7 @@ class TelegramNotifier:
                 await state.set_state(SignalState.choosing_mode.state)
                 kb = InlineKeyboardMarkup(row_width=2)
                 kb.add(
-                    InlineKeyboardButton("🌍 Normal", callback_data="mode:normal"),
+                    InlineKeyboardButton("🌍 CoreFX", callback_data="mode:normal"),
                     InlineKeyboardButton("🕒 OTC", callback_data="mode:otc")
                 )
                 await callback.message.edit_text(get_text("choose_mode", chat_id=callback.from_user.id), reply_markup=kb)
