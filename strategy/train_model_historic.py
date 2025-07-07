@@ -299,13 +299,11 @@ class ModelTrainer:
         self.feature_pipeline = FeatureEngineer.create_feature_pipeline()
 
     def prepare_data(self, df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
-        """Prepara os dados para treinamento"""
         X = self.feature_pipeline.fit_transform(df[self.features])
         y = df["target"].values
         return X, y
 
     def train_model(self, X: np.ndarray, y: np.ndarray) -> XGBClassifier:
-        """Treina modelo com validação temporal"""
         model = XGBClassifier(**self.MODEL_CONFIG)
         tscv = TimeSeriesSplit(n_splits=5)
         for train_idx, val_idx in tscv.split(X):
@@ -319,26 +317,24 @@ class ModelTrainer:
         return model
 
     def evaluate_model(self, model: XGBClassifier, X_test: np.ndarray, y_test: np.ndarray) -> Dict:
-        """Avaliação do modelo"""
         y_pred = model.predict(X_test)
         clf_report = classification_report(y_test, y_pred, output_dict=True)
         return {"classification_report": clf_report}
 
     def save_model(self, model: XGBClassifier, symbol: str, tf: str) -> str:
-        """Salva modelo com timestamp"""
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        model_name = f"model_{symbol}_{tf}_{timestamp}.pkl"
+        """Salva modelo SEM timestamp (sempre sobrescreve)"""
+        model_name = f"model_{symbol}_{tf}.pkl"
         model_path = os.path.join(MODEL_DIR, model_name)
         joblib.dump({
             'model': model,
             'features': self.features,
             'pipeline': self.feature_pipeline,
-            'timestamp': timestamp
+            'timestamp': datetime.now().strftime("%Y%m%d_%H%M%S")
         }, model_path)
         return model_path
 
 def ensure_latest_model(symbol, tf):
-    """Baixa modelo do Drive se não existir localmente"""
+    """Baixa modelo do Drive se não existir localmente (usado só na predição!)"""
     filename = f"model_{symbol.lower()}_{tf}.pkl"
     path = os.path.join(MODEL_DIR, filename)
     if not os.path.exists(path):
@@ -351,18 +347,15 @@ def ensure_latest_model(symbol, tf):
 
 def train_pipeline(filepath: str) -> Optional[Dict]:
     """Pipeline completo para um arquivo de dados"""
-    
     from data.data_client import FallbackDataClient
     try:
         logger.info(f"Iniciando processamento para: {filepath}")
-        # Carregar e validar dados
         df = DataProcessor.load_and_validate_data(filepath)
         symbol, tf = get_symbol_and_timeframe_from_filename(os.path.basename(filepath))
         if not symbol or not tf:
             logger.warning(f"Arquivo com nome inesperado: {filepath}")
             return None
 
-        # Busca candles frescos se o arquivo está inválido ou com poucos dados, mas faz merge para manter histórico!
         if df is None or len(df) < MIN_CANDLES:
             logger.warning(f"Arquivo {filepath} inválido ou com poucos dados ({0 if df is None else len(df)} linhas). Buscando candles frescos...")
             fallback_client = FallbackDataClient()
@@ -376,21 +369,17 @@ def train_pipeline(filepath: str) -> Optional[Dict]:
             df = DataProcessor.load_and_validate_data(filepath)
 
         logger.info(f"Processando dados para {symbol}/{tf} ({len(df)} registros)")
-        # Engenharia de features
         df = FeatureEngineer.add_technical_indicators(df)
         df = DataProcessor.create_target_variable(df, future_bars=3)
         train_df, test_df = DataProcessor.temporal_split(df, test_size=0.2)
-        # Treinamento
         trainer = ModelTrainer()
         X_train, y_train = trainer.prepare_data(train_df)
         model = trainer.train_model(X_train, y_train)
         X_test, y_test = trainer.prepare_data(test_df)
         evaluation = trainer.evaluate_model(model, X_test, y_test)
-        # Persistência do modelo
         model_path = trainer.save_model(model, symbol, tf)
         logger.info(f"Modelo treinado e salvo em: {model_path}")
         logger.info("Relatório de classificação:\n%s", evaluation["classification_report"])
-        # Upload para o Google Drive
         try:
             file_id = upload_file(model_path)
             logger.info(f"☁️ Arquivo {os.path.basename(model_path)} enviado ao Google Drive! ID: {file_id}")
@@ -407,7 +396,7 @@ def train_pipeline(filepath: str) -> Optional[Dict]:
     except Exception as e:
         logger.error(f"Erro no pipeline para {filepath}: {str(e)}", exc_info=True)
         return None
-
+        
 def main():
     """Fluxo principal"""
     try:
