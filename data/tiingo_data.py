@@ -10,7 +10,7 @@ class TiingoClient:
         self.api_key = os.getenv("TIINGO_API_KEY", "MISSING_API_KEY")
         self.base_url = "https://api.tiingo.com/tiingo/fx"
 
-    def fetch_candles(self, symbol, interval="1min", limit=5, retries=2):
+    def fetch_candles(self, symbol, interval="1min", limit=200, retries=2):
         if not symbol or len(symbol) != 6:
             print(f"❌ Invalid symbol format: {symbol}")
             return None
