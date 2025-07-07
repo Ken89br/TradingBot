@@ -16,3 +16,4 @@ google-auth-oauthlib
 tqdm>=4.65.0
 pydrive2
 websockets
+websocket-client
