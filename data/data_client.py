@@ -11,6 +11,8 @@ from data.tiingo_data import TiingoClient
 from data.polygon_data import PolygonClient
 from strategy.train_model_historic import main as run_training
 from data.google_drive_client import upload_or_update_file as upload_file, download_file, find_file_id, get_folder_id_for_file
+
+# Adicione para alerta Telegram
 from utils.telegram_alert import send_telegram_alert
 
 LAST_RETRAIN_PATH = "last_retrain.txt"
@@ -145,6 +147,10 @@ class FallbackDataClient:
                     print(f"✅ Success from {name}")
                     self._save_to_csv(symbol, interval, result["history"])
                     return result
+            except PocketOptionAuthError as e:
+                msg = f"❗ <b>ERRO PocketOption SSID</b>\n{e}\nHora: {datetime.utcnow()}"
+                print(msg)
+                send_telegram_alert(msg)
             except Exception as e:
                 print(f"❌ {name} error: {e}")
             tested.add((name, psymbol, pinterval))
