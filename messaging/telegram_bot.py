@@ -154,7 +154,7 @@ class TelegramNotifier:
                 )
                 await safe_send(self.bot, msg.chat.id, get_text("choose_mode", chat_id=msg.chat.id), reply_markup=kb)
                 # Mostra teclado de cancelar no fluxo
-                await safe_send(self.bot, msg.chat.id, " ", reply_markup=menu_cancel(msg.chat.id))
+                await safe_send(self.bot, msg.chat.id, " ", chat_id=msg.chat.id), reply_markup=menu_cancel(msg.chat.id))
             except Exception as e:
                 logger.exception(f"Error in start_signal handler: {e}")
 
