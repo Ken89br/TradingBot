@@ -178,7 +178,7 @@ class TelegramNotifier:
                 kb.add(InlineKeyboardButton(get_text("back", chat_id=callback.from_user.id), callback_data="back_choose_mode"))
                 await callback.message.edit_text(get_text("choose_timeframe", chat_id=callback.from_user.id), reply_markup=kb)
                 await callback.answer()
-                await safe_send(self.bot, callback.from_user.id, " ", reply_markup=menu_cancel(callback.from_user.id))
+                await safe_send(self.bot, callback.from_user.id, " ", chat_id=callback.from_user.id), reply_markup=menu_cancel(callback.from_user.id))
             except Exception as e:
                 logger.exception(f"Error in select_mode handler: {e}")
 
