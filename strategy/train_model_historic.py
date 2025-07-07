@@ -275,7 +275,7 @@ class FeatureEngineer:
     def create_feature_pipeline() -> Pipeline:
         """Pipeline de transformação de features"""
         return Pipeline([
-            ('imputer', SimpleImputer(strategy='ffill')),
+            ('imputer', SimpleImputer(strategy='mean')),
             ('scaler', StandardScaler())
         ])
 
