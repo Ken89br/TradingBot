@@ -5,12 +5,13 @@ import os
 import pandas as pd
 import joblib
 from datetime import datetime, timedelta
-from data.pocketoption_data import PocketOptionClient
+from data.pocketoption_data import PocketOptionClient, PocketOptionAuthError
 from data.twelvedata_data import TwelveDataClient
 from data.tiingo_data import TiingoClient
 from data.polygon_data import PolygonClient
 from strategy.train_model_historic import main as run_training
 from data.google_drive_client import upload_or_update_file as upload_file, download_file, find_file_id, get_folder_id_for_file
+from utils.telegram_alert import send_telegram_alert
 
 LAST_RETRAIN_PATH = "last_retrain.txt"
 
