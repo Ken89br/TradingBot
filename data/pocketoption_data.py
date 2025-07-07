@@ -26,7 +26,7 @@ class PocketOptionClient:
         }
         return mapping.get(interval.lower(), 60)
 
-    def fetch_candles(self, symbol, interval="m1", limit=5, retries=2):
+    def fetch_candles(self, symbol, interval="m1", limit=200, retries=2):
         symbol_api = symbol.lower().replace(" ", "").replace("/", "")
         tf_sec = self._to_tf(interval)
         try:
