@@ -1,4 +1,4 @@
-#data/pocketoption.py
+#data/pocketoption_data.py
 import os
 import json
 import time
@@ -40,7 +40,7 @@ class PocketOptionClient:
                 return {"history": candles, "close": candles[-1]["close"]}
         except PocketOptionAuthError as e:
             print(f"❌ PocketOption Auth error: {e}")
-            # Propague ou trate conforme desejado (ex: logar, alertar admin, etc)
+            # Aqui você pode acionar alerta Telegram se desejar
             raise
         except Exception as e:
             print(f"❌ PocketOption WS error: {e}")
@@ -50,7 +50,7 @@ class PocketOptionClient:
         ws = websocket.create_connection(self.ws_url)
         # Etapa 1: handshake inicial
         ws.recv()  # 0{"sid":"..."}
-        # Etapa 2: enviar AUTH com SSID
+        # Etapa 2: enviar AUTH com SSID (payload atualizado para conta real)
         auth_payload = json.dumps({
             "session": self.ssid,
             "isDemo": 0,
