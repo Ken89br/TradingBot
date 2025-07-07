@@ -1,12 +1,17 @@
-#data/pocketoption_data.py
+#data/pocketoption.py
 import os
 import json
 import time
+from datetime import datetime
 import websocket
+
+class PocketOptionAuthError(Exception):
+    """Erro de autenticação/SSID inválido ou expirado."""
+    pass
 
 class PocketOptionClient:
     def __init__(self):
-        # Use sempre EIO=4, pois é o padrão atual do site. Se o site mudar, só altere aqui!
+        # Atualize para EIO=4 se necessário pelo site.
         self.ws_url = "wss://socket.pocketoption.com/socket.io/?EIO=4&transport=websocket"
         self.ssid = os.getenv("POCKETOPTION_SSID")
         if not self.ssid:
@@ -26,22 +31,26 @@ class PocketOptionClient:
         }
         return mapping.get(interval.lower(), 60)
 
-    def fetch_candles(self, symbol, interval="m1", limit=200, retries=2):
+    def fetch_candles(self, symbol, interval="m1", limit=5, retries=2):
         symbol_api = symbol.lower().replace(" ", "").replace("/", "")
         tf_sec = self._to_tf(interval)
         try:
             candles = self._fetch_ws_candles(symbol_api, tf_sec, limit)
             if candles:
                 return {"history": candles, "close": candles[-1]["close"]}
+        except PocketOptionAuthError as e:
+            print(f"❌ PocketOption Auth error: {e}")
+            # Propague ou trate conforme desejado (ex: logar, alertar admin, etc)
+            raise
         except Exception as e:
             print(f"❌ PocketOption WS error: {e}")
         return None
 
     def _fetch_ws_candles(self, asset, period, limit):
         ws = websocket.create_connection(self.ws_url)
-        ws.recv()  # handshake inicial
-
-        # Payload de autenticação para CONTA REAL
+        # Etapa 1: handshake inicial
+        ws.recv()  # 0{"sid":"..."}
+        # Etapa 2: enviar AUTH com SSID
         auth_payload = json.dumps({
             "session": self.ssid,
             "isDemo": 0,
@@ -49,17 +58,23 @@ class PocketOptionClient:
             "isFastHistory": True,
             "isOptimized": True
         })
-
         ws.send(f'42["auth",{auth_payload}]')
-
-        # Espera confirmação de autenticação
+        # Espera confirmação de AUTH
+        auth_ok = False
         for _ in range(5):
             msg = ws.recv()
-            if '"auth"' in msg and ('"success":true' in msg or "authenticated" in msg):
-                break
+            if '"auth"' in msg:
+                if '"success":true' in msg or "authenticated" in msg:
+                    auth_ok = True
+                    break
+                elif '"success":false' in msg or "error" in msg or "invalid" in msg:
+                    ws.close()
+                    raise PocketOptionAuthError("Autenticação PocketOption falhou: SSID inválido ou expirado.")
             time.sleep(0.2)
-
-        # Solicita candles
+        if not auth_ok:
+            ws.close()
+            raise PocketOptionAuthError("Autenticação PocketOption não confirmada (timeout ou resposta inesperada).")
+        # Etapa 3: solicitar candles
         now = int(time.time())
         req_payload = json.dumps({
             "asset": asset,
@@ -69,12 +84,13 @@ class PocketOptionClient:
         })
         ws.send(f'42["get-candles",{req_payload}]')
         candles = None
-
+        # Espera resposta dos candles
         for _ in range(10):
             msg = ws.recv()
             if '"get-candles"' in msg:
                 try:
-                    arr = json.loads(msg[2:])  # remove o 42 do início
+                    arr = json.loads(msg[2:])  # remove o '42'
+                    # arr[1] é o dict de resposta
                     data = arr[1].get("data", [])
                     candles = []
                     for c in data:
