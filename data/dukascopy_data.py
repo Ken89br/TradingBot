@@ -4,7 +4,7 @@ import pandas as pd
 from dukascopy_node import getHistoricalRates
 
 class DukascopyClient:
-    def fetch_candles(self, symbol, interval="1min", limit=100):
+    def fetch_candles(self, symbol, interval="1min", limit=300):
         try:
             now = pd.Timestamp.utcnow()
             from_time = now - pd.Timedelta(minutes=limit)
