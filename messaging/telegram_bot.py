@@ -154,7 +154,7 @@ class TelegramNotifier:
                 )
                 await safe_send(self.bot, msg.chat.id, get_text("choose_mode", chat_id=msg.chat.id), reply_markup=kb)
                 # Mostra teclado de cancelar no fluxo
-                await safe_send(self.bot, msg.chat.id, " ", chat_id=msg.chat.id), reply_markup=menu_cancel(msg.chat.id))
+                await safe_send(self.bot, msg.chat.id, " ", chat_id=msg.chat.id, reply_markup=menu_cancel(msg.chat.id))
             except Exception as e:
                 logger.exception(f"Error in start_signal handler: {e}")
 
@@ -178,7 +178,7 @@ class TelegramNotifier:
                 kb.add(InlineKeyboardButton(get_text("back", chat_id=callback.from_user.id), callback_data="back_choose_mode"))
                 await callback.message.edit_text(get_text("choose_timeframe", chat_id=callback.from_user.id), reply_markup=kb)
                 await callback.answer()
-                await safe_send(self.bot, callback.from_user.id, " ", chat_id=callback.from_user.id), reply_markup=menu_cancel(callback.from_user.id))
+                await safe_send(self.bot, callback.from_user.id, " ", chat_id=callback.from_user.id, reply_markup=menu_cancel(callback.from_user.id))
             except Exception as e:
                 logger.exception(f"Error in select_mode handler: {e}")
 
@@ -215,7 +215,7 @@ class TelegramNotifier:
                 await state.set_state(SignalState.choosing_symbol.state)
                 await self.send_symbol_buttons(callback.message, callback.from_user.id, page=0)
                 await callback.answer()
-                await safe_send(self.bot, callback.from_user.id, " ", chat_id=callback.from_user.id), reply_markup=menu_cancel(callback.from_user.id))
+                await safe_send(self.bot, callback.from_user.id, " ", chat_id=callback.from_user.id, reply_markup=menu_cancel(callback.from_user.id))
             except Exception as e:
                 logger.exception(f"Error in select_timeframe handler: {e}")
 
@@ -237,7 +237,7 @@ class TelegramNotifier:
                 kb.add(InlineKeyboardButton(get_text("back", chat_id=callback.from_user.id), callback_data="back_choose_mode"))
                 await callback.message.edit_text(get_text("choose_timeframe", chat_id=callback.from_user.id), reply_markup=kb)
                 await callback.answer()
-                await safe_send(self.bot, callback.from_user.id, " ", chat_id=callback.from_user.id), reply_markup=menu_cancel(callback.from_user.id))
+                await safe_send(self.bot, callback.from_user.id, " ", chat_id=callback.from_user.id, reply_markup=menu_cancel(callback.from_user.id))
             except Exception as e:
                 logger.exception(f"Error in back_symbols handler: {e}")
 
