@@ -14,6 +14,14 @@ CONFIG = {
         "bot_token": get_env("TELEGRAM_BOT_TOKEN", required=True),
         "chat_id": get_env("TELEGRAM_CHAT_ID"),
         "admin_id": get_env("TELEGRAM_ADMIN_ID")
+        "max_lookahead_candles": 20,    # Quantos candles procurar para prever o melhor ponto de entrada (lookahead)
+        "min_expiry_candles": 1,       # Mínimo de candles para expiração dinâmica
+        "max_expiry_candles": 20,       # Máximo de candles para expiração dinâmica
+        "default_expiry_candles": 20,   # Valor padrão se não houver critério claro
+
+
+
+        
     },
 
     "support": {
@@ -222,7 +230,7 @@ CONFIG = {
             "lot_size": "Order size",
             "volume": "Volume",
             "payout": "Simulated Payout (92%)",
-            "timer": "Action Window: Execute within 1 minute!",
+            "timer": "",
             "refresh": "Refresh",
             "main_menu": "Main menu. Tap 📈 Start to generate a signal.",
             "back": "Back",
@@ -322,7 +330,7 @@ CONFIG = {
             "lot_size": "Ordem (lote)",
             "volume": "Volume",
             "payout": "Lucro Simulado (92%)",
-            "timer": "⏱ Execute dentro de 1 minuto!",
+            "timer": "",
             "refresh": "Atualizar",
             "main_menu": "Menu principal. Toque 📈 Start para gerar um sinal.",
             "back": "Voltar",
