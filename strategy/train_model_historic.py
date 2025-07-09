@@ -30,7 +30,7 @@ from strategy.indicators import (
 from data.google_drive_client import upload_or_update_file as upload_file, download_file, find_file_id, get_folder_id_for_file
 
 from data.fundamental_data import get_cot_feature, get_macro_feature, get_sentiment_feature
-from utils.features_extra import calc_obv
+from utils.features_extra import calc_obv, calc_spread
 from utils.aggregation import resample_candles
 
 logging.basicConfig(
