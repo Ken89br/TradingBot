@@ -128,6 +128,7 @@ class MLPredictor:
             return None
 
     def add_technical_indicators(df: pd.DataFrame, timeframe: str = None, symbol: str = None) -> pd.DataFrame:
+        df = FeatureEngineer.add_technical_indicators(df, timeframe=tf, symbol=symbol)
 
         if timeframe and timeframe.lower() in ['s1', '1s']:
         df = resample_candles(df, freq='10S')
