@@ -257,6 +257,8 @@ from utils.features_extra import calc_obv
         df["volume_status"] = df["volume_status"].map(volstat_mapping)
         df["sentiment"] = df["sentiment"].map(sentiment_mapping)
 
+        df["obv"] = calc_obv(df)
+
         # Preenche e limpa
         df.ffill(inplace=True)
         df.dropna(inplace=True)
