@@ -132,7 +132,7 @@ class MLPredictor:
         if timeframe and timeframe.lower() in ['s1', '1s']:
         df = resample_candles(df, freq='10S')
         
-        """Calcula os principais indicadores e features compatíveis com o pipeline de treino"""
+        """Cálculo dos principais indicadores e features compatíveis com o pipeline de treino"""
        
         # Rolling indicators
         df['returns'] = df['close'].pct_change()
@@ -202,19 +202,18 @@ class MLPredictor:
         df["variation"] = ((df["close"] - df["close"].shift(1)) / df["close"].shift(1)) * 100
         df["support_distance"] = df["close"] - df["support"]
         df["resistance_distance"] = df["resistance"] - df["close"]
-         
+
+        # OBV e Spread
         df["obv"] = calc_obv(df)
         df['spread'] = calc_spread(df)
         
         # Fundamentalista 
-
         if timeframe and timeframe.lower() in ['h4', 'd1']:
             df["cot"] = get_cot_feature(symbol)
             df["macro"] = get_macro_feature(symbol)
             df["sentiment_news"] = get_sentiment_feature(symbol)
 
-        # Mapeamento para valores numéricos
-        
+        # Mapeamento para valores numérico
         ma_mapping = {"buy": 1, "sell": -1, "neutral": 0}
         osc_mapping = {"buy": 1, "sell": -1, "neutral": 0}
         vol_mapping = {"High": 1, "Low": 0}
