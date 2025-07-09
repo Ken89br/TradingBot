@@ -128,7 +128,6 @@ class MLPredictor:
             return None
 
     def add_technical_indicators(df: pd.DataFrame, timeframe: str = None, symbol: str = None) -> pd.DataFrame:
-        df = FeatureEngineer.add_technical_indicators(df, timeframe=tf, symbol=symbol)
 
         if timeframe and timeframe.lower() in ['s1', '1s']:
         df = resample_candles(df, freq='10S')
@@ -213,6 +212,9 @@ class MLPredictor:
             df["cot"] = get_cot_feature(symbol)
             df["macro"] = get_macro_feature(symbol)
             df["sentiment_news"] = get_sentiment_feature(symbol)
+            for col in ["cot", "macro", "sentiment_news"]:
+                if col not in df.columns:
+                    df[col] = 0
 
         # Mapeamento para valores numérico
         ma_mapping = {"buy": 1, "sell": -1, "neutral": 0}
