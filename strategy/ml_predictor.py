@@ -11,8 +11,6 @@ from typing import List, Dict, Optional
 from functools import lru_cache
 from datetime import datetime, timedelta
 
-from data.fundamental_data import get_cot_feature, get_macro_feature, get_sentiment_feature
-
 import logging
 logging.basicConfig(
     level=logging.INFO,
@@ -34,6 +32,8 @@ from strategy.indicators import (
 )
 from data.google_drive_client import download_file, get_folder_id_for_file
 
+from data.fundamental_data import get_cot_feature, get_macro_feature, get_sentiment_feature
+from utils.features_extra import calc_obv, calc_spread
 from utils.aggregation import resample_candles
 
 class MLPredictor:
@@ -128,11 +128,11 @@ class MLPredictor:
             return None
 
     def _add_technical_indicators(self, df: pd.DataFrame, timeframe: str = None) -> pd.DataFrame:
-from utils.features_extra import calc_obv  
         if timeframe and timeframe.lower() in ['s1', '1s']:
         df = resample_candles(df, freq='10S')
         
         """Calcula os principais indicadores e features compatíveis com o pipeline de treino"""
+       
         # Rolling indicators
         df['returns'] = df['close'].pct_change()
         df['volatility'] = df['returns'].rolling(20).std()
@@ -140,6 +140,7 @@ from utils.features_extra import calc_obv
             df[f'sma_{period}'] = df['close'].rolling(period).mean()
         for period in [12, 26]:
             df[f'ema_{period}'] = df['close'].ewm(span=period, adjust=False).mean()
+       
         # RSI
         delta = df['close'].diff()
         gain = delta.clip(lower=0)
@@ -148,12 +149,14 @@ from utils.features_extra import calc_obv
         avg_loss = loss.ewm(span=14, adjust=False).mean()
         rs = avg_gain / (avg_loss + 1e-10)
         df['rsi'] = 100 - (100 / (1 + rs))
+      
         # MACD
         ema12 = df['ema_12']
         ema26 = df['ema_26']
         df['macd'] = ema12 - ema26
         df['macd_signal'] = df['macd'].ewm(span=9, adjust=False).mean()
         df['macd_hist'] = df['macd'] - df['macd_signal']
+      
         # Bollinger Bands
         sma20 = df['sma_20']
         rolling_std = df['close'].rolling(20).std()
@@ -161,17 +164,20 @@ from utils.features_extra import calc_obv
         df['bb_lower'] = sma20 - 2 * rolling_std
         df['bb_width'] = (df['bb_upper'] - df['bb_lower']) / sma20
         df['bb_pct'] = (df['close'] - df['bb_lower']) / (df['bb_upper'] - df['bb_lower'])
+     
         # ATR
         tr1 = df['high'] - df['low']
         tr2 = np.abs(df['high'] - df['close'].shift())
         tr3 = np.abs(df['low'] - df['close'].shift())
         true_range = np.maximum(np.maximum(tr1, tr2), tr3)
         df['atr'] = pd.Series(true_range).rolling(14).mean().values
+      
         # Suporte/Resistência
         df['support'] = df['low'].rolling(10, min_periods=1).min()
         df['resistance'] = df['high'].rolling(10, min_periods=1).max()
         df['support_dist'] = df['close'] - df['support']
         df['resistance_dist'] = df['resistance'] - df['close']
+       
         # Volume
         df['volume_sma'] = df['volume'].rolling(20).mean()
         df['volume_pct'] = df['volume'] / df['volume_sma']
@@ -195,7 +201,17 @@ from utils.features_extra import calc_obv
         df["variation"] = ((df["close"] - df["close"].shift(1)) / df["close"].shift(1)) * 100
         df["support_distance"] = df["close"] - df["support"]
         df["resistance_distance"] = df["resistance"] - df["close"]
+         
+        df["obv"] = calc_obv(df)
+        df['spread'] = calc_spread(df)
+
+        if timeframe and timeframe.lower() in ['h4', 'd1']:
+            df["cot"] = get_cot_feature(symbol)
+            df["macro"] = get_macro_feature(symbol)
+            df["sentiment_news"] = get_sentiment_feature(symbol)
+
         # Mapeamento para valores numéricos
+        
         ma_mapping = {"buy": 1, "sell": -1, "neutral": 0}
         osc_mapping = {"buy": 1, "sell": -1, "neutral": 0}
         vol_mapping = {"High": 1, "Low": 0}
@@ -206,14 +222,6 @@ from utils.features_extra import calc_obv
         df["volatility_proj"] = df["volatility_proj"].map(vol_mapping)
         df["volume_status"] = df["volume_status"].map(volstat_mapping)
         df["sentiment"] = df["sentiment"].map(sentiment_mapping)
-        
-        df["obv"] = calc_obv(df)
-        df['spread'] = calc_spread(df)
-
-        if timeframe and timeframe.lower() in ['h4', 'd1']:
-            df["cot"] = get_cot_feature(symbol)
-            df["macro"] = get_macro_feature(symbol)
-            df["sentiment_news"] = get_sentiment_feature(symbol)
         return df
 
     def _add_candlestick_features(self, df: pd.DataFrame) -> pd.DataFrame:
