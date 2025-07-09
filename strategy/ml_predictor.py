@@ -206,7 +206,8 @@ from utils.features_extra import calc_obv
         df["sentiment"] = df["sentiment"].map(sentiment_mapping)
         
         df["obv"] = calc_obv(df)
-       
+        df['spread'] = calc_spread(df)
+
         return df
 
     def _add_candlestick_features(self, df: pd.DataFrame) -> pd.DataFrame:
