@@ -149,7 +149,7 @@ class FeatureEngineer:
     # --- Agrupamento de S1 em 10s ---
         if timeframe and timeframe.lower() in ['s1', '1s']:
         df = resample_candles(df, freq='10S')
-        
+from utils.features_extra import calc_obv
         """Adiciona indicadores técnicos e candlestick patterns"""
         df = df.copy()
         closes = df["close"].values
