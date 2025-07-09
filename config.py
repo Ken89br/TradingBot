@@ -13,7 +13,7 @@ CONFIG = {
         "enabled": True,
         "bot_token": get_env("TELEGRAM_BOT_TOKEN", required=True),
         "chat_id": get_env("TELEGRAM_CHAT_ID"),
-        "admin_id": get_env("TELEGRAM_ADMIN_ID")
+        "admin_id": get_env("TELEGRAM_ADMIN_ID"),
         "max_lookahead_candles": 20,    # Quantos candles procurar para prever o melhor ponto de entrada (lookahead)
         "min_expiry_candles": 1,       # Mínimo de candles para expiração dinâmica
         "max_expiry_candles": 20,       # Máximo de candles para expiração dinâmica
