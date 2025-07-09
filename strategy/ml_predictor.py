@@ -125,7 +125,7 @@ class MLPredictor:
             logger.error(f"Falha ao processar candles: {str(e)}")
             return None
 
-        def _add_technical_indicators(self, df: pd.DataFrame, timeframe: str = None) -> pd.DataFrame:
+    def _add_technical_indicators(self, df: pd.DataFrame, timeframe: str = None) -> pd.DataFrame:
         if timeframe and timeframe.lower() in ['s1', '1s']:
         df = resample_candles(df, freq='10S')
         
