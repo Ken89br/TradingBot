@@ -258,6 +258,7 @@ from utils.features_extra import calc_obv
         df["sentiment"] = df["sentiment"].map(sentiment_mapping)
 
         df["obv"] = calc_obv(df)
+        df['spread'] = calc_spread(df)
 
         # Preenche e limpa
         df.ffill(inplace=True)
