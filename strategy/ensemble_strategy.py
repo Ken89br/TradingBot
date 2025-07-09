@@ -10,7 +10,7 @@
 import time
 from datetime import datetime, timedelta
 from config import CONFIG
-
+from strategy.feature_ensemble_utils import prepare_features_for_ensemble
 from strategy.candlestick_strategy import CandlestickStrategy
 from strategy.rsi_ma import AggressiveRSIMA
 from strategy.bollinger_breakout import BollingerBreakoutStrategy
@@ -110,10 +110,13 @@ class EnsembleStrategy:
         return N_expire
 
     def generate_signal(self, data, timeframe="1min"):
+        symbol = data["symbol"]
+        candles = data["history"]
+        candles_df = prepare_features_for_ensemble(candles, timeframe, symbol)
         votes, details = [], []
         for strat in self.strategies:
             try:
-                result = strat.generate_signal(data)
+                result = strat.generate_signal(candles_df)
                 if result:
                     votes.append(result["signal"].lower())
                     details.append(result)
