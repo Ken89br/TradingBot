@@ -249,6 +249,7 @@ class MLPredictor:
         return df
 
     def _get_features(self, df: pd.DataFrame) -> Optional[pd.DataFrame]:
+        df = FeatureEngineer.add_technical_indicators(df, timeframe=tf, symbol=symbol)
         """Seleciona e valida features para previsão (compatível com pipeline de treino)"""
         # Use a lista salva no modelo, se disponível, senão use o padrão
         features = getattr(self, "features", None)
