@@ -35,7 +35,7 @@ LAST_RETRAIN_PATH = os.path.join(DATA_DIR, "last_retrain.txt")
 LOG_FILE = os.path.join(DATA_DIR, "autotrainer.log")
 FILE_HASHES_PATH = os.path.join(DATA_DIR, "autotrainer_uploaded_hashes.json")
 
-NORMAL_LIMIT = 200  # Limite de candles no fluxo normal (ciclos). Bootstrap pega 7 dias!
+NORMAL_LIMIT = 1000  # Limite de candles no fluxo normal (ciclos). Bootstrap pega 7 dias!
 
 def setup_logging():
     import logging
@@ -81,7 +81,7 @@ def save_uploaded_hashes(hashes):
 uploaded_hashes = load_uploaded_hashes()
 
 data_client = FallbackDataClient()
-MIN_CANDLES = 100
+MIN_CANDLES = 50
 
 def merge_and_save_csv(filepath, new_candles):
     import pandas as pd
