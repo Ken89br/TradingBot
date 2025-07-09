@@ -29,6 +29,8 @@ from strategy.indicators import (
 # Google Drive utilities
 from data.google_drive_client import upload_or_update_file as upload_file, download_file, find_file_id, get_folder_id_for_file
 
+from data.fundamental_data import get_cot_feature, get_macro_feature, get_sentiment_feature
+
 from utils.aggregation import resample_candles
 
 logging.basicConfig(
@@ -150,6 +152,7 @@ class FeatureEngineer:
         if timeframe and timeframe.lower() in ['s1', '1s']:
         df = resample_candles(df, freq='10S')
 from utils.features_extra import calc_obv
+
         """Adiciona indicadores técnicos e candlestick patterns"""
         df = df.copy()
         closes = df["close"].values
@@ -260,6 +263,11 @@ from utils.features_extra import calc_obv
         df["obv"] = calc_obv(df)
         df['spread'] = calc_spread(df)
 
+        if timeframe and timeframe.lower() in ['h4', 'd1']:
+            df["cot"] = get_cot_feature(symbol)
+            df["macro"] = get_macro_feature(symbol)
+            df["sentiment_news"] = get_sentiment_feature(symbol
+       
         # Preenche e limpa
         df.ffill(inplace=True)
         df.dropna(inplace=True)
