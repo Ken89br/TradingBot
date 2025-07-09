@@ -130,7 +130,6 @@ class DataProcessor:
         return df.iloc[:split_idx], df.iloc[split_idx:]
 
 class FeatureEngineer:
-    df = FeatureEngineer.add_technical_indicators(df, timeframe=tf, symbol=symbol)
     """Engenharia de features para trading"""
 
     INDICATOR_CONFIG = {
@@ -392,6 +391,7 @@ def train_pipeline(filepath: str) -> Optional[Dict]:
             df = DataProcessor.load_and_validate_data(filepath)
 
         logger.info(f"Processando dados para {symbol}/{tf} ({len(df)} registros)")
+        df = FeatureEngineer.add_technical_indicators(df, timeframe=tf, symbol=symbol)
         df = FeatureEngineer.add_technical_indicators(df, timeframe=tf)
         df = DataProcessor.create_target_variable(df, future_bars=3)
         train_df, test_df = DataProcessor.temporal_split(df, test_size=0.2)
