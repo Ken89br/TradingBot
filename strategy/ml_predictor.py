@@ -32,6 +32,8 @@ from strategy.indicators import (
 )
 from data.google_drive_client import download_file, get_folder_id_for_file
 
+from utils.aggregation import resample_candles
+
 class MLPredictor:
     """Predictor otimizado para modelos de trading com cache, validação e download do Google Drive."""
 
@@ -265,7 +267,7 @@ class MLPredictor:
             if model is None:
                 return None
 
-            df = self._add_technical_indicators(df)
+            df = self._add_technical_indicators(df, timeframe)
             df = self._add_candlestick_features(df)
             df.dropna(inplace=True)
 
