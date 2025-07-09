@@ -258,7 +258,7 @@ class MLPredictor:
                 'atr', 'volume_sma', 'volume_pct',
                 "adx", "bb_width_proj", "bb_pos", "ma_rating", "osc_rating",
                 "volatility_proj", "volume_status", "sentiment", "support_distance", "resistance_distance", "variation",
-                "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji", "pattern_strength"
+                "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji", "pattern_strength", "obv", "spread", "cot", "macro", "sentiment_news"
             ]
         missing = [f for f in features if f not in df.columns]
         if missing:
