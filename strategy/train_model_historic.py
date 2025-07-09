@@ -251,7 +251,7 @@ class FeatureEngineer:
         df["sentiment"] = df["sentiment"].map(sentiment_mapping)
 
         # Preenche e limpa
-        df.fillna(method='ffill', inplace=True)
+        df.ffill(inplace=True)
         df.dropna(inplace=True)
         return df
 
