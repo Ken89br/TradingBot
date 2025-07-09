@@ -9,7 +9,8 @@ class PolygonClient:
         self.api_key = os.getenv("POLYGON_API_KEY", "MISSING_API_KEY")
         self.base_url = "https://api.polygon.io"
         
-    def fetch_candles(self, symbol, interval="1", limit=200, retries=3): limit = min(limit, 5000)
+    def fetch_candles(self, symbol, interval="1", limit=200, retries=3):
+        limit = min(limit, 10000)
             if not symbol:
             print("❌ Symbol is empty.")
             return None
