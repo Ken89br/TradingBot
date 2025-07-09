@@ -392,7 +392,6 @@ def train_pipeline(filepath: str) -> Optional[Dict]:
 
         logger.info(f"Processando dados para {symbol}/{tf} ({len(df)} registros)")
         df = FeatureEngineer.add_technical_indicators(df, timeframe=tf, symbol=symbol)
-        df = FeatureEngineer.add_technical_indicators(df, timeframe=tf)
         df = DataProcessor.create_target_variable(df, future_bars=3)
         train_df, test_df = DataProcessor.temporal_split(df, test_size=0.2)
         trainer = ModelTrainer()
