@@ -22,16 +22,18 @@ COT_SYMBOL_MAP = {
     "GBPUSD": "BRITISH POUND STERLING - CHICAGO MERCANTILE EXCHANGE",
     "USDJPY": "JAPANESE YEN - CHICAGO MERCANTILE EXCHANGE",
     "AUDUSD": "AUSTRALIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE",
+    "USDCHF": "SWISS FRANC - CHICAGO MERCANTILE EXCHANGE",
     "NZDUSD": "NEW ZEALAND DOLLAR - CHICAGO MERCANTILE EXCHANGE",
     "USDCAD": "CANADIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE",
-    "USDCHF": "SWISS FRANC - CHICAGO MERCANTILE EXCHANGE",
-    "S&P500": "E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE",
-    "GOLD": "GOLD - COMMODITY EXCHANGE INC.",
-    "SILVER": "SILVER - COMMODITY EXCHANGE INC.",
-    "OIL": "CRUDE OIL, LIGHT SWEET - NEW YORK MERCANTILE EXCHANGE",
-    "COPPER": "COPPER - COMMODITY EXCHANGE INC.",
-    "BTCUSD": "BITCOIN - CHICAGO MERCANTILE EXCHANGE",
-    # Adicione mais conforme sua necessidade
+    "EURJPY": "EURO FX - CHICAGO MERCANTILE EXCHANGE",      # Não existe contrato direto, usa EURO
+    "EURNZD": "EURO FX - CHICAGO MERCANTILE EXCHANGE",      # Não existe contrato direto, usa EURO
+    "AEDCNY": None,                                         # Não existe contrato na CME/CFTC
+    "AUDCAD": "AUSTRALIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE",  # Não existe direto, usa AUD
+    "AUDCHF": "AUSTRALIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE",  # Não existe direto, usa AUD
+    "AUDNZD": "AUSTRALIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE",  # Não existe direto, usa AUD
+    "CADJPY": "CANADIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE",    # Não existe direto, usa CAD
+    "CHFJPY": "SWISS FRANC - CHICAGO MERCANTILE EXCHANGE",        # Não existe direto, usa CHF
+    "EURGBP": "EURO FX - CHICAGO MERCANTILE EXCHANGE",            # Não existe direto, usa EURO
 }
 
 print("Baixando arquivo COT da CFTC...")
@@ -67,7 +69,7 @@ for my_symbol, cot_name in COT_SYMBOL_MAP.items():
             "net_long": row.get("Producer_Merchant_Processor_User_Long_All", None),
             "net_short": row.get("Producer_Merchant_Processor_User_Short_All", None),
             "open_interest": row.get("Open_Interest_All", None),
-            # Adicione mais campos se quiser
+    
         })
 df_parsed = pd.DataFrame(rows)
 df_parsed.to_csv(COT_PARSED_PATH, index=False)
