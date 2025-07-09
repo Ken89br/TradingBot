@@ -126,6 +126,7 @@ class MLPredictor:
             return None
 
     def _add_technical_indicators(self, df: pd.DataFrame, timeframe: str = None) -> pd.DataFrame:
+from utils.features_extra import calc_obv  
         if timeframe and timeframe.lower() in ['s1', '1s']:
         df = resample_candles(df, freq='10S')
         
@@ -203,6 +204,9 @@ class MLPredictor:
         df["volatility_proj"] = df["volatility_proj"].map(vol_mapping)
         df["volume_status"] = df["volume_status"].map(volstat_mapping)
         df["sentiment"] = df["sentiment"].map(sentiment_mapping)
+        
+        df["obv"] = calc_obv(df)
+       
         return df
 
     def _add_candlestick_features(self, df: pd.DataFrame) -> pd.DataFrame:
