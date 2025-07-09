@@ -30,7 +30,7 @@ from strategy.indicators import (
 from data.google_drive_client import upload_or_update_file as upload_file, download_file, find_file_id, get_folder_id_for_file
 
 from data.fundamental_data import get_cot_feature, get_macro_feature, get_sentiment_feature
-
+from utils.features_extra import calc_obv
 from utils.aggregation import resample_candles
 
 logging.basicConfig(
@@ -151,7 +151,6 @@ class FeatureEngineer:
     # --- Agrupamento de S1 em 10s ---
         if timeframe and timeframe.lower() in ['s1', '1s']:
         df = resample_candles(df, freq='10S')
-from utils.features_extra import calc_obv
 
         """Adiciona indicadores técnicos e candlestick patterns"""
         df = df.copy()
@@ -248,6 +247,16 @@ from utils.features_extra import calc_obv
         df["support_distance"] = df["close"] - df["support"]
         df["resistance_distance"] = df["resistance"] - df["close"]
 
+        # OBV e Spread
+        df["obv"] = calc_obv(df)
+        df["spread"] = calc_spread(df)
+
+        # Fundamentalistas
+        if timeframe and timeframe.lower() in ['h4', 'd1']:
+            df["cot"] = get_cot_feature(symbol)
+            df["macro"] = get_macro_feature(symbol)
+            df["sentiment_news"] = get_sentiment_feature(symbol)
+
         # Mapeamento para valores numéricos compatíveis com o restante do bot
         ma_mapping = {"buy": 1, "sell": -1, "neutral": 0}
         osc_mapping = {"buy": 1, "sell": -1, "neutral": 0}
@@ -260,14 +269,6 @@ from utils.features_extra import calc_obv
         df["volume_status"] = df["volume_status"].map(volstat_mapping)
         df["sentiment"] = df["sentiment"].map(sentiment_mapping)
 
-        df["obv"] = calc_obv(df)
-        df['spread'] = calc_spread(df)
-
-        if timeframe and timeframe.lower() in ['h4', 'd1']:
-            df["cot"] = get_cot_feature(symbol)
-            df["macro"] = get_macro_feature(symbol)
-            df["sentiment_news"] = get_sentiment_feature(symbol
-       
         # Preenche e limpa
         df.ffill(inplace=True)
         df.dropna(inplace=True)
