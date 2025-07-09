@@ -10,9 +10,9 @@ class TwelveDataClient:
         self.api_key = os.getenv("TWELVEDATA_API_KEY", "MISSING_API_KEY")
         self.base_url = "https://api.twelvedata.com"
 
-    def fetch_candles(self, symbol, interval="1min", limit = min(limit, 5000), retries=3):
+    def fetch_candles(self, symbol, interval="1min", limit=200, retries=3):
+    limit = min(limit, 5000)
         formatted_symbol = symbol.upper() if "/" in symbol else f"{symbol[:3]}/{symbol[3:]}"
-        
         url = f"{self.base_url}/time_series"
         params = {
             "symbol": formatted_symbol,
