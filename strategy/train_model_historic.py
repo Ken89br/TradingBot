@@ -144,7 +144,12 @@ class FeatureEngineer:
     }
 
     @staticmethod
-    def add_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
+    # ADICIONE ISSO LOGO NO INÍCIO DE add_technical_indicators
+    def add_technical_indicators(df: pd.DataFrame, timeframe: str = None) -> pd.DataFrame:
+    # --- Agrupamento de S1 em 10s ---
+        if timeframe and timeframe.lower() in ['s1', '1s']:
+        df = resample_candles(df, freq='10S')
+        
         """Adiciona indicadores técnicos e candlestick patterns"""
         df = df.copy()
         closes = df["close"].values
