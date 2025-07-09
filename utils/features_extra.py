@@ -10,3 +10,7 @@ def calc_obv(df):
         else:
             obv.append(obv[-1])
     return pd.Series(obv, index=df.index)
+
+def calc_spread(df):
+    """Calcula o spread (high - low) para cada candle."""
+    return df['high'] - df['low']
