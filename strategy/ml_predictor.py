@@ -130,7 +130,7 @@ class MLPredictor:
     def add_technical_indicators(df: pd.DataFrame, timeframe: str = None, symbol: str = None) -> pd.DataFrame:
 
         if timeframe and timeframe.lower() in ['s1', '1s']:
-        df = resample_candles(df, freq='10S')
+            df = resample_candles(df, freq='10S')
         
         """Cálculo dos principais indicadores e features compatíveis com o pipeline de treino"""
        
