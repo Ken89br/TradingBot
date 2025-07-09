@@ -11,6 +11,8 @@ from typing import List, Dict, Optional
 from functools import lru_cache
 from datetime import datetime, timedelta
 
+from data.fundamental_data import get_cot_feature, get_macro_feature, get_sentiment_feature
+
 import logging
 logging.basicConfig(
     level=logging.INFO,
@@ -208,6 +210,10 @@ from utils.features_extra import calc_obv
         df["obv"] = calc_obv(df)
         df['spread'] = calc_spread(df)
 
+        if timeframe and timeframe.lower() in ['h4', 'd1']:
+            df["cot"] = get_cot_feature(symbol)
+            df["macro"] = get_macro_feature(symbol)
+            df["sentiment_news"] = get_sentiment_feature(symbol)
         return df
 
     def _add_candlestick_features(self, df: pd.DataFrame) -> pd.DataFrame:
