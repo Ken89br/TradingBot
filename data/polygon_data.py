@@ -88,11 +88,20 @@ class PolygonClient:
 
             # Calcula período de tempo
             end_dt = datetime.utcnow()
-            start_dt = end_dt - timedelta(
-                minutes=limit * multiplier if timespan == "minute" else
-                hours=limit * multiplier if timespan == "hour" else
-                days=limit * multiplier
-            )
+
+            # Corrigido: define dinamicamente os argumentos para timedelta
+            delta_args = {}
+            if timespan == "minute":
+                delta_args["minutes"] = limit * multiplier
+            elif timespan == "hour":
+                delta_args["hours"] = limit * multiplier
+            elif timespan == "day":
+                delta_args["days"] = limit * multiplier
+            else:
+                self.logger.error(f"Timespan inválido: {timespan}")
+                return None
+
+            start_dt = end_dt - timedelta(**delta_args)
 
             endpoint = f"{self.base_url}/v2/aggs/ticker/{formatted_symbol}/range/{multiplier}/{timespan}/{start_dt:%Y-%m-%d}/{end_dt:%Y-%m-%d}"
             
@@ -166,3 +175,4 @@ class PolygonClient:
     def __del__(self):
         """Garante que a sessão seja fechada"""
         self.session.close()
+        
