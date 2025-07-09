@@ -295,7 +295,7 @@ class MLPredictor:
             if model is None:
                 return None
 
-            df = self._add_technical_indicators(df, timeframe)
+            df = self.add_technical_indicators(df, timeframe, symbol)
             df = self._add_candlestick_features(df)
             df.dropna(inplace=True)
 
