@@ -127,7 +127,8 @@ class MLPredictor:
             logger.error(f"Falha ao processar candles: {str(e)}")
             return None
 
-    def _add_technical_indicators(self, df: pd.DataFrame, timeframe: str = None) -> pd.DataFrame:
+    def add_technical_indicators(df: pd.DataFrame, timeframe: str = None, symbol: str = None) -> pd.DataFrame:
+
         if timeframe and timeframe.lower() in ['s1', '1s']:
         df = resample_candles(df, freq='10S')
         
@@ -204,6 +205,8 @@ class MLPredictor:
          
         df["obv"] = calc_obv(df)
         df['spread'] = calc_spread(df)
+        
+        # Fundamentalista 
 
         if timeframe and timeframe.lower() in ['h4', 'd1']:
             df["cot"] = get_cot_feature(symbol)
