@@ -147,7 +147,8 @@ class FeatureEngineer:
 
     @staticmethod
     # ADICIONE ISSO LOGO NO INÍCIO DE add_technical_indicators
-    def add_technical_indicators(df: pd.DataFrame, timeframe: str = None) -> pd.DataFrame:
+    def add_technical_indicators(df: pd.DataFrame, timeframe: str = None, symbol: str = None) -> pd.DataFrame:
+   
     # --- Agrupamento de S1 em 10s ---
         if timeframe and timeframe.lower() in ['s1', '1s']:
         df = resample_candles(df, freq='10S')
@@ -256,7 +257,7 @@ class FeatureEngineer:
             df["cot"] = get_cot_feature(symbol)
             df["macro"] = get_macro_feature(symbol)
             df["sentiment_news"] = get_sentiment_feature(symbol)
-
+        
         # Mapeamento para valores numéricos compatíveis com o restante do bot
         ma_mapping = {"buy": 1, "sell": -1, "neutral": 0}
         osc_mapping = {"buy": 1, "sell": -1, "neutral": 0}
