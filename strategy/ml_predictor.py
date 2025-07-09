@@ -125,7 +125,10 @@ class MLPredictor:
             logger.error(f"Falha ao processar candles: {str(e)}")
             return None
 
-    def _add_technical_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
+        def _add_technical_indicators(self, df: pd.DataFrame, timeframe: str = None) -> pd.DataFrame:
+        if timeframe and timeframe.lower() in ['s1', '1s']:
+        df = resample_candles(df, freq='10S')
+        
         """Calcula os principais indicadores e features compatíveis com o pipeline de treino"""
         # Rolling indicators
         df['returns'] = df['close'].pct_change()
