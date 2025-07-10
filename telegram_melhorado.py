@@ -234,8 +234,137 @@ class TelegramNotifier:
             except Exception as e:
                 logger.exception(f"Error in cancel_any handler: {e}")
 
-        # ... (restante dos handlers mantidos conforme original)
+        # ... (restante dos handlers mantidos conforme original) ja tentei alterar
 
+    @self.dp.callback_query_handler(lambda c: c.data.startswith("mode:"), state=SignalState.choosing_mode)
+        async def select_mode(callback: types.CallbackQuery, state: FSMContext):
+            try:
+                mode = callback.data.split(":")[1]
+                self.mode_map[callback.from_user.id] = mode
+                await state.set_state(SignalState.choosing_timeframe.state)
+                kb = InlineKeyboardMarkup(row_width=3)
+                buttons = [InlineKeyboardButton(tf, callback_data=f"timeframe:{tf}") for tf in CONFIG["timeframes"]]
+                kb.add(*buttons)
+                kb.add(InlineKeyboardButton(get_text("back", chat_id=callback.from_user.id), callback_data="back_choose_mode"))
+                await callback.message.edit_text(get_text("choose_timeframe", chat_id=callback.from_user.id), reply_markup=kb)
+                await callback.answer()
+                await safe_send(self.bot, callback.from_user.id, " ", chat_id=callback.from_user.id, reply_markup=menu_cancel(callback.from_user.id))
+            except Exception as e:
+                logger.exception(f"Error in select_mode handler: {e}")
+
+        @self.dp.callback_query_handler(lambda c: c.data == "back_mainmenu", state="*")
+        async def back_main_menu(callback: types.CallbackQuery, state: FSMContext):
+            try:
+                await state.finish()
+                chat_id = callback.from_user.id
+                await callback.message.edit_text(get_text("main_menu", chat_id=chat_id))
+                await safe_send(self.bot, chat_id, get_text("start", chat_id=chat_id), reply_markup=menu_main(chat_id))
+            except Exception as e:
+                logger.exception(f"Error in back_main_menu handler: {e}")
+
+        @self.dp.callback_query_handler(lambda c: c.data == "back_choose_mode", state=SignalState.choosing_timeframe)
+        async def back_choose_mode(callback: types.CallbackQuery, state: FSMContext):
+            try:
+                await state.set_state(SignalState.choosing_mode.state)
+                kb = InlineKeyboardMarkup(row_width=2)
+                kb.add(
+                    InlineKeyboardButton("🌍 CoreFX", callback_data="mode:normal"),
+                    InlineKeyboardButton("🕒 OTC", callback_data="mode:otc")
+                )
+                await callback.message.edit_text(get_text("choose_mode", chat_id=callback.from_user.id), reply_markup=kb)
+                await callback.answer()
+                await safe_send(self.bot, callback.from_user.id, " ", reply_markup=menu_cancel(callback.from_user.id))
+            except Exception as e:
+                logger.exception(f"Error in back_choose_mode handler: {e}")
+
+        @self.dp.callback_query_handler(lambda c: c.data.startswith("timeframe:"), state=SignalState.choosing_timeframe)
+        async def select_timeframe(callback: types.CallbackQuery, state: FSMContext):
+            try:
+                tf = callback.data.split(":")[1]
+                await state.update_data(timeframe=tf)
+                await state.set_state(SignalState.choosing_symbol.state)
+                await self.send_symbol_buttons(callback.message, callback.from_user.id, page=0)
+                await callback.answer()
+                await safe_send(self.bot, callback.from_user.id, " ", chat_id=callback.from_user.id, reply_markup=menu_cancel(callback.from_user.id))
+            except Exception as e:
+                logger.exception(f"Error in select_timeframe handler: {e}")
+
+        @self.dp.callback_query_handler(lambda c: c.data == "more_symbols", state=SignalState.choosing_symbol)
+        async def next_symbols(callback: types.CallbackQuery, state: FSMContext):
+            try:
+                await self.send_symbol_buttons(callback.message, callback.from_user.id, page=1)
+                await callback.answer()
+            except Exception as e:
+                logger.exception(f"Error in next_symbols handler: {e}")
+
+        @self.dp.callback_query_handler(lambda c: c.data == "back_symbols", state=SignalState.choosing_symbol)
+        async def back_symbols(callback: types.CallbackQuery, state: FSMContext):
+            try:
+                await state.set_state(SignalState.choosing_timeframe.state)
+                kb = InlineKeyboardMarkup(row_width=3)
+                buttons = [InlineKeyboardButton(tf, callback_data=f"timeframe:{tf}") for tf in CONFIG["timeframes"]]
+                kb.add(*buttons)
+                kb.add(InlineKeyboardButton(get_text("back", chat_id=callback.from_user.id), callback_data="back_choose_mode"))
+                await callback.message.edit_text(get_text("choose_timeframe", chat_id=callback.from_user.id), reply_markup=kb)
+                await callback.answer()
+                await safe_send(self.bot, callback.from_user.id, " ", chat_id=callback.from_user.id, reply_markup=menu_cancel(callback.from_user.id))
+            except Exception as e:
+                logger.exception(f"Error in back_symbols handler: {e}")
+
+        @self.dp.callback_query_handler(lambda c: c.data.startswith("symbol:"), state=SignalState.choosing_symbol)
+        async def select_symbol(callback: types.CallbackQuery, state: FSMContext):
+            try:
+                await callback.answer()
+                symbol = callback.data.split(":")[1].replace(" OTC", "")
+                await state.update_data(symbol=symbol)
+                user_data = await state.get_data()
+                timeframe = user_data["timeframe"]
+                kb = InlineKeyboardMarkup()
+                kb.add(InlineKeyboardButton(get_text("back", chat_id=callback.from_user.id), callback_data="back_symbols"))
+                progress_bar = get_text("progress_generating", chat_id=callback.from_user.id)
+                await callback.message.edit_text(
+                    f"⏱ {get_text('timeframe', chat_id=callback.from_user.id)}: `{timeframe}`\n"
+                    f"💱 {get_text('pair', chat_id=callback.from_user.id)}: `{symbol}`\n\n"
+                    f"{get_text('generating', chat_id=callback.from_user.id)}\n{progress_bar}",
+                    parse_mode="Markdown",
+                    reply_markup=kb
+                )
+                candles = self.data_client.fetch_candles(symbol, interval=self._map_timeframe(timeframe))
+                if not candles or "history" not in candles:
+                    await safe_send(self.bot, callback.from_user.id, get_text("failed_price_data", chat_id=callback.from_user.id), reply_markup=menu_main(callback.from_user.id))
+                    return
+
+                # Usa sempre os campos dinâmicos vindos do ensemble
+                signal_data = self.strategy.generate_signal(candles, timeframe=self._map_timeframe(timeframe))
+                if not signal_data:
+                    await safe_send(self.bot, callback.from_user.id, get_text("no_signal", chat_id=callback.from_user.id), reply_markup=menu_main(callback.from_user.id))
+                else:
+                    signal_context[callback.from_user.id] = {"symbol": symbol, "timeframe": timeframe}
+                    await self.send_trade_signal(callback.from_user.id, symbol, signal_data)
+                await state.finish()
+                await safe_send(self.bot, callback.from_user.id, get_text("start", chat_id=callback.from_user.id), reply_markup=menu_main(callback.from_user.id))
+            except Exception as e:
+                logger.exception(f"Error in select_symbol handler: {e}")
+
+        @self.dp.callback_query_handler(lambda c: c.data == "refresh_signal")
+        async def refresh(callback: types.CallbackQuery):
+            try:
+                uid = callback.from_user.id
+                await callback.answer()
+                if uid not in signal_context:
+                    await callback.answer(get_text("no_previous_signal", chat_id=uid), show_alert=True)
+                    return
+                ctx = signal_context[uid]
+                candles = self.data_client.fetch_candles(ctx["symbol"], interval=self._map_timeframe(ctx["timeframe"]))
+                if not candles or "history" not in candles:
+                    await safe_send(self.bot, uid, get_text("no_signal", chat_id=uid))
+                    return
+                signal_data = self.strategy.generate_signal(candles, timeframe=self._map_timeframe(ctx["timeframe"]))
+                if signal_data:
+                    await self.send_trade_signal(uid, ctx["symbol"], signal_data)
+            except Exception as e:
+                logger.exception(f"Error in refresh handler: {e}")
+    
     async def send_symbol_buttons(self, message, user_id, page=0):
         """Mostra os símbolos disponíveis com paginação"""
         try:
