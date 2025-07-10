@@ -396,4 +396,16 @@ class TelegramNotifier:
         except Exception as e:
             logger.exception(f"Error in send_trade_signal: {e}")
 
-    # ... (restante dos métodos mantidos conforme original)
+    @property
+    def token(self):
+        return CONFIG["telegram"]["bot_token"]
+
+    async def set_webhook(self):
+        await self.bot.set_webhook(f"{CONFIG['webhook']['url']}/webhook/{self.token}")
+
+    async def webhook_handler(self, request: web.Request):
+        update = types.Update(**(await request.json()))
+        Bot.set_current(self.bot)
+        Dispatcher.set_current(self.dp)
+        await self.dp.process_update(update)
+        return web.Response()
