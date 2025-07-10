@@ -277,13 +277,83 @@ class TelegramNotifier:
         except Exception as e:
             logger.exception(f"Error in send_symbol_buttons: {e}")
 
-    # ... (restante dos métodos mantidos conforme original)
+    # ... ( Adicona KEN original)
 
     async def send_trade_signal(self, chat_id, asset, signal_data):
-        """Envia sinal de trade formatado"""
+        signal_data["symbol"] = asset
+        signal_data["user"] = chat_id
+        signal_data["timestamp"] = to_maputo_time(pd.Timestamp.utcnow()).strftime("%Y-%m-%d %H:%M:%S")
+        signal_data["recommend_entry"] = signal_data.get("recommended_entry_time")
+
+        # ======== LOTE BASEADO NA CONFIANÇA ==========
         try:
-            # ... (código original de formatação do sinal mantido)
-            
+            confidence = float(signal_data.get("confidence", 0))
+            confidence = max(0, min(confidence, 100))
+        except Exception:
+            confidence = 0
+
+        min_lot = 1
+        max_lot = 100
+        lot_size = min_lot + (max_lot - min_lot) * (confidence / 100)
+        lot_size = round(lot_size)
+        lot_display = f"${lot_size}"
+
+        signal_data["lot_size"] = lot_size
+        signal_data["lot_display"] = lot_display
+        # =============================================
+
+        log_signal(chat_id, asset, signal_data.get("timeframe"), signal_data)
+
+        SIGNAL_CSV_PATH = "signals.csv"
+        df = pd.DataFrame([signal_data])
+        if os.path.exists(SIGNAL_CSV_PATH):
+            df.to_csv(SIGNAL_CSV_PATH, mode="a", header=False, index=False)
+        else:
+            df.to_csv(SIGNAL_CSV_PATH, index=False)
+
+        payout = round(signal_data.get('price', 0) * 0.92, 5)
+        patterns_list = signal_data.get("patterns", [])
+        patterns_str = ", ".join([get_text(p, chat_id=chat_id) for p in patterns_list]) if patterns_list else "-"
+
+        par = asset
+        timer = signal_data.get('timer', get_text('timer', chat_id=chat_id))
+        direction = get_text(signal_data.get('signal', '').lower(), chat_id=chat_id)
+        strength = get_text(signal_data.get('strength', '-').lower(), chat_id=chat_id)
+        confidence_disp = signal_data.get('confidence', '-')
+        entry = signal_data.get('recommended_entry_price', signal_data.get('price', '-'))
+        recommend_entry = signal_data.get('recommended_entry_time', '-')
+        expire_entry = signal_data.get('expire_entry_time', '-')
+        expire_entry_price = signal_data.get('expire_entry_price', entry)
+        high = signal_data.get('high', '-')
+        low = signal_data.get('low', '-')
+        volume = signal_data.get('volume', '-')
+        volatility = signal_data.get('volatility', '-')
+        sentiment = signal_data.get('sentiment', '-')
+        variation = signal_data.get('variation', '-')
+        risk = signal_data.get('risk', get_text('low_risk', chat_id=chat_id))
+        support = signal_data.get('support', '-')
+        resistance = signal_data.get('resistance', '-')
+        summary = get_text(signal_data.get('summary', '-').lower(), chat_id=chat_id)
+        ma = get_text(signal_data.get('moving_averages', '-').lower(), chat_id=chat_id)
+        osc = get_text(signal_data.get('oscillators', '-').lower(), chat_id=chat_id)
+        rsi = signal_data.get('rsi', '-')
+        macd = signal_data.get('macd', '-')
+        bollinger = signal_data.get('bollinger', '-')
+        atr = signal_data.get('atr', '-')
+        adx = signal_data.get('adx', '-')
+        volume_status = get_text(signal_data.get('volume_status', '-').lower(), chat_id=chat_id)
+        
+
+
+
+
+
+
+
+
+    
+
+    
             # Mensagem final com Markdown
             msg = (
                 f"📡 *{get_text('signal_title', chat_id=chat_id)}*\n\n"
