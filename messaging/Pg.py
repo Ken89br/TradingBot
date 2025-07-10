@@ -234,7 +234,13 @@ class TelegramNotifier:
             except Exception as e:
                 logger.exception(f"Error in cancel_any handler: {e}")
 
-        # ... (restante dos handlers mantidos conforme original)
+    def _map_timeframe(self, tf):
+        return {
+            "S1": "s1", "M1": "1min", "M5": "5min", "M15": "15min",
+            "M30": "30min", "H1": "1h", "H4": "4h", "D1": "1day"
+        }.get(tf, "1min")
+
+        # adicona KEN original)
 
     async def send_symbol_buttons(self, message, user_id, page=0):
         """Mostra os símbolos disponíveis com paginação"""
