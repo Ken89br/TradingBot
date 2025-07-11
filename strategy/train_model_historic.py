@@ -20,11 +20,6 @@ from sklearn.model_selection import TimeSeriesSplit
 # Indicadores e padrões do seu projeto
 from strategy.ml_utils import add_indicators
 from strategy.candlestick_patterns import detect_candlestick_patterns, get_pattern_strength
-from strategy.indicators import (
-    calc_rsi, calc_macd, calc_bollinger, calc_atr, calc_adx,
-    calc_moving_averages, calc_oscillators, calc_volatility,
-    calc_volume_status, calc_sentiment
-)
 
 # Google Drive utilities
 from data.google_drive_client import upload_or_update_file as upload_file, download_file, find_file_id, get_folder_id_for_file
