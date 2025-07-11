@@ -27,11 +27,7 @@ from strategy.atr_strategy import ATRStrategy
 from strategy.adx_strategy import ADXStrategy
 
 from strategy.candlestick_patterns import detect_candlestick_patterns
-from strategy.indicators import (
-    calc_rsi, calc_macd, calc_bollinger, calc_atr, calc_adx,
-    calc_moving_averages, calc_oscillators, calc_volatility,
-    calc_volume_status, calc_sentiment
-)
+from strategy.indicator_globe import TechnicalIndicators
 
 from utils.cot_utils import get_latest_cot
 
