@@ -163,6 +163,170 @@ class EnsembleStrategy:
         highs = [c["high"] for c in candles]
         lows = [c["low"] for c in candles]
         volumes = [c.get("volume", 0) for c in candles]
+        
+        closes = pd.Series(closes)
+        highs = pd.Series(highs)
+        lows = pd.Series(lows)
+        volumes = pd.Series(volumes)
+
+# RSI
+rsi_res = TechnicalIndicators.calc_rsi(closes)
+rsi_value = rsi_res['value']
+rsi_zone = rsi_res['zone']
+rsi_trend = rsi_res['trend']
+
+# MACD
+macd_res = TechnicalIndicators.calc_macd(closes)
+macd_hist = macd_res['histogram']
+macd_line = macd_res['macd_line']
+macd_signal = macd_res['signal_line']
+macd_momentum = macd_res['momentum']
+macd_cross = macd_res['cross']
+
+# Bollinger Bands
+bollinger_res = TechnicalIndicators.calc_bollinger(closes)
+bb_upper = bollinger_res['upper']
+bb_lower = bollinger_res['lower']
+bb_width = bollinger_res['width']
+bb_percent_b = bollinger_res['percent_b']
+bb_position = bollinger_res['position']
+bb_price_position = bollinger_res['price_position']
+
+# ATR
+atr_res = TechnicalIndicators.calc_atr(highs, lows, closes)
+atr_value = atr_res['value']
+atr_ratio = atr_res['ratio']
+atr_trend = atr_res['trend']
+
+# ADX
+adx_res = TechnicalIndicators.calc_adx(highs, lows, closes)
+adx_value = adx_res['adx']
+adx_strength = adx_res['strength']
+adx_trend = adx_res['trend']
+di_plus = adx_res['di_plus']
+di_minus = adx_res['di_minus']
+
+# Ichimoku
+ichimoku_res = TechnicalIndicators.calc_ichimoku(highs, lows, closes)
+ichimoku_conversion = ichimoku_res['conversion']
+ichimoku_base = ichimoku_res['base']
+ichimoku_a = ichimoku_res['leading_a']
+ichimoku_b = ichimoku_res['leading_b']
+ichimoku_cloud_position = ichimoku_res['cloud_position']
+
+# Fibonacci
+fibo_res = TechnicalIndicators.calc_fibonacci(highs, lows)
+fibo_236 = fibo_res['23.6%']
+fibo_382 = fibo_res['38.2%']
+fibo_50 = fibo_res['50%']
+fibo_618 = fibo_res['61.8%']
+
+# Supertrend
+supertrend_res = TechnicalIndicators.calc_supertrend(highs, lows, closes)
+supertrend_value = supertrend_res['value']
+supertrend_direction = supertrend_res['direction']
+supertrend_changed = supertrend_res['changed']
+
+# Market Profile
+market_profile_res = TechnicalIndicators.get_market_profile(closes, volumes)
+mp_poc = market_profile_res['poc']
+mp_val_area_low = market_profile_res['value_area']['low']
+mp_val_area_high = market_profile_res['value_area']['high']
+
+# Stochastic
+stoch_res = TechnicalIndicators.calc_stochastic(highs, lows, closes)
+stoch_k = stoch_res['k']
+stoch_d = stoch_res['d']
+stoch_state = stoch_res['state']
+stoch_trend = stoch_res['trend']
+
+# CCI
+cci_res = TechnicalIndicators.calc_cci(highs, lows, closes)
+cci_value = cci_res['value']
+cci_state = cci_res['state']
+
+# Williams %R
+williams_res = TechnicalIndicators.calc_williams_r(highs, lows, closes)
+williams_value = williams_res['value']
+williams_state = williams_res['state']
+
+# Parabolic SAR
+psar_res = TechnicalIndicators.calc_parabolic_sar(highs, lows)
+psar_value = psar_res['value']
+psar_trend = psar_res['trend']
+
+# Momentum
+mom_res = TechnicalIndicators.calc_momentum(closes)
+mom_value = mom_res['value']
+mom_trend = mom_res['trend']
+
+# ROC
+roc_res = TechnicalIndicators.calc_roc(closes)
+roc_value = roc_res['value']
+roc_trend = roc_res['trend']
+
+# DMI
+dmi_res = TechnicalIndicators.calc_dmi(highs, lows, closes)
+dmi_plus = dmi_res['plus_di']
+dmi_minus = dmi_res['minus_di']
+dmi_adx = dmi_res['adx']
+dmi_trend = dmi_res['trend']
+
+# VWAP
+vwap_res = TechnicalIndicators.calc_vwap(highs, lows, closes, volumes)
+vwap_value = vwap_res['value']
+vwap_relation = vwap_res['relation']
+
+# Envelope
+envelope_res = TechnicalIndicators.calc_envelope(closes)
+envelope_upper = envelope_res['upper']
+envelope_lower = envelope_res['lower']
+envelope_center = envelope_res['center']
+envelope_position = envelope_res['position']
+
+# Zigzag
+zigzag_res = TechnicalIndicators.calc_zigzag(closes)
+zigzag_peaks = zigzag_res['peaks']
+zigzag_troughs = zigzag_res['troughs']
+zigzag_trend = zigzag_res['trend']
+
+# Elliott Wave
+elliott_res = TechnicalIndicators.calc_elliott_wave(closes)
+elliott_peaks = elliott_res.get('peaks', [])
+elliott_troughs = elliott_res.get('troughs', [])
+elliott_phase = elliott_res.get('phase', '')
+
+# ========== AUXILIARES (sempre dict!) ==========
+
+# Médias móveis rating
+ma_res = TechnicalIndicators.calc_moving_averages(closes)
+ma_rating = ma_res['rating']
+
+# Osciladores rating
+osc_res = TechnicalIndicators.calc_oscillators(rsi_value, macd_hist)
+osc_rating = osc_res['rating']
+
+# Volatilidade
+vol_res = TechnicalIndicators.calc_volatility(closes)
+volatility = vol_res['level']
+
+# Volume status
+volstat_res = TechnicalIndicators.calc_volume_status(volumes)
+volume_status = volstat_res['status']
+
+# Sentimento
+sentiment_res = TechnicalIndicators.calc_sentiment(closes)
+sentiment = sentiment_res['sentiment']
+
+# Força da tendência (score + strength)
+trend_strength_res = TechnicalIndicators.get_trend_strength(closes)
+trend_score = trend_strength_res['score']
+trend_strength = trend_strength_res['strength']
+
+# Suportes e resistências (últimos 3)
+sr_res = TechnicalIndicators.get_support_resistance(closes)
+support_lvls = sr_res.get('support', [])
+resistance_lvls = sr_res.get('resistance', [])
 
         # --- BUSCA DO MELHOR CANDLE DE ENTRADA/EXPIRAÇÃO (LOOKAHEAD) ---
         LOOKAHEAD = CONFIG.get("max_lookahead_candles", 5)
