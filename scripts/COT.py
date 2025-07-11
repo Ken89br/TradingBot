@@ -15,8 +15,9 @@ import time
 # Import do método de upload para o Google Drive
 from data.google_drive_client import upload_or_update_file
 
-# ID da pasta do Google Drive para salvar os arquivos processados
-GDRIVE_FOLDER_ID = "1Bv5rwzYMUVuRNSXKSz9zAFidDTCjY8g6"
+# IDs das pastas do Google Drive
+GDRIVE_FOLDER_ID_RAW = "17Ok0Eo53XvoUYKtr5iMPgd_NkXLtDT85"     # Pasta para ZIP bruto baixado
+GDRIVE_FOLDER_ID_CSV = "1Bv5rwzYMUVuRNSXKSz9zAFidDTCjY8g6"     # Pasta para CSV processado
 
 # Configuração de logging
 logging.basicConfig(
@@ -27,10 +28,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class CotProcessor:
-    def __init__(self, config_path: str = 'COT.yaml', gdrive_folder_id: Optional[str] = None):
+    def __init__(self, config_path: str = 'COT.yaml'):
         self.config = self._load_config(config_path)
         self.local_cot_dir = "cot_data"
-        self.gdrive_folder_id = gdrive_folder_id
         os.makedirs(self.local_cot_dir, exist_ok=True)
         
     def _load_config(self, config_path: str) -> Dict:
@@ -119,40 +119,43 @@ class CotProcessor:
             return None
 
     def run_pipeline(self):
-        """Executa todo o pipeline de processamento"""
+        """Executa todo o pipeline de processamento do COT"""
         try:
-            # Busca dinâmica do link
+            # Busca dinâmica do link do ZIP
             cot_url = self._get_latest_cot_url()
             cot_zip_path = os.path.join(self.local_cot_dir, "cot_latest.zip")
             if not self.download_file(cot_url, cot_zip_path):
                 return False
+
+            # Upload ZIP bruto para pasta específica no Google Drive
+            try:
+                upload_or_update_file(cot_zip_path, drive_folder_id=GDRIVE_FOLDER_ID_RAW)
+                logger.info(f"Arquivo ZIP bruto enviado ao Google Drive (pasta RAW)")
+            except Exception as e:
+                logger.error(f"Falha ao enviar ZIP bruto: {e}")
 
             # Extração e processamento inicial
             self.df_cot = self.extract_and_process(cot_zip_path)
             if self.df_cot is None:
                 return False
 
-            # Processamento paralelo
+            # Processamento paralelo para todos os símbolos
             with Pool() as pool:
                 results = pool.map(self.process_symbol_data, self.config['symbols'].items())
-            
-            # Combina resultados
             df_parsed = pd.concat([r for r in results if r is not None])
-            
-            # Salva arquivo com timestamp
+
+            # Salva arquivo CSV processado com timestamp
             version = datetime.now().strftime("%Y%m%d_%H%M")
             output_path = os.path.join(self.local_cot_dir, f"cot_processed_{version}.csv")
             df_parsed.to_csv(output_path, index=False)
             logger.info(f"Dados processados salvos em {output_path}")
 
-            # Upload para Google Drive na pasta correta
-            if self.gdrive_folder_id:
-                logger.info("Enviando arquivo processado ao Google Drive...")
-                try:
-                    file_id = upload_or_update_file(output_path, drive_folder_id=self.gdrive_folder_id)
-                    logger.info(f"Upload concluído! File ID: {file_id}")
-                except Exception as e:
-                    logger.error(f"Falha no upload para o Google Drive: {e}")
+            # Upload CSV processado para pasta específica no Google Drive
+            try:
+                upload_or_update_file(output_path, drive_folder_id=GDRIVE_FOLDER_ID_CSV)
+                logger.info(f"CSV processado enviado ao Google Drive (pasta CSV)")
+            except Exception as e:
+                logger.error(f"Falha ao enviar CSV processado: {e}")
 
             return True
             
@@ -164,7 +167,7 @@ def run_periodically(interval_minutes=1440):
     """
     Executa o pipeline de tempos em tempos (default: 1440 minutos = 24h).
     """
-    processor = CotProcessor(config_path="COT.yaml", gdrive_folder_id=GDRIVE_FOLDER_ID)
+    processor = CotProcessor(config_path="COT.yaml")
     while True:
         logger.info(f"Iniciando pipeline COT agendado ({interval_minutes} min)")
         try:
