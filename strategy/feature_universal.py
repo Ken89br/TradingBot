@@ -1,11 +1,7 @@
 import pandas as pd
 from strategy.ml_utils import add_indicators
 from strategy.candlestick_patterns import detect_candlestick_patterns, get_pattern_strength
-from strategy.indicators import (
-    calc_rsi, calc_macd, calc_bollinger, calc_atr, calc_adx,
-    calc_moving_averages, calc_oscillators, calc_volatility,
-    calc_volume_status, calc_sentiment
-)
+from strategy.indicator_globe import TechnicalIndicators
 from utils.features_extra import calc_obv, calc_spread
 from data.fundamental_data import get_cot_feature, get_macro_feature, get_sentiment_feature
 
