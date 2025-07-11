@@ -112,10 +112,11 @@ class EnsembleStrategy:
         return N_expire
 
     def generate_signal(self, data, timeframe="1min"):
+        symbol = data["symbol"]
+        
         # Busca o COT
         cot_info = get_latest_cot(symbol)
     
-        symbol = data["symbol"]
         candles = data["history"]
         candles_df = prepare_features_for_ensemble(candles, timeframe, symbol)
         votes, details = [], []
@@ -261,7 +262,22 @@ class EnsembleStrategy:
             "adx": adx_str,
             "patterns": patterns  # <-- padrões já vão para o filtro
         }
+        
+        # Integração COT
+        if cot_info:
+            signal_data["cot_net_position"] = cot_info["net_position"]
+            signal_data["cot_pct_long"] = cot_info["pct_long"]
+            signal_data["cot_open_interest"] = cot_info["open_interest"]
+            signal_data["cot_date"] = cot_info["date"]
 
+        # Influência direta na confiança do sinal
+        if signal_data["signal"] == "up" and cot_info["pct_long"] > 0.55:
+            signal_data["confidence"] = min(100, signal_data["confidence"] + 10)
+        elif signal_data["signal"] == "down" and cot_info["pct_long"] < 0.45:
+            signal_data["confidence"] = min(100, signal_data["confidence"] + 10)
+        else:
+            signal_data["confidence"] = max(10, signal_data["confidence"] - 10)
+        
         try:
             ml_prediction = self.ml.predict(data["symbol"], timeframe, data["history"])
             if ml_prediction and ml_prediction != signal_data["signal"]:
