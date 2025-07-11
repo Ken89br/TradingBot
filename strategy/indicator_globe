@@ -5,287 +5,346 @@ from typing import Tuple, Dict, Union, List
 
 class TechnicalIndicators:
     """
-    Agregador completo de indicadores técnicos com todas as funções originais
-    e novos indicadores adicionais.
+    Agregador completo de indicadores técnicos, contexto enriquecido:
+    - Indicadores clássicos e modernos
+    - Ratings, zonas, tendências, contexto (sempre dicts!)
+    - Pronto para ML, ensemble e dashboards
     """
 
-    @staticmethod
-    def calc_rsi(close: pd.Series, period: int = 14) -> Dict[str, float]:
-        """Calcula o RSI da lista de preços de fechamento."""
-        return ta.momentum.RSIIndicator(pd.Series(close), window=period).rsi().iloc[-1]
+    # ==== Indicadores Clássicos ====
 
     @staticmethod
-    def calc_macd(close: pd.Series) -> Tuple[float, float, float]:
-        """Calcula o MACD, retornando histograma, linha MACD e linha de sinal."""
-        macd = ta.trend.MACD(pd.Series(close))
-        return macd.macd_diff().iloc[-1], macd.macd().iloc[-1], macd.macd_signal().iloc[-1]
-
-    @staticmethod
-    def calc_bollinger(close: pd.Series, period: int = 20) -> Tuple[str, float, float]:
-        """Calcula as Bandas de Bollinger, retorna string explicativa, largura e posição."""
-        bb = ta.volatility.BollingerBands(pd.Series(close), window=period)
-        width = bb.bollinger_hband().iloc[-1] - bb.bollinger_lband().iloc[-1]
-        pos = close[-1] - bb.bollinger_lband().iloc[-1]
-        return (f"Bollinger width: {width:.5f}, Pos: {pos:.5f}", width, pos)
-
-    @staticmethod
-    def calc_atr(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> float:
-        """Calcula o ATR (Average True Range)."""
-        return ta.volatility.AverageTrueRange(
-            pd.Series(high), pd.Series(low), pd.Series(close), window=period
-        ).average_true_range().iloc[-1]
-
-    @staticmethod
-    def calc_adx(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> float:
-        """Calcula o ADX (Average Directional Index)."""
-        return ta.trend.ADXIndicator(
-            pd.Series(high), pd.Series(low), pd.Series(close), window=period
-        ).adx().iloc[-1]
-
-    @staticmethod
-    def calc_moving_averages(close: pd.Series, fast: int = 5, slow: int = 20) -> str:
-        """Compara médias móveis rápidas e lentas. Retorna 'buy', 'sell' ou 'neutral'."""
-        fast_ma = pd.Series(close).rolling(window=fast).mean().iloc[-1]
-        slow_ma = pd.Series(close).rolling(window=slow).mean().iloc[-1]
-        if fast_ma > slow_ma:
-            return "buy"
-        elif fast_ma < slow_ma:
-            return "sell"
-        else:
-            return "neutral"
-
-    @staticmethod
-    def calc_oscillators(rsi: float, macd_hist: float) -> str:
-        """Combina RSI e MACD histogram para sugerir 'buy', 'sell' ou 'neutral'."""
-        if rsi > 70 and macd_hist < 0:
-            return "sell"
-        elif rsi < 30 and macd_hist > 0:
-            return "buy"
-        else:
-            return "neutral"
-
-    @staticmethod
-    def calc_volatility(close: pd.Series, period: int = 14) -> str:
-        """Determina se a volatilidade está alta ou baixa."""
-        std = pd.Series(close).rolling(window=period).std().iloc[-1]
-        median_std = pd.Series(close).rolling(window=period).std().median()
-        return "High" if std > median_std else "Low"
-
-    @staticmethod
-    def calc_volume_status(volume: pd.Series, period: int = 20) -> str:
-        """Classifica o status do volume."""
-        vol = pd.Series(volume)
-        ma = vol.rolling(window=period).mean().iloc[-1]
-        if vol.iloc[-1] > ma * 1.5:
-            return "Spiked"
-        elif vol.iloc[-1] < ma * 0.7:
-            return "Low"
-        else:
-            return "Normal"
-
-    @staticmethod
-    def calc_sentiment(close: pd.Series) -> str:
-        """Avalia sentimento simples baseado nos últimos candles."""
-        if len(close) < 3:
-            return "Neutral"
-        if close.iloc[-1] > close.iloc[-2] > close.iloc[-3]:
-            return "Optimistic"
-        elif close.iloc[-1] < close.iloc[-2] < close.iloc[-3]:
-            return "Pessimistic"
-        else:
-            return "Neutral"
-
-    # ============== NOVOS INDICADORES ADICIONADOS ==============
-    
-    @staticmethod
-    def calc_stochastic(high: pd.Series, low: pd.Series, close: pd.Series, 
-                       k_period: int = 14, d_period: int = 3) -> Dict[str, float]:
-        """Stochastic Oscillator com linhas %K e %D"""
-        stoch = ta.momentum.StochasticOscillator(
-            high=high, low=low, close=close, 
-            window=k_period, smooth_window=d_period
-        )
+    def calc_rsi(close: pd.Series, period: int = 14) -> Dict[str, Union[float, str]]:
+        if len(close) < period:
+            return {'error': 'Not enough data'}
+        rsi = ta.momentum.RSIIndicator(close, window=period).rsi()
+        val = float(rsi.iloc[-1])
+        prev = float(rsi.iloc[-2]) if len(rsi) > 1 else val
         return {
-            'k': stoch.stoch().iloc[-1],
-            'd': stoch.stoch_signal().iloc[-1],
-            'state': 'overbought' if stoch.stoch().iloc[-1] > 80 else 
-                    'oversold' if stoch.stoch().iloc[-1] < 20 else 'neutral'
+            'value': round(val, 2),
+            'zone': 'overbought' if val > 70 else 'oversold' if val < 30 else 'neutral',
+            'trend': 'up' if val > prev else 'down'
         }
 
     @staticmethod
-    def calc_cci(high: pd.Series, low: pd.Series, close: pd.Series, 
-                period: int = 20) -> Dict[str, float]:
-        """Commodity Channel Index (CCI)"""
-        cci = ta.trend.CCIIndicator(
-            high=high, low=low, close=close, window=period
-        )
+    def calc_macd(close: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9) -> Dict[str, Union[float, str]]:
+        macd = ta.trend.MACD(close, window_fast=fast, window_slow=slow, window_sign=signal)
+        hist = float(macd.macd_diff().iloc[-1])
+        macd_line = float(macd.macd().iloc[-1])
+        signal_line = float(macd.macd_signal().iloc[-1])
         return {
-            'value': cci.cci().iloc[-1],
-            'state': 'overbought' if cci.cci().iloc[-1] > 100 else 
-                     'oversold' if cci.cci().iloc[-1] < -100 else 'neutral'
+            'histogram': round(hist, 5),
+            'macd_line': round(macd_line, 5),
+            'signal_line': round(signal_line, 5),
+            'momentum': 'bullish' if hist > 0 else 'bearish',
+            'cross': 'bullish' if macd_line > signal_line else 'bearish' if macd_line < signal_line else 'neutral'
         }
 
     @staticmethod
-    def calc_williams_r(high: pd.Series, low: pd.Series, close: pd.Series, 
-                       period: int = 14) -> Dict[str, float]:
-        """Williams %R"""
-        williams = ta.momentum.WilliamsRIndicator(
-            high=high, low=low, close=close, lbp=period
-        )
+    def calc_bollinger(close: pd.Series, period: int = 20, std_dev: int = 2) -> Dict[str, Union[float, str]]:
+        bb = ta.volatility.BollingerBands(close, window=period, window_dev=std_dev)
+        upper = float(bb.bollinger_hband().iloc[-1])
+        lower = float(bb.bollinger_lband().iloc[-1])
+        width = float(bb.bollinger_wband().iloc[-1])
+        percent_b = float(bb.bollinger_pband().iloc[-1])
+        pos = 'squeeze' if width < 0.5 else 'normal'
+        price_pos = 'above_upper' if close.iloc[-1] > upper else \
+                    'below_lower' if close.iloc[-1] < lower else \
+                    'inside'
         return {
-            'value': williams.williams_r().iloc[-1],
-            'state': 'overbought' if williams.williams_r().iloc[-1] > -20 else 
-                     'oversold' if williams.williams_r().iloc[-1] < -80 else 'neutral'
+            'upper': round(upper, 5),
+            'lower': round(lower, 5),
+            'width': round(width, 5),
+            'percent_b': round(percent_b, 5),
+            'position': pos,
+            'price_position': price_pos
         }
 
     @staticmethod
-    def calc_parabolic_sar(high: pd.Series, low: pd.Series, 
-                          step: float = 0.02, max_step: float = 0.2) -> Dict[str, Union[float, str]]:
-        """Parabolic SAR"""
-        psar = ta.trend.PSARIndicator(
-            high=high, low=low, close=pd.Series((high + low)/2),  # Usa média HL como close
-            step=step, max_step=max_step
-        )
+    def calc_atr(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> Dict[str, Union[float, str]]:
+        atr = ta.volatility.AverageTrueRange(high, low, close, window=period)
+        series = atr.average_true_range()
+        curr = float(series.iloc[-1])
+        prev = float(series.iloc[-2]) if len(series) > 1 else curr
         return {
-            'value': psar.psar().iloc[-1],
-            'trend': 'up' if psar.psar().iloc[-1] < high.iloc[-1] else 'down'
+            'value': round(curr, 5),
+            'ratio': round(curr / close.iloc[-1] * 100, 2),
+            'trend': 'rising' if curr > prev else 'falling'
         }
 
     @staticmethod
-    def calc_momentum(close: pd.Series, period: int = 10) -> Dict[str, float]:
-        """Momentum simples"""
+    def calc_adx(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> Dict[str, Union[float, str]]:
+        adx = ta.trend.ADXIndicator(high, low, close, window=period)
+        val = float(adx.adx().iloc[-1])
+        di_plus = float(adx.adx_pos().iloc[-1])
+        di_minus = float(adx.adx_neg().iloc[-1])
+        return {
+            'adx': round(val, 2),
+            'di_plus': round(di_plus, 2),
+            'di_minus': round(di_minus, 2),
+            'strength': 'strong' if val > 25 else 'weak',
+            'trend': 'up' if di_plus > di_minus else 'down'
+        }
+
+    # ==== Indicadores Avançados ====
+
+    @staticmethod
+    def calc_ichimoku(high: pd.Series, low: pd.Series, close: pd.Series) -> Dict[str, Union[float, str]]:
+        ichi = ta.trend.IchimokuIndicator(high, low)
+        conv = float(ichi.ichimoku_conversion_line().iloc[-1])
+        base = float(ichi.ichimoku_base_line().iloc[-1])
+        a = float(ichi.ichimoku_a().iloc[-1])
+        b = float(ichi.ichimoku_b().iloc[-1])
+        cloud_pos = 'above' if close.iloc[-1] > max(a, b) else 'below' if close.iloc[-1] < min(a, b) else 'inside'
+        return {
+            'conversion': round(conv, 5),
+            'base': round(base, 5),
+            'leading_a': round(a, 5),
+            'leading_b': round(b, 5),
+            'cloud_position': cloud_pos
+        }
+
+    @staticmethod
+    def calc_fibonacci(high: pd.Series, low: pd.Series) -> Dict[str, float]:
+        diff = high.max() - low.min()
+        return {
+            '23.6%': round(high.max() - diff * 0.236, 5),
+            '38.2%': round(high.max() - diff * 0.382, 5),
+            '50%': round(high.max() - diff * 0.5, 5),
+            '61.8%': round(high.max() - diff * 0.618, 5)
+        }
+
+    @staticmethod
+    def calc_supertrend(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 7, multiplier: int = 3) -> Dict[str, Union[float, str, bool]]:
+        st = ta.trend.SuperTrendIndicator(high, low, close, window=period, multiplier=multiplier)
+        last = int(st.super_trend_direction().iloc[-1])
+        prev = int(st.super_trend_direction().iloc[-2]) if len(st.super_trend_direction()) > 1 else last
+        return {
+            'value': round(float(st.super_trend().iloc[-1]), 5),
+            'direction': 'up' if last == 1 else 'down',
+            'changed': last != prev
+        }
+
+    @staticmethod
+    def get_market_profile(close: pd.Series, volume: pd.Series, bins: int = 20) -> Dict[str, float]:
+        hist, bin_edges = np.histogram(close, bins=bins, weights=volume)
+        area_idx = np.argsort(hist)[-3:]
+        return {
+            'poc': round(bin_edges[np.argmax(hist)], 5),
+            'value_area': {
+                'low': round(bin_edges[min(area_idx)], 5),
+                'high': round(bin_edges[max(area_idx)], 5)
+            }
+        }
+
+    # ==== Novos Indicadores ====
+
+    @staticmethod
+    def calc_stochastic(high: pd.Series, low: pd.Series, close: pd.Series, k_period: int = 14, d_period: int = 3) -> Dict[str, Union[float, str]]:
+        stoch = ta.momentum.StochasticOscillator(high=high, low=low, close=close, window=k_period, smooth_window=d_period)
+        k = float(stoch.stoch().iloc[-1])
+        d = float(stoch.stoch_signal().iloc[-1])
+        return {
+            'k': round(k, 2),
+            'd': round(d, 2),
+            'state': 'overbought' if k > 80 else 'oversold' if k < 20 else 'neutral',
+            'trend': 'up' if k > d else 'down'
+        }
+
+    @staticmethod
+    def calc_cci(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 20) -> Dict[str, Union[float, str]]:
+        cci = ta.trend.CCIIndicator(high=high, low=low, close=close, window=period)
+        val = float(cci.cci().iloc[-1])
+        return {
+            'value': round(val, 2),
+            'state': 'overbought' if val > 100 else 'oversold' if val < -100 else 'neutral'
+        }
+
+    @staticmethod
+    def calc_williams_r(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> Dict[str, Union[float, str]]:
+        will = ta.momentum.WilliamsRIndicator(high=high, low=low, close=close, lbp=period)
+        val = float(will.williams_r().iloc[-1])
+        return {
+            'value': round(val, 2),
+            'state': 'overbought' if val > -20 else 'oversold' if val < -80 else 'neutral'
+        }
+
+    @staticmethod
+    def calc_parabolic_sar(high: pd.Series, low: pd.Series, step: float = 0.02, max_step: float = 0.2) -> Dict[str, Union[float, str]]:
+        psar = ta.trend.PSARIndicator(high=high, low=low, close=(high + low)/2, step=step, max_step=max_step)
+        val = float(psar.psar().iloc[-1])
+        return {
+            'value': round(val, 5),
+            'trend': 'up' if val < high.iloc[-1] else 'down'
+        }
+
+    @staticmethod
+    def calc_momentum(close: pd.Series, period: int = 10) -> Dict[str, Union[float, str]]:
         mom = ta.momentum.ROCIndicator(close=close, window=period)
+        val = float(mom.roc().iloc[-1])
         return {
-            'value': mom.roc().iloc[-1],
-            'trend': 'up' if mom.roc().iloc[-1] > 0 else 'down'
+            'value': round(val, 5),
+            'trend': 'up' if val > 0 else 'down'
         }
 
     @staticmethod
-    def calc_roc(close: pd.Series, period: int = 12) -> Dict[str, float]:
-        """Rate of Change (ROC)"""
+    def calc_roc(close: pd.Series, period: int = 12) -> Dict[str, Union[float, str]]:
         roc = ta.momentum.ROCIndicator(close=close, window=period)
+        val = float(roc.roc().iloc[-1])
         return {
-            'value': roc.roc().iloc[-1],
-            'trend': 'up' if roc.roc().iloc[-1] > 0 else 'down'
+            'value': round(val, 5),
+            'trend': 'up' if val > 0 else 'down'
         }
 
     @staticmethod
-    def calc_dmi(high: pd.Series, low: pd.Series, close: pd.Series, 
-                period: int = 14) -> Dict[str, float]:
-        """Directional Movement Index (DMI)"""
-        dmi = ta.trend.DMIIndicator(
-            high=high, low=low, close=close, window=period
-        )
+    def calc_dmi(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> Dict[str, Union[float, str]]:
+        dmi = ta.trend.DMIIndicator(high=high, low=low, close=close, window=period)
+        plus = float(dmi.plus_di().iloc[-1])
+        minus = float(dmi.minus_di().iloc[-1])
+        adx = float(dmi.adx().iloc[-1])
         return {
-            'plus_di': dmi.plus_di().iloc[-1],
-            'minus_di': dmi.minus_di().iloc[-1],
-            'adx': dmi.adx().iloc[-1],
-            'trend': 'up' if dmi.plus_di().iloc[-1] > dmi.minus_di().iloc[-1] else 'down'
+            'plus_di': round(plus, 2),
+            'minus_di': round(minus, 2),
+            'adx': round(adx, 2),
+            'trend': 'up' if plus > minus else 'down'
         }
 
     @staticmethod
-    def calc_vwap(high: pd.Series, low: pd.Series, close: pd.Series, 
-                 volume: pd.Series) -> Dict[str, float]:
-        """Volume Weighted Average Price (VWAP)"""
+    def calc_vwap(high: pd.Series, low: pd.Series, close: pd.Series, volume: pd.Series) -> Dict[str, Union[float, str]]:
         typical_price = (high + low + close) / 3
         vwap = (typical_price * volume).cumsum() / volume.cumsum()
+        val = float(vwap.iloc[-1])
         return {
-            'value': vwap.iloc[-1],
-            'relation': 'above' if close.iloc[-1] > vwap.iloc[-1] else 'below'
+            'value': round(val, 5),
+            'relation': 'above' if close.iloc[-1] > val else 'below'
         }
 
     @staticmethod
-    def calc_envelope(close: pd.Series, period: int = 20, 
-                     deviation: float = 0.05) -> Dict[str, float]:
-        """Envelope Channels"""
+    def calc_envelope(close: pd.Series, period: int = 20, deviation: float = 0.05) -> Dict[str, Union[float, str]]:
         sma = close.rolling(window=period).mean()
+        base = float(sma.iloc[-1])
+        upper = base * (1 + deviation)
+        lower = base * (1 - deviation)
+        pos = 'above' if close.iloc[-1] > upper else 'below' if close.iloc[-1] < lower else 'within'
         return {
-            'upper': sma.iloc[-1] * (1 + deviation),
-            'lower': sma.iloc[-1] * (1 - deviation),
-            'center': sma.iloc[-1],
-            'position': 'above' if close.iloc[-1] > sma.iloc[-1] * (1 + deviation) else 
-                       'below' if close.iloc[-1] < sma.iloc[-1] * (1 - deviation) else 'within'
+            'upper': round(upper, 5),
+            'lower': round(lower, 5),
+            'center': round(base, 5),
+            'position': pos
         }
 
     @staticmethod
-    def calc_zigzag(close: pd.Series, percent: float = 5) -> Dict[str, List[float]]:
-        """Zig Zag Indicator (simplificado)"""
+    def calc_zigzag(close: pd.Series, percent: float = 5) -> Dict[str, Union[List[float], str]]:
         peaks = []
         troughs = []
         last_pivot = close.iloc[0]
         trend = None
-        
         for i in range(1, len(close)):
             if close.iloc[i] >= last_pivot * (1 + percent/100):
                 if trend != 'up':
-                    troughs.append(last_pivot)
+                    troughs.append(float(last_pivot))
                     trend = 'up'
                 last_pivot = close.iloc[i]
             elif close.iloc[i] <= last_pivot * (1 - percent/100):
                 if trend != 'down':
-                    peaks.append(last_pivot)
+                    peaks.append(float(last_pivot))
                     trend = 'down'
                 last_pivot = close.iloc[i]
-        
         return {
-            'peaks': peaks[-3:],  # Últimos 3 picos
-            'troughs': troughs[-3:],  # Últimos 3 vales
+            'peaks': peaks[-3:],
+            'troughs': troughs[-3:],
             'trend': trend
         }
 
     @staticmethod
     def calc_elliott_wave(close: pd.Series, lookback: int = 50) -> Dict[str, Union[str, List[float]]]:
-        """Análise simplificada de Elliott Wave"""
         if len(close) < lookback:
             return {'error': 'Not enough data'}
-            
         window = close.iloc[-lookback:]
         peaks = window[(window.shift(1) < window) & (window.shift(-1) < window)]
         troughs = window[(window.shift(1) > window) & (window.shift(-1) > window)]
-        
         return {
-            'peaks': peaks.tolist(),
-            'troughs': troughs.tolist(),
+            'peaks': [float(p) for p in peaks.tolist()],
+            'troughs': [float(t) for t in troughs.tolist()],
             'phase': 'impulse' if len(peaks) >= 3 else 'correction'
         }
 
-    # ============== FUNÇÕES AUXILIARES ADICIONAIS ==============
-    
+    # ==== Ratings/Auxiliares (sempre dict!) ====
+
     @staticmethod
-    def get_trend_strength(close: pd.Series, period: int = 14) -> Dict[str, float]:
-        """Avalia força da tendência usando múltiplos indicadores"""
+    def calc_moving_averages(close: pd.Series, fast: int = 5, slow: int = 20) -> Dict[str, str]:
+        fast_ma = close.rolling(window=fast).mean().iloc[-1]
+        slow_ma = close.rolling(window=slow).mean().iloc[-1]
+        if fast_ma > slow_ma:
+            return {"rating": "buy"}
+        elif fast_ma < slow_ma:
+            return {"rating": "sell"}
+        else:
+            return {"rating": "neutral"}
+
+    @staticmethod
+    def calc_oscillators(rsi: float, macd_hist: float) -> Dict[str, str]:
+        if rsi > 70 and macd_hist < 0:
+            return {"rating": "sell"}
+        elif rsi < 30 and macd_hist > 0:
+            return {"rating": "buy"}
+        else:
+            return {"rating": "neutral"}
+
+    @staticmethod
+    def calc_volatility(close: pd.Series, period: int = 14) -> Dict[str, str]:
+        std = close.rolling(window=period).std().iloc[-1]
+        median_std = close.rolling(window=period).std().median()
+        return {"level": "High" if std > median_std else "Low"}
+
+    @staticmethod
+    def calc_volume_status(volume: pd.Series, period: int = 20) -> Dict[str, str]:
+        ma = volume.rolling(window=period).mean().iloc[-1]
+        if volume.iloc[-1] > ma * 1.5:
+            return {"status": "Spiked"}
+        elif volume.iloc[-1] < ma * 0.7:
+            return {"status": "Low"}
+        else:
+            return {"status": "Normal"}
+
+    @staticmethod
+    def calc_sentiment(close: pd.Series) -> Dict[str, str]:
+        if len(close) < 3:
+            return {"sentiment": "Neutral"}
+        if close.iloc[-1] > close.iloc[-2] > close.iloc[-3]:
+            return {"sentiment": "Optimistic"}
+        elif close.iloc[-1] < close.iloc[-2] < close.iloc[-3]:
+            return {"sentiment": "Pessimistic"}
+        else:
+            return {"sentiment": "Neutral"}
+
+    # ==== Funções auxiliares enriquecidas ====
+
+    @staticmethod
+    def get_trend_strength(close: pd.Series, period: int = 14) -> Dict[str, Union[int, str]]:
         rsi = TechnicalIndicators.calc_rsi(close, period)
         adx = TechnicalIndicators.calc_adx(close, close, close, period)
         mom = TechnicalIndicators.calc_momentum(close, period)
-        
         score = 0
-        if rsi > 60: score += 1
-        elif rsi < 40: score -= 1
-        
-        if adx > 25: score += 2
-        elif adx < 20: score -= 1
-        
-        if mom['trend'] == 'up': score += 1
+        if rsi.get("value", 50) > 60: score += 1
+        elif rsi.get("value", 50) < 40: score -= 1
+        if adx.get("adx", 20) > 25: score += 2
+        elif adx.get("adx", 20) < 20: score -= 1
+        if mom.get("trend", "up") == 'up': score += 1
         else: score -= 1
-        
         return {
             'score': score,
-            'strength': 'strong' if score >= 3 else 
-                       'moderate' if score >= 1 else 
-                       'weak' if score >= -1 else 'bearish'
+            'strength': 'strong' if score >= 3 else 'moderate' if score >= 1 else 'weak' if score >= -1 else 'bearish'
         }
 
     @staticmethod
-    def get_support_resistance(close: pd.Series, lookback: int = 100) -> Dict[str, List[float]]:
-        """Identifica níveis de suporte e resistência"""
+    def get_support_resistance(close: pd.Series, lookback: int = 100) -> Dict[str, Union[str, List[float]]]:
         if len(close) < lookback:
             return {'error': 'Not enough data'}
-            
         window = close.iloc[-lookback:]
         resistance = window.rolling(5).max().dropna().unique()
         support = window.rolling(5).min().dropna().unique()
-        
         return {
-            'support': sorted(support)[-3:],  # Top 3 supports
-            'resistance': sorted(resistance)[:3]  # Bottom 3 resistances
+            'support': sorted([float(x) for x in support])[-3:],
+            'resistance': sorted([float(x) for x in resistance])[:3]
         }
