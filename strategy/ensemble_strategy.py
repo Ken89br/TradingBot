@@ -33,6 +33,8 @@ from strategy.indicators import (
     calc_volume_status, calc_sentiment
 )
 
+from utils.cot_utils import get_latest_cot
+
 class EnsembleStrategy:
     def __init__(self):
         self.strategies = [
@@ -110,6 +112,9 @@ class EnsembleStrategy:
         return N_expire
 
     def generate_signal(self, data, timeframe="1min"):
+        # Busca o COT
+        cot_info = get_latest_cot(symbol)
+    
         symbol = data["symbol"]
         candles = data["history"]
         candles_df = prepare_features_for_ensemble(candles, timeframe, symbol)
@@ -158,7 +163,7 @@ class EnsembleStrategy:
         lows = [c["low"] for c in candles]
         volumes = [c.get("volume", 0) for c in candles]
 
-        # --- MELHORIA: BUSCA DO MELHOR CANDLE DE ENTRADA/EXPIRAÇÃO (LOOKAHEAD) ---
+        # --- BUSCA DO MELHOR CANDLE DE ENTRADA/EXPIRAÇÃO (LOOKAHEAD) ---
         LOOKAHEAD = CONFIG.get("max_lookahead_candles", 5)
         if len(candles) < LOOKAHEAD + 2:
             print("⚠️ Histórico insuficiente para lookahead, usando último candle como fallback.")
@@ -224,7 +229,7 @@ class EnsembleStrategy:
             expire_dt = entry_dt + timedelta(minutes=N_expire)
             expire_price = entry_price
 
-        # --- FIM MELHORIA: ENTRADA/EXPIRAÇÃO REALISTAS E DINÂMICAS ---
+        # --- ENTRADA/EXPIRAÇÃO REALISTAS E DINÂMICAS ---
 
         signal_data = {
             "signal": direction,
