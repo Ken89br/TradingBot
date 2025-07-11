@@ -1,1 +1,120 @@
+import pandas as pd
+import numpy as np
+import ta
+from typing import Tuple, Dict, Union
 
+class TechnicalIndicators:
+    """
+    Agregador avançado de indicadores técnicos com:
+    - Cálculos mais robustos
+    - Novos indicadores importantes
+    - Melhor tratamento de edge cases
+    - Saídas padronizadas
+    """
+    
+    @staticmethod
+    def calc_rsi(close: pd.Series, period: int = 14) -> Dict[str, float]:
+        """Calcula RSI com validação e dados adicionais"""
+        if len(close) < period:
+            raise ValueError(f"Necessário mínimo {period} períodos para RSI")
+            
+        rsi = ta.momentum.RSIIndicator(close, window=period).rsi()
+        return {
+            'value': round(rsi.iloc[-1], 2),
+            'zone': 'overbought' if rsi.iloc[-1] > 70 else 
+                   'oversold' if rsi.iloc[-1] < 30 else 'neutral',
+            'trend': 'up' if rsi.iloc[-1] > rsi.iloc[-2] else 'down'
+        }
+
+    @staticmethod
+    def calc_macd(close: pd.Series, 
+                 fast: int = 12, 
+                 slow: int = 26, 
+                 signal: int = 9) -> Dict[str, float]:
+        """Retorna MACD com análise de momentum"""
+        macd = ta.trend.MACD(close, window_fast=fast, window_slow=slow, window_sign=signal)
+        return {
+            'histogram': round(macd.macd_diff().iloc[-1], 5),
+            'macd_line': round(macd.macd().iloc[-1], 5),
+            'signal_line': round(macd.macd_signal().iloc[-1], 5),
+            'momentum': 'bullish' if macd.macd_diff().iloc[-1] > 0 else 'bearish'
+        }
+
+    @staticmethod
+    def calc_bollinger(close: pd.Series, period: int = 20, std_dev: int = 2) -> Dict[str, float]:
+        """Bandas de Bollinger com mais métricas"""
+        bb = ta.volatility.BollingerBands(close, window=period, window_dev=std_dev)
+        return {
+            'upper': round(bb.bollinger_hband().iloc[-1], 5),
+            'lower': round(bb.bollinger_lband().iloc[-1], 5),
+            'width': round(bb.bollinger_wband().iloc[-1], 5),
+            'percent_b': round(bb.bollinger_pband().iloc[-1], 5),
+            'position': 'squeeze' if bb.bollinger_wband().iloc[-1] < 0.5 else 'normal'
+        }
+
+    @staticmethod
+    def calc_atr(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> Dict[str, float]:
+        """ATR com contexto de volatilidade"""
+        atr = ta.volatility.AverageTrueRange(high, low, close, window=period)
+        current_atr = atr.average_true_range().iloc[-1]
+        return {
+            'value': round(current_atr, 5),
+            'ratio': round(current_atr / close.iloc[-1] * 100, 2),  # ATR%
+            'trend': 'rising' if current_atr > atr.average_true_range().iloc[-2] else 'falling'
+        }
+
+    @staticmethod
+    def calc_adx(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> Dict[str, float]:
+        """ADX completo com DI+ e DI-"""
+        adx = ta.trend.ADXIndicator(high, low, close, window=period)
+        return {
+            'adx': round(adx.adx().iloc[-1], 2),
+            'di_plus': round(adx.adx_pos().iloc[-1], 2),
+            'di_minus': round(adx.adx_neg().iloc[-1], 2),
+            'strength': 'strong' if adx.adx().iloc[-1] > 25 else 'weak'
+        }
+
+    @staticmethod
+    def calc_ichimoku(high: pd.Series, low: pd.Series, close: pd.Series) -> Dict[str, float]:
+        """Ichimoku Cloud completo"""
+        ichi = ta.trend.IchimokuIndicator(high, low)
+        return {
+            'conversion': round(ichi.ichimoku_conversion_line().iloc[-1], 5),
+            'base': round(ichi.ichimoku_base_line().iloc[-1], 5),
+            'leading_a': round(ichi.ichimoku_a().iloc[-1], 5),
+            'leading_b': round(ichi.ichimoku_b().iloc[-1], 5),
+            'cloud_position': 'above' if close.iloc[-1] > ichi.ichimoku_a().iloc[-1] else 'below'
+        }
+
+    @staticmethod
+    def calc_fibonacci(high: pd.Series, low: pd.Series) -> Dict[str, float]:
+        """Níveis de Fibonacci Retracement"""
+        diff = high.max() - low.min()
+        return {
+            '23.6%': round(high.max() - diff * 0.236, 5),
+            '38.2%': round(high.max() - diff * 0.382, 5),
+            '50%': round(high.max() - diff * 0.5, 5),
+            '61.8%': round(high.max() - diff * 0.618, 5)
+        }
+
+    @staticmethod
+    def calc_supertrend(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 7, multiplier: int = 3) -> Dict[str, Union[float, str]]:
+        """Supertrend com sinal direcional"""
+        st = ta.trend.SuperTrendIndicator(high, low, close, window=period, multiplier=multiplier)
+        return {
+            'value': round(st.super_trend().iloc[-1], 5),
+            'direction': 'up' if st.super_trend_direction().iloc[-1] == 1 else 'down',
+            'changed': st.super_trend_direction().iloc[-1] != st.super_trend_direction().iloc[-2]
+        }
+
+    @staticmethod
+    def get_market_profile(close: pd.Series, volume: pd.Series, bins: int = 20) -> Dict[str, float]:
+        """Perfil de mercado baseado em volume"""
+        hist, bin_edges = np.histogram(close, bins=bins, weights=volume)
+        return {
+            'poc': round(bin_edges[np.argmax(hist)], 5),  # Point of Control
+            'value_area': {
+                'low': round(bin_edges[np.argsort(hist)[-3]], 5),  # 3º maior
+                'high': round(bin_edges[np.argsort(hist)[-1]], 5)   # 1º maior
+            }
+        }
