@@ -263,20 +263,48 @@ class EnsembleStrategy:
             "patterns": patterns  # <-- padrões já vão para o filtro
         }
         
-        # Integração COT
-        if cot_info:
-            signal_data["cot_net_position"] = cot_info["net_position"]
-            signal_data["cot_pct_long"] = cot_info["pct_long"]
-            signal_data["cot_open_interest"] = cot_info["open_interest"]
-            signal_data["cot_date"] = cot_info["date"]
+    # Integração COT
+    original_confidence = signal_data.get("confidence", 50)
+    if cot_info:
+    # 1. Armazenamento dos dados brutos
+        signal_data.update({
+            "cot_net_position": cot_info["net_position"],
+            "cot_pct_long": cot_info["pct_long"],
+            "cot_open_interest": cot_info["open_interest"],
+            "cot_date": cot_info["date"],
+            "cot_52w_high": cot_info.get("52w_high", None),  # Novo: Máximo histórico
+            "cot_52w_low": cot_info.get("52w_low", None),    # Novo: Mínimo histórico
+            "cot_4w_avg": cot_info.get("4w_avg", None)       # Novo: Média móvel
+    })
 
-        # Influência direta na confiança do sinal
-        if signal_data["signal"] == "up" and cot_info["pct_long"] > 0.55:
-            signal_data["confidence"] = min(100, signal_data["confidence"] + 10)
-        elif signal_data["signal"] == "down" and cot_info["pct_long"] < 0.45:
-            signal_data["confidence"] = min(100, signal_data["confidence"] + 10)
-        else:
-            signal_data["confidence"] = max(10, signal_data["confidence"] - 10)
+    # 2. Cálculo de métricas derivadas
+    cot_strength = (cot_info["pct_long"] - 0.5) * 2  # Normalizado entre -1 e 1
+    signal_data["cot_strength"] = cot_strength
+
+    # 3. Influência na confiança com sistema hierárquico
+    base_confidence = original_confidence
+    
+    # Regra 1: Alinhamento direto
+    if (signal_data["signal"] == "up" and cot_strength > 0.1) or \
+       (signal_data["signal"] == "down" and cot_strength < -0.1):
+        base_confidence += 15 * cot_strength  # Impacto proporcional
+        
+    # Regra 2: Extremos históricos
+    elif cot_info.get("52w_high") and cot_info["pct_long"] > cot_info["52w_high"] * 0.9:
+        base_confidence += 20 if signal_data["signal"] == "up" else -20
+    elif cot_info.get("52w_low") and cot_info["pct_long"] < cot_info["52w_low"] * 1.1:
+        base_confidence += 20 if signal_data["signal"] == "down" else -20
+        
+    # Regra 3: Tendência persistente
+    elif cot_info.get("4w_avg"):
+        if (cot_info["pct_long"] - cot_info["4w_avg"]) > 0.05:
+            base_confidence += 10 if signal_data["signal"] == "up" else -10
+        elif (cot_info["pct_long"] - cot_info["4w_avg"]) < -0.05:
+            base_confidence += 10 if signal_data["signal"] == "down" else -10
+
+    # 4. Ajuste final com limites e suavização
+    signal_data["confidence"] = min(95, max(5, base_confidence))  # Limites 5-95%
+    signal_data["cot_confidence_impact"] = signal_data["confidence"] - original_confidence  # Para análise/debug
         
         try:
             ml_prediction = self.ml.predict(data["symbol"], timeframe, data["history"])
