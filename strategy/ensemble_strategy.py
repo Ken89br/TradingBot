@@ -10,7 +10,7 @@
 import time
 from datetime import datetime, timedelta
 from config import CONFIG
-from strategy.feature_ensemble_utils import prepare_features_for_ensemble
+from strategy.feature_universal import prepare_universal_features
 from strategy.candlestick_strategy import CandlestickStrategy
 from strategy.rsi_ma import AggressiveRSIMA
 from strategy.bollinger_breakout import BollingerBreakoutStrategy
