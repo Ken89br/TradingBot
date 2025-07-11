@@ -10,10 +10,13 @@ import yaml
 from typing import Dict, Optional
 from bs4 import BeautifulSoup
 import re
+import time
 
 # Import do método de upload para o Google Drive
-# Substitua pelo caminho real no seu projeto!
 from data.google_drive_client import upload_or_update_file
+
+# ID da pasta do Google Drive para salvar os arquivos processados
+GDRIVE_FOLDER_ID = "1Bv5rwzYMUVuRNSXKSz9zAFidDTCjY8g6"
 
 # Configuração de logging
 logging.basicConfig(
@@ -142,7 +145,7 @@ class CotProcessor:
             df_parsed.to_csv(output_path, index=False)
             logger.info(f"Dados processados salvos em {output_path}")
 
-            # Upload para Google Drive (se folder id for fornecido)
+            # Upload para Google Drive na pasta correta
             if self.gdrive_folder_id:
                 logger.info("Enviando arquivo processado ao Google Drive...")
                 try:
@@ -157,12 +160,21 @@ class CotProcessor:
             logger.error(f"Erro no pipeline: {e}")
             return False
 
-if __name__ == "__main__":
-    # Troque pelo ID real da sua pasta no Google Drive
-    GDRIVE_FOLDER_ID = "17Ok0Eo53XvoUYKtr5iMPgd_NkXLtDT85"
-
+def run_periodically(interval_minutes=1440):
+    """
+    Executa o pipeline de tempos em tempos (default: 1440 minutos = 24h).
+    """
     processor = CotProcessor(config_path="COT.yaml", gdrive_folder_id=GDRIVE_FOLDER_ID)
-    if processor.run_pipeline():
-        logger.info("Processamento concluído com sucesso!")
-    else:
-        logger.error("Falha no processamento")
+    while True:
+        logger.info(f"Iniciando pipeline COT agendado ({interval_minutes} min)")
+        try:
+            processor.run_pipeline()
+        except Exception as e:
+            logger.error(f"Erro no ciclo agendado do pipeline: {e}")
+        logger.info(f"Aguardando {interval_minutes} minutos para próxima execução...")
+        time.sleep(interval_minutes * 60)
+
+if __name__ == "__main__":
+    # Troque o valor para o intervalo desejado (em minutos)
+    INTERVAL_MINUTES = 1440  # 24 horas (recomendado: 1x por dia)
+    run_periodically(interval_minutes=INTERVAL_MINUTES)
