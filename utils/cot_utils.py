@@ -1,22 +1,23 @@
 import os
 import pandas as pd
-from data.google_drive_client import download_file, get_folder_id_for_file, list_files_in_drive_folder
+from data.google_drive_client import download_file, list_files_in_drive_folder
 
 COT_DATA_DIR = "cot_data"
-GDRIVE_FOLDER_ID = "1Bv5rwzYMUVuRNSXKSz9zAFidDTCjY8g6"
+GDRIVE_FOLDER_ID_CSV = "1Bv5rwzYMUVuRNSXKSz9zAFidDTCjY8g6"
 
 def get_latest_cot_drive():
     """Busca o cot_processed_*.csv mais recente do Google Drive e faz download para cot_data/."""
-    files = list_files_in_drive_folder(GDRIVE_FOLDER_ID)
+    files = list_files_in_drive_folder(GDRIVE_FOLDER_ID_CSV)
     cot_files = [f for f in files if f['name'].startswith('cot_processed_') and f['name'].endswith('.csv')]
     if not cot_files:
         print("[COT UTILS] Nenhum arquivo cot_processed encontrado no Drive.")
         return None
+    # Ordena pelo modifiedTime (YYYY-MM-DDTHH:MM:SS.sssZ ou similar)
     latest = max(cot_files, key=lambda f: f['modifiedTime'])
     local_path = os.path.join(COT_DATA_DIR, latest['name'])
     if not os.path.exists(COT_DATA_DIR):
         os.makedirs(COT_DATA_DIR, exist_ok=True)
-    download_file(latest['name'], local_path, drive_folder_id=GDRIVE_FOLDER_ID)
+    download_file(latest['name'], local_path, drive_folder_id=GDRIVE_FOLDER_ID_CSV)
     return local_path
 
 def get_latest_cot(symbol):
