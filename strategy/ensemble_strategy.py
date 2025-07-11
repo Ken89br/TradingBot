@@ -113,22 +113,26 @@ class EnsembleStrategy:
 
     def generate_signal(self, data, timeframe="1min"):
         symbol = data["symbol"]
-        
-        # Busca o COT
         cot_info = get_latest_cot(symbol)
-    
+
         candles = data["history"]
-        candles_df = prepare_features_for_ensemble(candles, timeframe, symbol)
+        # Use o DataFrame universal:
+        features_df = prepare_universal_features(candles, symbol, timeframe)
+        if features_df.empty or len(features_df) < 3:
+            print("⚠️ Insufficient features, skip signal.")
+            return None
+
         votes, details = [], []
         for strat in self.strategies:
             try:
-                result = strat.generate_signal(candles_df)
+                # Passe o DataFrame universal para todas as estratégias!
+                result = strat.generate_signal(features_df)
                 if result:
                     votes.append(result["signal"].lower())
                     details.append(result)
             except Exception as e:
                 print(f"⚠️ {type(strat).__name__} failed: {e}")
-
+        
         if not votes:
             print("⚠️ No strategies returned a signal.")
             return None
