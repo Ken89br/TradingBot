@@ -43,11 +43,19 @@ def get_latest_cot(symbol):
         if df_symbol.empty:
             return None
         row = df_symbol.sort_values("date").iloc[-1]
+        # Calcule extremos e médias móveis (considerando colunas 'pct_long' e 'date')
+        pct_long_series = df_symbol.sort_values("date")["pct_long"].tail(52)
+        high_52w = pct_long_series.max() if len(pct_long_series) >= 10 else None
+        low_52w = pct_long_series.min() if len(pct_long_series) >= 10 else None
+        avg_4w = pct_long_series.tail(4).mean() if len(pct_long_series) >= 4 else None
         return {
             "net_position": row["net_position"],
             "pct_long": row["pct_long"],
             "open_interest": row["Open_Interest_All"],
-            "date": row["date"]
+            "date": row["date"],
+            "52w_high": high_52w,
+            "52w_low": low_52w,
+            "4w_avg": avg_4w
         }
     except Exception as e:
         print(f"[COT UTILS] Erro ao ler COT: {e}")
