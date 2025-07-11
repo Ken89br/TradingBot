@@ -27,7 +27,7 @@ def prepare_universal_features(candles: list, symbol: str, timeframe: str) -> pd
     for period in [12, 26]:
         df[f'ema_{period}'] = df['close'].ewm(span=period, adjust=False).mean()
 
-    # RSI, MACD
+    # RSI, MACD (apenas os valores clássicos para features rápidas)
     delta = df['close'].diff()
     gain = delta.clip(lower=0)
     loss = -delta.clip(upper=0)
@@ -57,8 +57,12 @@ def prepare_universal_features(candles: list, symbol: str, timeframe: str) -> pd
     true_range = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
     df['atr'] = true_range.rolling(14).mean()
     closes, highs, lows, volumes = df['close'].tolist(), df['high'].tolist(), df['low'].tolist(), df['volume'].tolist()
-    df["adx"] = calc_adx(highs, lows, closes)
-    df["atr_proj"] = calc_atr(highs, lows, closes)
+    closes_s = pd.Series(closes)
+    highs_s = pd.Series(highs)
+    lows_s = pd.Series(lows)
+    volumes_s = pd.Series(volumes)
+    df["adx"] = TechnicalIndicators.calc_adx(highs_s, lows_s, closes_s)["adx"]
+    df["atr_proj"] = TechnicalIndicators.calc_atr(highs_s, lows_s, closes_s)["value"]
 
     # Suporte/Resistência
     df['support'] = df['low'].rolling(10, min_periods=1).min()
@@ -70,28 +74,39 @@ def prepare_universal_features(candles: list, symbol: str, timeframe: str) -> pd
     df['volume_sma'] = df['volume'].rolling(20).mean()
     df['volume_pct'] = df['volume'] / df['volume_sma']
 
-    # Ratings e Osciladores
-    df["ma_rating"] = calc_moving_averages(closes)
-    macd_hist, macd_val, macd_signal = calc_macd(closes)
-    rsi_val = calc_rsi(closes)
-    df["osc_rating"] = calc_oscillators(rsi_val, macd_hist)
-    df["volatility_proj"] = calc_volatility(closes)
-    df["volume_status"] = calc_volume_status(volumes)
-    df["sentiment"] = calc_sentiment(closes)
+    # Ratings e Osciladores enriquecidos
+    df["ma_rating"] = TechnicalIndicators.calc_moving_averages(closes_s)["rating"]
+    macd_res = TechnicalIndicators.calc_macd(closes_s)
+    rsi_res = TechnicalIndicators.calc_rsi(closes_s)
+    df["osc_rating"] = TechnicalIndicators.calc_oscillators(rsi_res["value"], macd_res["histogram"])["rating"]
+    df["volatility_proj"] = TechnicalIndicators.calc_volatility(closes_s)["level"]
+    df["volume_status"] = TechnicalIndicators.calc_volume_status(volumes_s)["status"]
+    df["sentiment"] = TechnicalIndicators.calc_sentiment(closes_s)["sentiment"]
     df["variation"] = ((df["close"] - df["close"].shift(1)) / df["close"].shift(1)) * 100
 
     # OBV e Spread
     df["obv"] = calc_obv(df)
     df["spread"] = calc_spread(df)
 
-    # Candlestick Patterns (flags e força)
-    pattern_list = ["bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji"]
+    # ---- PADRÕES DE VELA ENRIQUECIDOS (mais completos) ----
+    # Cobertura máxima para todos os padrões do candlestick_patterns.py
+    pattern_list = [
+        "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji",
+        "dragonfly_doji", "gravestone_doji", "long_legged_doji", "spinning_top",
+        "hanging_man", "inverted_hammer", "marubozu", "bullish_harami", "bearish_harami",
+        "harami_cross", "piercing_line", "dark_cloud_cover", "tweezer_bottom", "tweezer_top",
+        "morning_star", "evening_star", "three_white_soldiers", "three_black_crows",
+        "three_inside_up", "three_inside_down", "three_outside_up", "three_outside_down",
+        "abandoned_baby_bullish", "abandoned_baby_bearish", "kicker_bullish", "kicker_bearish",
+        "gap_up", "gap_down", "upside_tasuki_gap", "downside_tasuki_gap", "on_neckline",
+        "separating_lines", "rising_three_methods", "falling_three_methods"
+    ]
     for pattern in pattern_list:
         df[pattern] = 0
     pattern_strengths = []
     patterns_col = []
     for i in range(len(df)):
-        candles_slice = df.iloc[max(i-3, 0):i+1][["open", "high", "low", "close", "volume"]].to_dict("records")
+        candles_slice = df.iloc[max(i-5, 0):i+1][["open", "high", "low", "close", "volume"]].to_dict("records")
         patterns = detect_candlestick_patterns(candles_slice)
         patterns_col.append(patterns)
         for pattern in pattern_list:
