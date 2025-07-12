@@ -276,7 +276,7 @@ class FeatureEngineer:
     @staticmethod
     def get_feature_columns() -> List[str]:
         """Lista de features para treino - ajuste para compatibilidade"""
-        features = [
+        return [
             'open', 'high', 'low', 'close', 'volume',
 
             # Rolling/Price
