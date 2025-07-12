@@ -123,6 +123,90 @@ class MLPredictor:
             logger.error(f"Falha ao processar candles: {str(e)}")
             return None
 
+        @staticmethod
+    def add_technical_indicators(df: pd.DataFrame, timeframe: str = None, symbol: str = None) -> pd.DataFrame:
+        if timeframe and timeframe.lower() in ['s1', '1s']:
+            df = resample_candles(df, freq='10S')
+
+        df = df.copy()
+        closes = pd.Series(df["close"].values)
+        highs = pd.Series(df["high"].values)
+        lows = pd.Series(df["low"].values)
+        volumes = pd.Series(df["volume"].values)
+
+        # RSI enriquecido
+        rsi = TechnicalIndicators.calc_rsi(closes)
+        df['rsi_value'] = rsi['value']
+        df['rsi_zone'] = rsi['zone']
+        df['rsi_trend'] = rsi['trend']
+
+        # MACD enriquecido
+        macd = TechnicalIndicators.calc_macd(closes)
+        df['macd_histogram'] = macd['histogram']
+        df['macd_line'] = macd['macd_line']
+        df['macd_signal_line'] = macd['signal_line']
+        df['macd_momentum'] = macd['momentum']
+
+        # Bollinger Bands enriquecido
+        bb = TechnicalIndicators.calc_bollinger(closes)
+        df['bb_upper'] = bb['upper']
+        df['bb_lower'] = bb['lower']
+        df['bb_width'] = bb['width']
+        df['bb_percent_b'] = bb['percent_b']
+        df['bb_position'] = bb['position']
+
+        # ATR enriquecido
+        atr = TechnicalIndicators.calc_atr(highs, lows, closes)
+        df['atr_value'] = atr['value']
+        df['atr_ratio'] = atr['ratio']
+        df['atr_trend'] = atr['trend']
+
+        # ADX enriquecido
+        adx = TechnicalIndicators.calc_adx(highs, lows, closes)
+        df['adx_value'] = adx['adx']
+        df['adx_di_plus'] = adx['di_plus']
+        df['adx_di_minus'] = adx['di_minus']
+        df['adx_strength'] = adx['strength']
+
+        # ... Continue para todos os outros indicadores enriquecidos ...
+
+        # Ratings e auxiliares
+        df['ma_rating'] = TechnicalIndicators.calc_moving_averages(closes)['rating']
+        df['osc_rating'] = TechnicalIndicators.calc_oscillators(rsi['value'], macd['histogram'])['rating']
+        df['volatility_level'] = TechnicalIndicators.calc_volatility(closes)['level']
+        df['volume_status'] = TechnicalIndicators.calc_volume_status(volumes)['status']
+        df['sentiment'] = TechnicalIndicators.calc_sentiment(closes)['sentiment']
+
+        # OBV, spread, variation, etc
+        df["obv"] = calc_obv(df)
+        df["spread"] = calc_spread(df)
+        df["variation"] = ((df["close"] - df["close"].shift(1)) / df["close"].shift(1)) * 100
+
+        # Fundamentalistas
+        if timeframe and timeframe.lower() in ['h4', 'd1']:
+            df["cot"] = get_cot_feature(symbol)
+            df["macro"] = get_macro_feature(symbol)
+            df["sentiment_news"] = get_sentiment_feature(symbol)
+        else:
+            for col in ["cot", "macro", "sentiment_news"]:
+                df[col] = 0
+
+        # Mapeamentos para pipeline ML
+        ma_mapping = {"buy": 1, "sell": -1, "neutral": 0}
+        osc_mapping = {"buy": 1, "sell": -1, "neutral": 0}
+        vol_mapping = {"High": 1, "Low": 0}
+        volstat_mapping = {"Spiked": 2, "Normal": 1, "Low": 0}
+        sentiment_mapping = {"Optimistic": 1, "Neutral": 0, "Pessimistic": -1}
+        df["ma_rating"] = df["ma_rating"].map(ma_mapping)
+        df["osc_rating"] = df["osc_rating"].map(osc_mapping)
+        df["volatility_level"] = df["volatility_level"].map(vol_mapping)
+        df["volume_status"] = df["volume_status"].map(volstat_mapping)
+        df["sentiment"] = df["sentiment"].map(sentiment_mapping)
+
+        df.ffill(inplace=True)
+        df.dropna(inplace=True)
+        return df
+
     @staticmethod
     def add_technical_indicators(df: pd.DataFrame, timeframe: str = None, symbol: str = None) -> pd.DataFrame:
 
