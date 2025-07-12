@@ -222,33 +222,7 @@ class MLPredictor:
             df[f'sma_{period}'] = df['close'].rolling(period).mean()
         for period in [12, 26]:
             df[f'ema_{period}'] = df['close'].ewm(span=period, adjust=False).mean()
-        # RSI
-        delta = df['close'].diff()
-        gain = delta.clip(lower=0)
-        loss = -delta.clip(upper=0)
-        avg_gain = gain.ewm(span=14, adjust=False).mean()
-        avg_loss = loss.ewm(span=14, adjust=False).mean()
-        rs = avg_gain / (avg_loss + 1e-10)
-        df['rsi'] = 100 - (100 / (1 + rs))
-        # MACD
-        ema12 = df['ema_12']
-        ema26 = df['ema_26']
-        df['macd'] = ema12 - ema26
-        df['macd_signal'] = df['macd'].ewm(span=9, adjust=False).mean()
-        df['macd_hist'] = df['macd'] - df['macd_signal']
-        # Bollinger Bands
-        sma20 = df['sma_20']
-        rolling_std = df['close'].rolling(20).std()
-        df['bb_upper'] = sma20 + 2 * rolling_std
-        df['bb_lower'] = sma20 - 2 * rolling_std
-        df['bb_width'] = (df['bb_upper'] - df['bb_lower']) / sma20
-        df['bb_pct'] = (df['close'] - df['bb_lower']) / (df['bb_upper'] - df['bb_lower'])
-        # ATR
-        tr1 = df['high'] - df['low']
-        tr2 = np.abs(df['high'] - df['close'].shift())
-        tr3 = np.abs(df['low'] - df['close'].shift())
-        true_range = np.maximum(np.maximum(tr1, tr2), tr3)
-        df['atr'] = pd.Series(true_range).rolling(14).mean().values
+        
         # Suporte/Resistência
         df['support'] = df['low'].rolling(10, min_periods=1).min()
         df['resistance'] = df['high'].rolling(10, min_periods=1).max()
@@ -277,34 +251,6 @@ class MLPredictor:
         df["variation"] = ((df["close"] - df["close"].shift(1)) / df["close"].shift(1)) * 100
         df["support_distance"] = df["close"] - df["support"]
         df["resistance_distance"] = df["resistance"] - df["close"]
-
-        # OBV e Spread
-        df["obv"] = calc_obv(df)
-        df['spread'] = calc_spread(df)
-        
-        # Fundamentalistas para H4/D1
-        if timeframe and timeframe.lower() in ['h4', 'd1']:
-            df["cot"] = get_cot_feature(symbol)
-            df["macro"] = get_macro_feature(symbol)
-            df["sentiment_news"] = get_sentiment_feature(symbol)
-        
-        # Sempre garantir as colunas fundamentais, mesmo para timeframes baixos
-        for col in ["cot", "macro", "sentiment_news"]:
-            if col not in df.columns:
-                df[col] = 0
-
-        # Mapeamento para valores numérico
-        ma_mapping = {"buy": 1, "sell": -1, "neutral": 0}
-        osc_mapping = {"buy": 1, "sell": -1, "neutral": 0}
-        vol_mapping = {"High": 1, "Low": 0}
-        volstat_mapping = {"Spiked": 2, "Normal": 1, "Low": 0}
-        sentiment_mapping = {"Optimistic": 1, "Neutral": 0, "Pessimistic": -1}
-        df["ma_rating"] = df["ma_rating"].map(ma_mapping)
-        df["osc_rating"] = df["osc_rating"].map(osc_mapping)
-        df["volatility_proj"] = df["volatility_proj"].map(vol_mapping)
-        df["volume_status"] = df["volume_status"].map(volstat_mapping)
-        df["sentiment"] = df["sentiment"].map(sentiment_mapping)
-        return df
 
     def def _add_candlestick_features(self, df: pd.DataFrame) -> pd.DataFrame:
     pattern_list = [
