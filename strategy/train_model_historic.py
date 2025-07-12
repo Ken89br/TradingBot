@@ -466,7 +466,6 @@ class FeatureEngineer:
             "gap_up", "gap_down", "upside_tasuki_gap", "downside_tasuki_gap", "on_neckline",
             "separating_lines", "rising_three_methods", "falling_three_methods",
             "pattern_strength", "patterns"
-            "diff_sma_5_20", "diff_ema_12_26", "cross_sma_5_20", "cross_ema_12_26", "macd_cross",
         ]
 
     @staticmethod
