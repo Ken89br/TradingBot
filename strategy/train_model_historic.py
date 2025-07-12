@@ -451,9 +451,11 @@ class FeatureEngineer:
             'cot', 'macro', 'sentiment_news',
             "diff_sma_5_20", "diff_ema_12_26", "cross_sma_5_20", "cross_ema_12_26", "macd_cross",
             "num_patterns", "rare_pattern_event",
-            "atr_7", "atr_14", "atr_21", "atr_28", "atr_7_pct", "atr_14_pct",
-            "bb_upper_10", "bb_lower_10", "bb_width_10", "bb_pct_10"
-    
+            "atr_7", "atr_14", "atr_21", "atr_28", "atr_7_pct", "atr_14_pct", "atr_21_pct", "atr_28_pct",
+            "bb_upper_10", "bb_lower_10", "bb_width_10", "bb_pct_10",
+            "bb_upper_20", "bb_lower_20", "bb_width_20", "bb_pct_20",
+            "bb_upper_50", "bb_lower_50", "bb_width_50", "bb_pct_50",
+        
             # PADRÕES DE VELA
             "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji",
             "dragonfly_doji", "gravestone_doji", "long_legged_doji", "spinning_top",
