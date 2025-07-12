@@ -298,19 +298,19 @@ class MLPredictor:
         df["resistance_lvls"] = str(sr.get("resistance", []))
         df["price_position"] = sr.get("current_position", "")
 
-        # Ratings e auxiliares
+    # Ratings e auxiliares
         df['ma_rating'] = TechnicalIndicators.calc_moving_averages(closes)['rating']
         df['osc_rating'] = TechnicalIndicators.calc_oscillators(rsi['value'], macd['histogram'])['rating']
         df['volatility_level'] = TechnicalIndicators.calc_volatility(closes)['level']
         df['volume_status'] = TechnicalIndicators.calc_volume_status(volumes)['status']
         df['sentiment'] = TechnicalIndicators.calc_sentiment(closes)['sentiment']
 
-        # OBV, spread, variation, etc
+    # OBV, spread, variation, etc
         df["obv"] = calc_obv(df)
         df["spread"] = calc_spread(df)
         df["variation"] = ((df["close"] - df["close"].shift(1)) / df["close"].shift(1)) * 100
 
-        # Fundamentalistas
+    # Fundamentalistas
         if timeframe and timeframe.lower() in ['h4', 'd1']:
             df["cot"] = get_cot_feature(symbol)
             df["macro"] = get_macro_feature(symbol)
@@ -319,7 +319,7 @@ class MLPredictor:
             for col in ["cot", "macro", "sentiment_news"]:
                 df[col] = 0
 
-        # Mapeamentos para pipeline ML
+    # Mapeamentos para pipeline ML
         ma_mapping = {"buy": 1, "sell": -1, "neutral": 0}
         osc_mapping = {"buy": 1, "sell": -1, "neutral": 0}
         vol_mapping = {"High": 1, "Low": 0}
@@ -335,11 +335,6 @@ class MLPredictor:
         df.dropna(inplace=True)
         return df
 
-    @staticmethod
-    def add_technical_indicators(df: pd.DataFrame, timeframe: str = None, symbol: str = None) -> pd.DataFrame:
-
-        """Cálculo dos principais indicadores e features compatíveis com o pipeline de treino"""
-        df = df.copy()
         # Rolling indicators
         df['returns'] = df['close'].pct_change()
         df['volatility'] = df['returns'].rolling(20).std()
