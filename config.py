@@ -108,7 +108,7 @@ CONFIG = {
         "volume_threshold": 1.3,
 },
 
-    # ATR STRATEGY CONFIGURATION CENTRALIZED HERE
+    # ATR STRATEGY CONFIGURATION
     "atr": {
         "atr_period": 14,            # Período para cálculo do ATR
         "multiplier": 1.2,           # Multiplicador do ATR para validar corpo do candle (ajuste para mais sensibilidade/assertividade)
@@ -120,7 +120,7 @@ CONFIG = {
         "pattern_boost": 0.2         # Fator de boost na confiança ao detectar padrão relevante
     },
     
-    # BOLLINGER STRATEGY CONFIGURATION CENTRALIZED HERE
+    # BOLLINGER STRATEGY CONFIGURATION
     "bbands": {
         "period": 20,   
         "std_dev": 2.0,
@@ -132,7 +132,7 @@ CONFIG = {
         "signal_direction_filter": "both", # 'up', 'down' ou 'both'
         "allow_neutral_signals": False,
     },
-    # BOLLINGER BREAKOUT STRATEGY CONFIGURATION CENTRALIZED HERE
+    # BOLLINGER BREAKOUT STRATEGY
     "bollinger_breakout": {
         "period": 20,                # Período da média móvel (padrão clássico)
         "std_dev": 2.0,              # Desvio padrão para bandas (2.0 é o padrão técnico)
@@ -145,7 +145,7 @@ CONFIG = {
         "allow_neutral_signals": False,    # Permite sinais neutros? (normalmente False)
     },
     
-    # RSI STRATEGY CONFIGURATION CENTRALIZED HERE
+    # RSI STRATEGY CONFIGURATION
     "rsi": {
         "overbought": 70,
         "oversold": 30,
@@ -176,26 +176,7 @@ CONFIG = {
         "inverted_hammer",
         "belt_hold_bullish",
         "breakaway_bullish",
-        "concealing_baby_swallow",
         "counterattack_bullish",
-        "deliberation_bullish",
-        "doji_star_bullish",
-        "gapping_up_doji",
-        "homing_pigeon",
-        "identical_three_crows_bullish",
-        "kicking_bullish",
-        "ladder_bottom",
-        "last_engulfing_bottom",
-        "mat_hold",
-        "matching_low",
-        "meeting_lines_bullish",
-        "morning_doji_star",
-        "one_white_soldier",
-        "rising_three_methods",
-        "side_by_side_white_lines_bullish",
-        "stick_sandwich",
-        "takuri_line",
-        "tri_star_bullish",
         "unique_three_river_bottom"
     ],
     "reversal_down": [
@@ -214,115 +195,33 @@ CONFIG = {
         "shooting_star",
         "belt_hold_bearish",
         "breakaway_bearish",
-        "concealing_baby_swallow_bearish",
         "counterattack_bearish",
-        "deliberation_bearish",
-        "doji_star_bearish",
-        "gapping_down_doji",
-        "identical_three_crows",
-        "kicking_bearish",
-        "last_engulfing_top",
-        "meeting_lines_bearish",
-        "evening_doji_star",
-        "falling_three_methods",
-        "side_by_side_white_lines_bearish",
-        "tri_star_bearish",
-        "two_crows",
-        "upside_gap_two_crows",
-        "advance_block",
-        "descending_hawk",
-        "abandoned_baby_bearish",
-        "low_price_gapping_down"
+        "abandoned_baby_bearish"
     ],
     "trend_up": [
-        "marubozu",
         "three_white_soldiers",
+        "rising_three_methods",
         "upside_tasuki_gap",
-        "separating_lines",
-        "rising_window",
-        "white_candlestick",
-        "long_white_candlestick",
-        "white_opening_bozu",
-        "white_closing_bozu",
-        "continuation_white_candlestick",
-        "side_by_side_white_lines",
-        "in_neck_line",
-        "on_neck_line_bullish",
-        "thrusting_line",
-        "stick_sandwich_bullish",
-        "rising_three_methods_continuation",
-        "upside_gap_three_methods"
+        "separating_lines"
     ],
     "trend_down": [
-        "marubozu",
         "three_black_crows",
+        "falling_three_methods",
         "downside_tasuki_gap",
-        "separating_lines",
-        "falling_window",
-        "black_candlestick",
-        "long_black_candlestick",
-        "black_opening_bozu",
-        "black_closing_bozu",
-        "continuation_black_candlestick",
-        "side_by_side_black_lines",
-        "in_neck_line_bearish",
-        "on_neck_line_bearish",
-        "thrusting_line_bearish",
-        "falling_three_methods_continuation",
-        "downside_gap_three_methods",
-        "identical_three_crows_continuation"
+        "separating_lines"
     ],
     "neutral": [
         "doji",
-        "spinning_top",
+        "dragonfly_doji",
+        "gravestone_doji",
         "long_legged_doji",
-        "on_neckline",
-        "high_wave",
-        "doji_gravestone",
-        "doji_dragonfly",
-        "four_price_doji",
-        "doji_star",
-        "doji_with_long_shadow",
-        "doji_with_short_shadow",
-        "rickshaw_man",
-        "star",
-        "tri_doji",
-        "doji_after_long_white",
-        "doji_after_long_black",
-        "doji_inside_candlestick",
-        "doji_outside_candlestick",
-        "doji_with_equal_open_close",
-        "doji_with_high_volatility"
+        "spinning_top",
+        "marubozu"
     ],
-    "complex_patterns": [
-        "head_and_shoulders",
-        "inverse_head_and_shoulders",
-        "double_top",
-        "double_bottom",
-        "triple_top",
-        "triple_bottom",
-        "rounding_bottom",
-        "rounding_top",
-        "cup_with_handle",
-        "bump_and_run",
-        "island_reversal",
-        "hook_reversal",
-        "key_reversal",
-        "saucer_bottom",
-        "saucer_top",
-        "wedge_rising",
-        "wedge_falling",
-        "flag_bullish",
-        "flag_bearish",
-        "pennant_bullish",
-        "pennant_bearish",
-        "broadening_formation",
-        "diamond_bottom",
-        "diamond_top",
-        "megaphone_top",
-        "megaphone_bottom"
+    "hybrid_or_uncertain": [
+        "harami_cross"
     ]
-},
+}
     
     "languages": {
         "en": {
