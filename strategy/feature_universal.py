@@ -245,7 +245,40 @@ def prepare_universal_features(candles: list, symbol: str, timeframe: str) -> pd
     df["sentiment"] = df["sentiment"].map(sentiment_mapping)
     df["rsi_zone"] = df["rsi_zone"].map(zone_mapping)
     df["trend_strength"] = df["trend_strength"].map(trend_mapping)
+    # Diferença entre médias móveis (curta e longa)
+    df['diff_sma_5_20'] = df['sma_5'] - df['sma_20']
+    df['diff_ema_12_26'] = df['ema_12'] - df['ema_26']
 
+    # Cruzamento de médias móveis (flag booleana)
+    df['cross_sma_5_20'] = ((df['sma_5'] > df['sma_20']) & (df['sma_5'].shift(1) <= df['sma_20'].shift(1))).astype(int)
+    df['cross_ema_12_26'] = ((df['ema_12'] > df['ema_26']) & (df['ema_12'].shift(1) <= df['ema_26'].shift(1))).astype(int)
+
+    # Cruzamento MACD/Signal
+    df['macd_cross'] = ((df['macd_line'] > df['macd_signal_line']) & (df['macd_line'].shift(1) <= df['macd_signal_line'].shift(1))).astype(int)
+
+    # Eventos raros: 3+ padrões de vela no mesmo candle
+    df['num_patterns'] = df['patterns'].apply(lambda x: len(x) if isinstance(x, list) else 0)
+    df['rare_pattern_event'] = (df['num_patterns'] >= 3).astype(int)
+
+    # ATR para múltiplos períodos
+    for period in [7, 14, 21, 28]:
+        tr1 = df['high'] - df['low']
+        tr2 = abs(df['high'] - df['close'].shift())
+        tr3 = abs(df['low'] - df['close'].shift())
+        true_range = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+        df[f'atr_{period}'] = true_range.rolling(period).mean()
+        # Razão ATR/close
+        df[f'atr_{period}_pct'] = df[f'atr_{period}'] / df['close']
+
+    # Bandas de Bollinger para múltiplos períodos
+    for period in [10, 20, 50]:
+        sma = df['close'].rolling(period).mean()
+        std = df['close'].rolling(period).std()
+        df[f'bb_upper_{period}'] = sma + 2 * std
+        df[f'bb_lower_{period}'] = sma - 2 * std
+        df[f'bb_width_{period}'] = (df[f'bb_upper_{period}'] - df[f'bb_lower_{period}']) / sma
+        df[f'bb_pct_{period}'] = (df['close'] - df[f'bb_lower_{period}']) / (df[f'bb_upper_{period}'] - df[f'bb_lower_{period}'])
+    
     df.ffill(inplace=True)
     df.dropna(inplace=True)
     return df
