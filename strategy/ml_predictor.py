@@ -279,9 +279,9 @@ class MLPredictor:
         df["zigzag_retracements"] = str(zz.get("retracements", []))
 
     # ========= AUXILIARES CONTEXTUAIS =========
-        ma_rating = TechnicalIndicators.calc_moving_averages(closes)
-        osc_rating = TechnicalIndicators.calc_oscillators(rsi["value"], macd["histogram"])
-        vol = TechnicalIndicators.calc_volatility(closes)
+        ma_rating = TechnicalIndicators.calc_moving_averages(closes)['rating']
+        osc_rating = TechnicalIndicators.calc_oscillators(rsi["value"], macd["histogram"])['rating']
+        vol = TechnicalIndicators.calc_volatility(closes)['level']
         volstat = TechnicalIndicators.calc_volume_status(volumes)
         sentiment = TechnicalIndicators.calc_sentiment(closes)
         trendctx = TechnicalIndicators.get_trend_context(closes)
@@ -297,13 +297,6 @@ class MLPredictor:
         df["support_lvls"] = str(sr.get("support", []))
         df["resistance_lvls"] = str(sr.get("resistance", []))
         df["price_position"] = sr.get("current_position", "")
-
-    # Ratings e auxiliares
-        df['ma_rating'] = TechnicalIndicators.calc_moving_averages(closes)['rating']
-        df['osc_rating'] = TechnicalIndicators.calc_oscillators(rsi['value'], macd['histogram'])['rating']
-        df['volatility_level'] = TechnicalIndicators.calc_volatility(closes)['level']
-        df['volume_status'] = TechnicalIndicators.calc_volume_status(volumes)['status']
-        df['sentiment'] = TechnicalIndicators.calc_sentiment(closes)['sentiment']
 
     # OBV, spread, variation, etc
         df["obv"] = calc_obv(df)
