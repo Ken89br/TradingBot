@@ -123,10 +123,6 @@ class MLPredictor:
             logger.error(f"Falha ao processar candles: {str(e)}")
             return None
 
-
-
-
-
     @staticmethod
     def add_technical_indicators(df: pd.DataFrame, timeframe: str = None, symbol: str = None) -> pd.DataFrame:
         if timeframe and timeframe.lower() in ['s1', '1s']:
@@ -138,20 +134,18 @@ class MLPredictor:
         lows = pd.Series(df["low"].values)
         volumes = pd.Series(df["volume"].values)
 
-    # RSI
+        # ==== INDICADORES ENRIQUECIDOS ====
         rsi = TechnicalIndicators.calc_rsi(closes)
         df["rsi_value"] = rsi["value"]
         df["rsi_zone"] = rsi["zone"]
         df["rsi_trend"] = rsi["trend"]
 
-    # MACD
         macd = TechnicalIndicators.calc_macd(closes)
         df["macd_histogram"] = macd["histogram"]
         df["macd_line"] = macd["macd_line"]
         df["macd_signal_line"] = macd["signal_line"]
         df["macd_momentum"] = macd["momentum"]
 
-    # Bollinger Bands
         bb = TechnicalIndicators.calc_bollinger(closes)
         df["bb_upper"] = bb["upper"]
         df["bb_lower"] = bb["lower"]
@@ -159,20 +153,17 @@ class MLPredictor:
         df["bb_percent_b"] = bb["percent_b"]
         df["bb_position"] = bb["position"]
 
-    # ATR
         atr = TechnicalIndicators.calc_atr(highs, lows, closes)
         df["atr_value"] = atr["value"]
         df["atr_ratio"] = atr["ratio"]
         df["atr_trend"] = atr["trend"]
 
-    # ADX
         adx = TechnicalIndicators.calc_adx(highs, lows, closes)
         df["adx_value"] = adx["adx"]
         df["adx_di_plus"] = adx["di_plus"]
         df["adx_di_minus"] = adx["di_minus"]
         df["adx_strength"] = adx["strength"]
 
-    # Ichimoku
         ichimoku = TechnicalIndicators.calc_ichimoku(highs, lows, closes)
         df["ichimoku_conversion"] = ichimoku["conversion"]
         df["ichimoku_base"] = ichimoku["base"]
@@ -180,66 +171,56 @@ class MLPredictor:
         df["ichimoku_leading_b"] = ichimoku["leading_b"]
         df["ichimoku_cloud_position"] = ichimoku["cloud_position"]
 
-    # Fibonacci
         fibo = TechnicalIndicators.calc_fibonacci(highs, lows)
         df["fibo_23_6"] = fibo["23.6%"]
         df["fibo_38_2"] = fibo["38.2%"]
         df["fibo_50"] = fibo["50%"]
         df["fibo_61_8"] = fibo["61.8%"]
 
-    # Supertrend
         supertrend = TechnicalIndicators.calc_supertrend(highs, lows, closes)
         df["supertrend_value"] = supertrend["value"]
         df["supertrend_direction"] = supertrend["direction"]
         df["supertrend_changed"] = supertrend["changed"]
 
-    # Market Profile
         mprofile = TechnicalIndicators.get_market_profile(closes, volumes)
         df["market_poc"] = mprofile["poc"]
         df["market_va_low"] = mprofile["value_area"]["low"]
         df["market_va_high"] = mprofile["value_area"]["high"]
 
-    # Stochastic
         stoch = TechnicalIndicators.calc_stochastic(highs, lows, closes)
         df["stoch_k"] = stoch["k_line"]
         df["stoch_d"] = stoch["d_line"]
         df["stoch_state"] = stoch["state"]
         df["stoch_cross"] = stoch["cross"]
 
-    # CCI
-         cci = TechnicalIndicators.calc_cci(highs, lows, closes)
-         df["cci_value"] = cci["value"]
-         df["cci_state"] = cci["state"]
-         df["cci_momentum"] = cci["momentum"]
-         df["cci_strength"] = cci["strength"]
+        cci = TechnicalIndicators.calc_cci(highs, lows, closes)
+        df["cci_value"] = cci["value"]
+        df["cci_state"] = cci["state"]
+        df["cci_momentum"] = cci["momentum"]
+        df["cci_strength"] = cci["strength"]
 
-    # Williams %R
         wr = TechnicalIndicators.calc_williams_r(highs, lows, closes)
         df["williamsr_value"] = wr["value"]
         df["williamsr_state"] = wr["state"]
         df["williamsr_trend"] = wr["trend"]
 
-    # Parabolic SAR
         psar = TechnicalIndicators.calc_parabolic_sar(highs, lows)
         df["psar_value"] = psar["value"]
         df["psar_trend"] = psar["trend"]
         df["psar_acceleration"] = psar["acceleration"]
 
-    # Momentum
         mom = TechnicalIndicators.calc_momentum(closes)
         df["momentum_value"] = mom["value"]
         df["momentum_trend"] = mom["trend"]
         df["momentum_acceleration"] = mom["acceleration"]
         df["momentum_strength"] = mom["strength"]
 
-    # ROC
         roc = TechnicalIndicators.calc_roc(closes)
         df["roc_value"] = roc["value"]
         df["roc_trend"] = roc["trend"]
         df["roc_momentum"] = roc["momentum"]
         df["roc_extreme"] = roc["extreme"]
 
-    # DMI
         dmi = TechnicalIndicators.calc_dmi(highs, lows, closes)
         df["dmi_adx"] = dmi["adx"]
         df["dmi_plus_di"] = dmi["plus_di"]
@@ -247,14 +228,12 @@ class MLPredictor:
         df["dmi_trend"] = dmi["trend"]
         df["dmi_crossover"] = dmi["crossover"]
 
-    # VWAP
         vwap = TechnicalIndicators.calc_vwap(highs, lows, closes, volumes)
         df["vwap_value"] = vwap["value"]
         df["vwap_relation"] = vwap["relation"]
         df["vwap_spread"] = vwap["spread"]
         df["vwap_trend"] = vwap["trend"]
 
-    # Envelope
         envelope = TechnicalIndicators.calc_envelope(closes)
         df["envelope_upper"] = envelope["upper"]
         df["envelope_lower"] = envelope["lower"]
@@ -263,14 +242,12 @@ class MLPredictor:
         df["envelope_band_width"] = envelope["band_width"]
         df["envelope_percent_center"] = envelope["percent_from_center"]
 
-    # Elliott Wave
         elliott = TechnicalIndicators.calc_elliott_wave(closes)
         df["elliott_peaks"] = str(elliott.get("peaks", []))
         df["elliott_troughs"] = str(elliott.get("troughs", []))
         df["elliott_phase"] = elliott.get("phase", "")
         df["elliott_wave_counts"] = str(elliott.get("wave_counts", {}))
 
-    # Zigzag
         zz = TechnicalIndicators.calc_zigzag(closes)
         df["zigzag_peaks"] = str(zz.get("peaks", []))
         df["zigzag_troughs"] = str(zz.get("troughs", []))
@@ -278,10 +255,10 @@ class MLPredictor:
         df["zigzag_pattern"] = zz.get("pattern", "")
         df["zigzag_retracements"] = str(zz.get("retracements", []))
 
-    # ========= AUXILIARES CONTEXTUAIS =========
-        ma_rating = TechnicalIndicators.calc_moving_averages(closes)['rating']
-        osc_rating = TechnicalIndicators.calc_oscillators(rsi["value"], macd["histogram"])['rating']
-        vol = TechnicalIndicators.calc_volatility(closes)['level']
+        # ========= AUXILIARES CONTEXTUAIS =========
+        ma_rating = TechnicalIndicators.calc_moving_averages(closes)
+        osc_rating = TechnicalIndicators.calc_oscillators(rsi["value"], macd["histogram"])
+        vol = TechnicalIndicators.calc_volatility(closes)
         volstat = TechnicalIndicators.calc_volume_status(volumes)
         sentiment = TechnicalIndicators.calc_sentiment(closes)
         trendctx = TechnicalIndicators.get_trend_context(closes)
@@ -298,12 +275,17 @@ class MLPredictor:
         df["resistance_lvls"] = str(sr.get("resistance", []))
         df["price_position"] = sr.get("current_position", "")
 
-    # OBV, spread, variation, etc
+        df['returns'] = df['close'].pct_change()
+        df['volatility'] = df['returns'].rolling(20).std()
+        for period in [5, 10, 20, 50]:
+            df[f'sma_{period}'] = df['close'].rolling(period).mean()
+        for period in [12, 26]:
+            df[f'ema_{period}'] = df['close'].ewm(span=period, adjust=False).mean()
+
         df["obv"] = calc_obv(df)
         df["spread"] = calc_spread(df)
         df["variation"] = ((df["close"] - df["close"].shift(1)) / df["close"].shift(1)) * 100
 
-    # Fundamentalistas
         if timeframe and timeframe.lower() in ['h4', 'd1']:
             df["cot"] = get_cot_feature(symbol)
             df["macro"] = get_macro_feature(symbol)
@@ -312,148 +294,86 @@ class MLPredictor:
             for col in ["cot", "macro", "sentiment_news"]:
                 df[col] = 0
 
-    # Mapeamentos para pipeline ML
         ma_mapping = {"buy": 1, "sell": -1, "neutral": 0}
         osc_mapping = {"buy": 1, "sell": -1, "neutral": 0}
         vol_mapping = {"High": 1, "Low": 0}
         volstat_mapping = {"Spiked": 2, "Normal": 1, "Low": 0}
         sentiment_mapping = {"Optimistic": 1, "Neutral": 0, "Pessimistic": -1}
+        trend_mapping = {"strong": 2, "moderate": 1, "weak": 0, "bearish": -1}
+        zone_mapping = {"overbought": 1, "neutral": 0, "oversold": -1}
         df["ma_rating"] = df["ma_rating"].map(ma_mapping)
         df["osc_rating"] = df["osc_rating"].map(osc_mapping)
         df["volatility_level"] = df["volatility_level"].map(vol_mapping)
         df["volume_status"] = df["volume_status"].map(volstat_mapping)
         df["sentiment"] = df["sentiment"].map(sentiment_mapping)
+        df["rsi_zone"] = df["rsi_zone"].map(zone_mapping)
+        df["trend_strength"] = df["trend_strength"].map(trend_mapping)
 
         df.ffill(inplace=True)
         df.dropna(inplace=True)
         return df
 
-        # Rolling indicators
-        df['returns'] = df['close'].pct_change()
-        df['volatility'] = df['returns'].rolling(20).std()
-        for period in [5, 10, 20, 50]:
-            df[f'sma_{period}'] = df['close'].rolling(period).mean()
-        for period in [12, 26]:
-            df[f'ema_{period}'] = df['close'].ewm(span=period, adjust=False).mean()
-        
-        # Suporte/Resistência
-        df['support'] = df['low'].rolling(10, min_periods=1).min()
-        df['resistance'] = df['high'].rolling(10, min_periods=1).max()
-        df['support_dist'] = df['close'] - df['support']
-        df['resistance_dist'] = df['resistance'] - df['close']
-        # Volume
-        df['volume_sma'] = df['volume'].rolling(20).mean()
-        df['volume_pct'] = df['volume'] / df['volume_sma']
-        # Extras do projeto (compatível com pipeline de treino)
-        closes, highs, lows, volumes = df['close'].tolist(), df['high'].tolist(), df['low'].tolist(), df['volume'].tolist()
-        df["atr_proj"] = calc_atr(highs, lows, closes)
-        df["adx"] = calc_adx(highs, lows, closes)
-        bb_res = calc_bollinger(closes)
-        if isinstance(bb_res, tuple) and len(bb_res) == 3:
-            _, df["bb_width_proj"], df["bb_pos"] = bb_res
-        else:
-            df["bb_width_proj"] = 0
-            df["bb_pos"] = 0
-        df["ma_rating"] = calc_moving_averages(closes)
-        macd_hist, macd_val, macd_signal = calc_macd(closes)
-        rsi_val = calc_rsi(closes)
-        df["osc_rating"] = calc_oscillators(rsi_val, macd_hist)
-        df["volatility_proj"] = calc_volatility(closes)
-        df["volume_status"] = calc_volume_status(volumes)
-        df["sentiment"] = calc_sentiment(closes)
-        df["variation"] = ((df["close"] - df["close"].shift(1)) / df["close"].shift(1)) * 100
-        df["support_distance"] = df["close"] - df["support"]
-        df["resistance_distance"] = df["resistance"] - df["close"]
-
-    def def _add_candlestick_features(self, df: pd.DataFrame) -> pd.DataFrame:
-    pattern_list = [
-        "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji",
-        "dragonfly_doji", "gravestone_doji", "long_legged_doji", "spinning_top",
-        "hanging_man", "inverted_hammer", "marubozu", "bullish_harami", "bearish_harami",
-        "harami_cross", "piercing_line", "dark_cloud_cover", "tweezer_bottom", "tweezer_top",
-        "morning_star", "evening_star", "three_white_soldiers", "three_black_crows",
-        "three_inside_up", "three_inside_down", "three_outside_up", "three_outside_down",
-        "abandoned_baby_bullish", "abandoned_baby_bearish", "kicker_bullish", "kicker_bearish",
-        "gap_up", "gap_down", "upside_tasuki_gap", "downside_tasuki_gap", "on_neckline",
-        "separating_lines", "rising_three_methods", "falling_three_methods"
-    ]
-    for pattern in pattern_list:
-        df[pattern] = 0
-    pattern_strengths = []
-    patterns_col = []
-    for i in range(len(df)):
-        candles = df.iloc[max(i-5, 0):i+1][["open", "high", "low", "close", "volume"]].to_dict("records")
-        patterns = detect_candlestick_patterns(candles)
-        patterns_col.append(patterns)
+    def _add_candlestick_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        pattern_list = [
+            "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji",
+            "dragonfly_doji", "gravestone_doji", "long_legged_doji", "spinning_top",
+            "hanging_man", "inverted_hammer", "marubozu", "bullish_harami", "bearish_harami",
+            "harami_cross", "piercing_line", "dark_cloud_cover", "tweezer_bottom", "tweezer_top",
+            "morning_star", "evening_star", "three_white_soldiers", "three_black_crows",
+            "three_inside_up", "three_inside_down", "three_outside_up", "three_outside_down",
+            "abandoned_baby_bullish", "abandoned_baby_bearish", "kicker_bullish", "kicker_bearish",
+            "gap_up", "gap_down", "upside_tasuki_gap", "downside_tasuki_gap", "on_neckline",
+            "separating_lines", "rising_three_methods", "falling_three_methods"
+        ]
         for pattern in pattern_list:
-            if pattern in patterns:
-                df.at[df.index[i], pattern] = 1
-        pattern_strengths.append(get_pattern_strength(patterns))
-    df["pattern_strength"] = pattern_strengths
-    df["patterns"] = patterns_col
-    return df
+            df[pattern] = 0
+        pattern_strengths = []
+        patterns_col = []
+        for i in range(len(df)):
+            candles = df.iloc[max(i-5, 0):i+1][["open", "high", "low", "close", "volume"]].to_dict("records")
+            patterns = detect_candlestick_patterns(candles)
+            patterns_col.append(patterns)
+            for pattern in pattern_list:
+                if pattern in patterns:
+                    df.at[df.index[i], pattern] = 1
+            pattern_strengths.append(get_pattern_strength(patterns))
+        df["pattern_strength"] = pattern_strengths
+        df["patterns"] = patterns_col
+        return df
 
     def _get_features(self, df: pd.DataFrame) -> Optional[pd.DataFrame]:
-        """Seleciona e valida features para previsão (compatível com pipeline de treino)"""
         # Use a lista salva no modelo, se disponível, senão use o padrão
         features = getattr(self, "features", None)
         if not features:
             features = [
                 'open', 'high', 'low', 'close', 'volume',
-
-                # Rolling/Price
                 'returns', 'volatility',
                 'sma_5', 'sma_10', 'sma_20', 'sma_50',
                 'ema_12', 'ema_26',
-                # RSI
                 'rsi_value', 'rsi_zone', 'rsi_trend',
-                # MACD
                 'macd_histogram', 'macd_line', 'macd_signal_line', 'macd_momentum',
-                # Bollinger Bands
                 'bb_upper', 'bb_lower', 'bb_width', 'bb_percent_b', 'bb_position',
-                # ATR
                 'atr_value', 'atr_ratio', 'atr_trend',
-                # ADX
                 'adx_value', 'adx_di_plus', 'adx_di_minus', 'adx_strength',
-                # Ichimoku
                 'ichimoku_conversion', 'ichimoku_base', 'ichimoku_leading_a', 'ichimoku_leading_b', 'ichimoku_cloud_position',
-                # Fibonacci
                 'fibo_23_6', 'fibo_38_2', 'fibo_50', 'fibo_61_8',
-                # Supertrend
                 'supertrend_value', 'supertrend_direction', 'supertrend_changed',
-                # Market Profile
                 'market_poc', 'market_va_low', 'market_va_high',
-                # Stochastic
                 'stoch_k', 'stoch_d', 'stoch_state', 'stoch_cross',
-                # CCI
                 'cci_value', 'cci_state', 'cci_momentum', 'cci_strength',
-                # Williams %R
                 'williamsr_value', 'williamsr_state', 'williamsr_trend',
-                # Parabolic SAR
                 'psar_value', 'psar_trend', 'psar_acceleration',
-                # Momentum
                 'momentum_value', 'momentum_trend', 'momentum_acceleration', 'momentum_strength',
-                # ROC
                 'roc_value', 'roc_trend', 'roc_momentum', 'roc_extreme',
-                # DMI
                 'dmi_adx', 'dmi_plus_di', 'dmi_minus_di', 'dmi_trend', 'dmi_crossover',
-                # VWAP
                 'vwap_value', 'vwap_relation', 'vwap_spread', 'vwap_trend',
-                # Envelope
                 'envelope_upper', 'envelope_lower', 'envelope_center', 'envelope_position', 'envelope_band_width', 'envelope_percent_center',
-                # Elliott Wave
                 'elliott_peaks', 'elliott_troughs', 'elliott_phase', 'elliott_wave_counts',
-                # Zigzag
                 'zigzag_peaks', 'zigzag_troughs', 'zigzag_trend', 'zigzag_pattern', 'zigzag_retracements',
-                # Contexto/trend auxiliar
                 'ma_rating', 'osc_rating', 'volatility_level', 'volume_status', 'sentiment',
                 'trend_score', 'trend_strength', 'trend_suggestion', 'support_lvls', 'resistance_lvls', 'price_position',
-                # EXTRAS
                 'obv', 'spread', 'variation',
-                # Fundamentalistas
                 'cot', 'macro', 'sentiment_news',
-
-                # PADRÕES DE VELA
                 "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji",
                 "dragonfly_doji", "gravestone_doji", "long_legged_doji", "spinning_top",
                 "hanging_man", "inverted_hammer", "marubozu", "bullish_harami", "bearish_harami",
@@ -463,16 +383,18 @@ class MLPredictor:
                 "abandoned_baby_bullish", "abandoned_baby_bearish", "kicker_bullish", "kicker_bearish",
                 "gap_up", "gap_down", "upside_tasuki_gap", "downside_tasuki_gap", "on_neckline",
                 "separating_lines", "rising_three_methods", "falling_three_methods",
-                # Padrão de força e lista de padrões
                 "pattern_strength", "patterns"
+                "diff_sma_5_20, diff_ema_12_26, cross_sma_5_20, cross_ema_12_26, macd_cross
+                "num_patterns, rare_pattern_event
+                "atr_7", "atr_14", "atr_21", "atr_28", "atr_7_pct", "atr_14_pct",
+                "bb_upper_10", "bb_lower_10", "bb_width_10", "bb_pct_10"
             ]
-    
         missing = [f for f in features if f not in df.columns]
         if missing:
             logger.error(f"Features obrigatórias ausentes: {missing}")
             return None
         return df[features].iloc[[-1]]
-
+    
     def predict(self, symbol: str, timeframe: str, candles: List[Dict]) -> Optional[str]:
         """
         Faz previsão de direção usando modelo de ML ('up', 'down' ou None)
