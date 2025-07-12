@@ -146,115 +146,221 @@ class FeatureEngineer:
         if timeframe and timeframe.lower() in ['s1', '1s']:
             df = resample_candles(df, freq='10S')
 
-        """Adiciona indicadores técnicos e candlestick patterns"""
         df = df.copy()
-        closes = df["close"].values
-        highs = df["high"].values
-        lows = df["low"].values
+        closes = pd.Series(df["close"].values)
+        highs = pd.Series(df["high"].values)
+        lows = pd.Series(df["low"].values)
+        volumes = pd.Series(df["volume"].values)
 
-        # Retornos e Volatilidade
-        df["returns"] = df["close"].pct_change()
-        df["volatility"] = df["returns"].rolling(
-            FeatureEngineer.INDICATOR_CONFIG['volatility_window']
-        ).std()
-
-        # Médias Móveis
-        for period in FeatureEngineer.INDICATOR_CONFIG['sma_periods']:
-            df[f"sma_{period}"] = df["close"].rolling(period).mean()
-        for period in FeatureEngineer.INDICATOR_CONFIG['ema_periods']:
-            df[f"ema_{period}"] = df["close"].ewm(span=period, adjust=False).mean()
-
+        # ==== INDICADORES ENRIQUECIDOS ====
         # RSI
-        delta = df["close"].diff()
-        gain = delta.clip(lower=0)
-        loss = -delta.clip(upper=0)
-        avg_gain = gain.ewm(span=FeatureEngineer.INDICATOR_CONFIG['rsi_period'], adjust=False).mean()
-        avg_loss = loss.ewm(span=FeatureEngineer.INDICATOR_CONFIG['rsi_period'], adjust=False).mean()
-        rs = avg_gain / (avg_loss + 1e-10)
-        df["rsi"] = 100 - (100 / (1 + rs))
+        rsi = TechnicalIndicators.calc_rsi(closes)
+        df["rsi_value"] = rsi["value"]
+        df["rsi_zone"] = rsi["zone"]
+        df["rsi_trend"] = rsi["trend"]
 
         # MACD
-        ema_fast = df[f"ema_{FeatureEngineer.INDICATOR_CONFIG['macd_fast']}"]
-        ema_slow = df[f"ema_{FeatureEngineer.INDICATOR_CONFIG['macd_slow']}"]
-        df["macd"] = ema_fast - ema_slow
-        df["macd_signal"] = df["macd"].ewm(span=FeatureEngineer.INDICATOR_CONFIG['macd_signal'], adjust=False).mean()
-        df["macd_hist"] = df["macd"] - df["macd_signal"]
+        macd = TechnicalIndicators.calc_macd(closes)
+        df["macd_histogram"] = macd["histogram"]
+        df["macd_line"] = macd["macd_line"]
+        df["macd_signal_line"] = macd["signal_line"]
+        df["macd_momentum"] = macd["momentum"]
 
         # Bollinger Bands
-        sma = df[f"sma_{FeatureEngineer.INDICATOR_CONFIG['bollinger_period']}"]
-        rolling_std = df["close"].rolling(FeatureEngineer.INDICATOR_CONFIG['bollinger_period']).std()
-        df["bb_upper"] = sma + (FeatureEngineer.INDICATOR_CONFIG['bollinger_std'] * rolling_std)
-        df["bb_lower"] = sma - (FeatureEngineer.INDICATOR_CONFIG['bollinger_std'] * rolling_std)
-        df["bb_width"] = (df["bb_upper"] - df["bb_lower"]) / sma
-        df["bb_pct"] = (df["close"] - df["bb_lower"]) / (df["bb_upper"] - df["bb_lower"])
+        bb = TechnicalIndicators.calc_bollinger(closes)
+        df["bb_upper"] = bb["upper"]
+        df["bb_lower"] = bb["lower"]
+        df["bb_width"] = bb["width"]
+        df["bb_percent_b"] = bb["percent_b"]
+        df["bb_position"] = bb["position"]
 
         # ATR
-        tr1 = highs - lows
-        tr2 = np.abs(highs - df["close"].shift())
-        tr3 = np.abs(lows - df["close"].shift())
-        true_range = np.maximum(np.maximum(tr1, tr2), tr3)
-        df["atr"] = pd.Series(true_range).rolling(FeatureEngineer.INDICATOR_CONFIG['atr_period']).mean().values
+        atr = TechnicalIndicators.calc_atr(highs, lows, closes)
+        df["atr_value"] = atr["value"]
+        df["atr_ratio"] = atr["ratio"]
+        df["atr_trend"] = atr["trend"]
 
-        # Volume Analysis
-        df["volume_sma"] = df["volume"].rolling(20).mean()
-        df["volume_pct"] = df["volume"] / df["volume_sma"]
+        # ADX
+        adx = TechnicalIndicators.calc_adx(highs, lows, closes)
+        df["adx_value"] = adx["adx"]
+        df["adx_di_plus"] = adx["di_plus"]
+        df["adx_di_minus"] = adx["di_minus"]
+        df["adx_strength"] = adx["strength"]
 
-        # Candlestick Patterns
-        pattern_list = [
-            "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji"
-        ]
-        for pattern in pattern_list:
-            df[pattern] = 0
-        pattern_strengths = []
-        for i in range(len(df)):
-            candles = df.iloc[max(i-3, 0):i+1][["open", "high", "low", "close", "volume"]].to_dict("records")
-            patterns = detect_candlestick_patterns(candles)
-            for pattern in pattern_list:
-                if pattern in patterns:
-                    df.at[df.index[i], pattern] = 1
-            pattern_strengths.append(get_pattern_strength(patterns))
-        df["pattern_strength"] = pattern_strengths
+        # Ichimoku
+        ichimoku = TechnicalIndicators.calc_ichimoku(highs, lows, closes)
+        df["ichimoku_conversion"] = ichimoku["conversion"]
+        df["ichimoku_base"] = ichimoku["base"]
+        df["ichimoku_leading_a"] = ichimoku["leading_a"]
+        df["ichimoku_leading_b"] = ichimoku["leading_b"]
+        df["ichimoku_cloud_position"] = ichimoku["cloud_position"]
 
-        # Indicadores do seu projeto (rating, volatility, etc)
-        closes_list = df["close"].tolist()
-        highs_list = df["high"].tolist()
-        lows_list = df["low"].tolist()
-        volumes_list = df["volume"].tolist()
-        df["atr_proj"] = calc_atr(highs_list, lows_list, closes_list)
-        df["adx"] = calc_adx(highs_list, lows_list, closes_list)
-        bb_res = calc_bollinger(closes_list)
-        if isinstance(bb_res, tuple) and len(bb_res) == 3:
-            _, df["bb_width_proj"], df["bb_pos"] = bb_res
-        else:
-            df["bb_width_proj"] = 0
-            df["bb_pos"] = 0
-        df["ma_rating"] = calc_moving_averages(closes_list)
-        macd_hist, macd_val, macd_signal = calc_macd(closes_list)
-        rsi_val = calc_rsi(closes_list)
-        df["osc_rating"] = calc_oscillators(rsi_val, macd_hist)
-        df["volatility_proj"] = calc_volatility(closes_list)
-        df["volume_status"] = calc_volume_status(volumes_list)
-        df["sentiment"] = calc_sentiment(closes_list)
-        df["variation"] = ((df["close"] - df["close"].shift(1)) / df["close"].shift(1)) * 100
-        df["support"] = df["low"].rolling(window=10, min_periods=1).min()
-        df["resistance"] = df["high"].rolling(window=10, min_periods=1).max()
-        df["support_distance"] = df["close"] - df["support"]
-        df["resistance_distance"] = df["resistance"] - df["close"]
+        # Fibonacci
+        fibo = TechnicalIndicators.calc_fibonacci(highs, lows)
+        df["fibo_23_6"] = fibo["23.6%"]
+        df["fibo_38_2"] = fibo["38.2%"]
+        df["fibo_50"] = fibo["50%"]
+        df["fibo_61_8"] = fibo["61.8%"]
 
-        # OBV e Spread
+        # Supertrend
+        supertrend = TechnicalIndicators.calc_supertrend(highs, lows, closes)
+        df["supertrend_value"] = supertrend["value"]
+        df["supertrend_direction"] = supertrend["direction"]
+        df["supertrend_changed"] = supertrend["changed"]
+
+        # Market Profile
+        mprofile = TechnicalIndicators.get_market_profile(closes, volumes)
+        df["market_poc"] = mprofile["poc"]
+        df["market_va_low"] = mprofile["value_area"]["low"]
+        df["market_va_high"] = mprofile["value_area"]["high"]
+
+        # Stochastic
+        stoch = TechnicalIndicators.calc_stochastic(highs, lows, closes)
+        df["stoch_k"] = stoch["k_line"]
+        df["stoch_d"] = stoch["d_line"]
+        df["stoch_state"] = stoch["state"]
+        df["stoch_cross"] = stoch["cross"]
+
+        # CCI
+        cci = TechnicalIndicators.calc_cci(highs, lows, closes)
+        df["cci_value"] = cci["value"]
+        df["cci_state"] = cci["state"]
+        df["cci_momentum"] = cci["momentum"]
+        df["cci_strength"] = cci["strength"]
+
+        # Williams %R
+        wr = TechnicalIndicators.calc_williams_r(highs, lows, closes)
+        df["williamsr_value"] = wr["value"]
+        df["williamsr_state"] = wr["state"]
+        df["williamsr_trend"] = wr["trend"]
+
+        # Parabolic SAR
+        psar = TechnicalIndicators.calc_parabolic_sar(highs, lows)
+        df["psar_value"] = psar["value"]
+        df["psar_trend"] = psar["trend"]
+        df["psar_acceleration"] = psar["acceleration"]
+
+        # Momentum
+        mom = TechnicalIndicators.calc_momentum(closes)
+        df["momentum_value"] = mom["value"]
+        df["momentum_trend"] = mom["trend"]
+        df["momentum_acceleration"] = mom["acceleration"]
+        df["momentum_strength"] = mom["strength"]
+
+        # ROC
+        roc = TechnicalIndicators.calc_roc(closes)
+        df["roc_value"] = roc["value"]
+        df["roc_trend"] = roc["trend"]
+        df["roc_momentum"] = roc["momentum"]
+        df["roc_extreme"] = roc["extreme"]
+
+        # DMI
+        dmi = TechnicalIndicators.calc_dmi(highs, lows, closes)
+        df["dmi_adx"] = dmi["adx"]
+        df["dmi_plus_di"] = dmi["plus_di"]
+        df["dmi_minus_di"] = dmi["minus_di"]
+        df["dmi_trend"] = dmi["trend"]
+        df["dmi_crossover"] = dmi["crossover"]
+
+        # VWAP
+        vwap = TechnicalIndicators.calc_vwap(highs, lows, closes, volumes)
+        df["vwap_value"] = vwap["value"]
+        df["vwap_relation"] = vwap["relation"]
+        df["vwap_spread"] = vwap["spread"]
+        df["vwap_trend"] = vwap["trend"]
+
+        # Envelope
+        envelope = TechnicalIndicators.calc_envelope(closes)
+        df["envelope_upper"] = envelope["upper"]
+        df["envelope_lower"] = envelope["lower"]
+        df["envelope_center"] = envelope["center"]
+        df["envelope_position"] = envelope["position"]
+        df["envelope_band_width"] = envelope["band_width"]
+        df["envelope_percent_center"] = envelope["percent_from_center"]
+
+        # Elliott Wave
+        elliott = TechnicalIndicators.calc_elliott_wave(closes)
+        df["elliott_peaks"] = str(elliott.get("peaks", []))
+        df["elliott_troughs"] = str(elliott.get("troughs", []))
+        df["elliott_phase"] = elliott.get("phase", "")
+        df["elliott_wave_counts"] = str(elliott.get("wave_counts", {}))
+
+        # Zigzag
+        zz = TechnicalIndicators.calc_zigzag(closes)
+        df["zigzag_peaks"] = str(zz.get("peaks", []))
+        df["zigzag_troughs"] = str(zz.get("troughs", []))
+        df["zigzag_trend"] = zz.get("trend", "")
+        df["zigzag_pattern"] = zz.get("pattern", "")
+        df["zigzag_retracements"] = str(zz.get("retracements", []))
+
+        # ========= AUXILIARES CONTEXTUAIS =========
+        ma_rating = TechnicalIndicators.calc_moving_averages(closes)
+        osc_rating = TechnicalIndicators.calc_oscillators(rsi["value"], macd["histogram"])
+        vol = TechnicalIndicators.calc_volatility(closes)
+        volstat = TechnicalIndicators.calc_volume_status(volumes)
+        sentiment = TechnicalIndicators.calc_sentiment(closes)
+        trendctx = TechnicalIndicators.get_trend_context(closes)
+        sr = TechnicalIndicators.get_support_resistance(closes)
+        df["ma_rating"] = ma_rating["rating"]
+        df["osc_rating"] = osc_rating["rating"]
+        df["volatility_level"] = vol["level"]
+        df["volume_status"] = volstat["status"]
+        df["sentiment"] = sentiment["sentiment"]
+        df["trend_score"] = trendctx["trend_score"]
+        df["trend_strength"] = trendctx["trend_strength"]
+        df["trend_suggestion"] = trendctx["suggestion"]
+        df["support_lvls"] = str(sr.get("support", []))
+        df["resistance_lvls"] = str(sr.get("resistance", []))
+        df["price_position"] = sr.get("current_position", "")
+
+        # Rolling indicators
+        df['returns'] = df['close'].pct_change()
+        df['volatility'] = df['returns'].rolling(20).std()
+        for period in [5, 10, 20, 50]:
+            df[f'sma_{period}'] = df['close'].rolling(period).mean()
+        for period in [12, 26]:
+            df[f'ema_{period}'] = df['close'].ewm(span=period, adjust=False).mean()
+
+        # OBV, spread, variation, etc
         df["obv"] = calc_obv(df)
         df["spread"] = calc_spread(df)
+        df["variation"] = ((df["close"] - df["close"].shift(1)) / df["close"].shift(1)) * 100
 
         # Fundamentalistas para H4/D1
         if timeframe and timeframe.lower() in ['h4', 'd1']:
             df["cot"] = get_cot_feature(symbol)
             df["macro"] = get_macro_feature(symbol)
             df["sentiment_news"] = get_sentiment_feature(symbol)
-        
-        # Sempre garantir as colunas fundamentais, mesmo para timeframes baixos
-        for col in ["cot", "macro", "sentiment_news"]:
-            if col not in df.columns:
+        else:
+            for col in ["cot", "macro", "sentiment_news"]:
                 df[col] = 0
+
+        # PADRÕES DE VELA:
+        pattern_list = [
+            "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji",
+            "dragonfly_doji", "gravestone_doji", "long_legged_doji", "spinning_top",
+            "hanging_man", "inverted_hammer", "marubozu", "bullish_harami", "bearish_harami",
+            "harami_cross", "piercing_line", "dark_cloud_cover", "tweezer_bottom", "tweezer_top",
+            "morning_star", "evening_star", "three_white_soldiers", "three_black_crows",
+            "three_inside_up", "three_inside_down", "three_outside_up", "three_outside_down",
+            "abandoned_baby_bullish", "abandoned_baby_bearish", "kicker_bullish", "kicker_bearish",
+            "gap_up", "gap_down", "upside_tasuki_gap", "downside_tasuki_gap", "on_neckline",
+            "separating_lines", "rising_three_methods", "falling_three_methods"
+        ]
+        for pattern in pattern_list:
+            df[pattern] = 0
+        pattern_strengths = []
+        patterns_col = []
+        for i in range(len(df)):
+            candles = df.iloc[max(i-5, 0):i+1][["open", "high", "low", "close", "volume"]].to_dict("records")
+            patterns = detect_candlestick_patterns(candles)
+            patterns_col.append(patterns)
+            for pattern in pattern_list:
+                if pattern in patterns:
+                    df.at[df.index[i], pattern] = 1
+            pattern_strengths.append(get_pattern_strength(patterns))
+        df["pattern_strength"] = pattern_strengths
+        df["patterns"] = patterns_col
 
         # Mapeamento para valores numéricos compatíveis com o restante do bot
         ma_mapping = {"buy": 1, "sell": -1, "neutral": 0}
@@ -262,11 +368,15 @@ class FeatureEngineer:
         vol_mapping = {"High": 1, "Low": 0}
         volstat_mapping = {"Spiked": 2, "Normal": 1, "Low": 0}
         sentiment_mapping = {"Optimistic": 1, "Neutral": 0, "Pessimistic": -1}
+        trend_mapping = {"strong": 2, "moderate": 1, "weak": 0, "bearish": -1}
+        zone_mapping = {"overbought": 1, "neutral": 0, "oversold": -1}
         df["ma_rating"] = df["ma_rating"].map(ma_mapping)
         df["osc_rating"] = df["osc_rating"].map(osc_mapping)
-        df["volatility_proj"] = df["volatility_proj"].map(vol_mapping)
+        df["volatility_level"] = df["volatility_level"].map(vol_mapping)
         df["volume_status"] = df["volume_status"].map(volstat_mapping)
         df["sentiment"] = df["sentiment"].map(sentiment_mapping)
+        df["rsi_zone"] = df["rsi_zone"].map(zone_mapping)
+        df["trend_strength"] = df["trend_strength"].map(trend_mapping)
 
         # Preenche e limpa
         df.ffill(inplace=True)
@@ -278,59 +388,33 @@ class FeatureEngineer:
         """Lista de features para treino - ajuste para compatibilidade"""
         return [
             'open', 'high', 'low', 'close', 'volume',
-
-            # Rolling/Price
             'returns', 'volatility',
             'sma_5', 'sma_10', 'sma_20', 'sma_50',
             'ema_12', 'ema_26',
-            # RSI
             'rsi_value', 'rsi_zone', 'rsi_trend',
-            # MACD
             'macd_histogram', 'macd_line', 'macd_signal_line', 'macd_momentum',
-            # Bollinger Bands
-            'bb_upper', 'bb_lower', 'bb_width', 'bb_percent_b', 'bb_position',                
-            # ATR
-            'atr_value', 'atr_ratio', 'atr_trend',                
-            # ADX
+            'bb_upper', 'bb_lower', 'bb_width', 'bb_percent_b', 'bb_position',
+            'atr_value', 'atr_ratio', 'atr_trend',
             'adx_value', 'adx_di_plus', 'adx_di_minus', 'adx_strength',
-            # Ichimoku
             'ichimoku_conversion', 'ichimoku_base', 'ichimoku_leading_a', 'ichimoku_leading_b', 'ichimoku_cloud_position',
-            # Fibonacci
             'fibo_23_6', 'fibo_38_2', 'fibo_50', 'fibo_61_8',
-            # Supertrend
-            'supertrend_value', 'supertrend_direction', 'supertrend_changed',             
-            # Market Profile
+            'supertrend_value', 'supertrend_direction', 'supertrend_changed',
             'market_poc', 'market_va_low', 'market_va_high',
-            # Stochastic
             'stoch_k', 'stoch_d', 'stoch_state', 'stoch_cross',
-            # CCI
             'cci_value', 'cci_state', 'cci_momentum', 'cci_strength',
-            # Williams %R
             'williamsr_value', 'williamsr_state', 'williamsr_trend',
-            # Parabolic SAR
             'psar_value', 'psar_trend', 'psar_acceleration',
-            # Momentum
-            'momentum_value', 'momentum_trend', 'momentum_acceleration', 'momentum_strength',            
-            # ROC
+            'momentum_value', 'momentum_trend', 'momentum_acceleration', 'momentum_strength',
             'roc_value', 'roc_trend', 'roc_momentum', 'roc_extreme',
-            # DMI
             'dmi_adx', 'dmi_plus_di', 'dmi_minus_di', 'dmi_trend', 'dmi_crossover',
-            # VWAP
             'vwap_value', 'vwap_relation', 'vwap_spread', 'vwap_trend',
-            # Envelope
             'envelope_upper', 'envelope_lower', 'envelope_center', 'envelope_position', 'envelope_band_width', 'envelope_percent_center',
-            # Elliott Wave
             'elliott_peaks', 'elliott_troughs', 'elliott_phase', 'elliott_wave_counts',
-            # Zigzag
             'zigzag_peaks', 'zigzag_troughs', 'zigzag_trend', 'zigzag_pattern', 'zigzag_retracements',
-            # Contexto/trend auxiliar
             'ma_rating', 'osc_rating', 'volatility_level', 'volume_status', 'sentiment',
             'trend_score', 'trend_strength', 'trend_suggestion', 'support_lvls', 'resistance_lvls', 'price_position',
-            # EXTRAS
             'obv', 'spread', 'variation',
-            # Fundamentalistas
             'cot', 'macro', 'sentiment_news',
-
             # PADRÕES DE VELA
             "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji",
             "dragonfly_doji", "gravestone_doji", "long_legged_doji", "spinning_top",
@@ -341,7 +425,6 @@ class FeatureEngineer:
             "abandoned_baby_bullish", "abandoned_baby_bearish", "kicker_bullish", "kicker_bearish",
             "gap_up", "gap_down", "upside_tasuki_gap", "downside_tasuki_gap", "on_neckline",
             "separating_lines", "rising_three_methods", "falling_three_methods",
-            # Padrão de força e lista de padrões
             "pattern_strength", "patterns"
         ]
 
