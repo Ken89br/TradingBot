@@ -345,7 +345,8 @@ class FeatureEngineer:
             "marubozu", "bullish_harami", "bearish_harami", "harami_cross", "tweezer_bottom", "tweezer_top",
             "three_inside_up", "three_inside_down", "three_outside_up", "three_outside_down", "gap_up",
             "gap_down", "on_neckline", "belt_hold_bullish", "belt_hold_bearish", "counterattack_bullish",
-            "counterattack_bearish", "unique_three_river_bottom", "breakaway_bullish", "breakaway_bearish"
+            "counterattack_bearish", "unique_three_river_bottom", "breakaway_bullish", "breakaway_bearish",
+            "pattern_strength", "patterns",
         ]
         for pattern in pattern_list:
             df[pattern] = 0
@@ -456,16 +457,16 @@ class FeatureEngineer:
             "bb_upper_50", "bb_lower_50", "bb_width_50", "bb_pct_50",
         
             # PADRÕES DE VELA
-            "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji",
-            "dragonfly_doji", "gravestone_doji", "long_legged_doji", "spinning_top",
-            "hanging_man", "inverted_hammer", "marubozu", "bullish_harami", "bearish_harami",
-            "harami_cross", "piercing_line", "dark_cloud_cover", "tweezer_bottom", "tweezer_top",
-            "morning_star", "evening_star", "three_white_soldiers", "three_black_crows",
-            "three_inside_up", "three_inside_down", "three_outside_up", "three_outside_down",
-            "abandoned_baby_bullish", "abandoned_baby_bearish", "kicker_bullish", "kicker_bearish",
-            "gap_up", "gap_down", "upside_tasuki_gap", "downside_tasuki_gap", "on_neckline",
-            "separating_lines", "rising_three_methods", "falling_three_methods",
-            "pattern_strength", "patterns"
+            "bullish_engulfing", "bearish_engulfing", "hammer", "hanging_man", "inverted_hammer", "shooting_star",
+            "morning_star", "evening_star", "piercing_line", "dark_cloud_cover","three_white_soldiers",
+            "three_black_crows", "abandoned_baby_bullish", "abandoned_baby_bearish", "kicker_bullish", "kicker_bearish",
+            "rising_three_methods", "falling_three_methods", "upside_tasuki_gap", "downside_tasuki_gap",
+            "separating_lines", "doji", "dragonfly_doji", "gravestone_doji", "long_legged_doji", "spinning_top",
+            "marubozu", "bullish_harami", "bearish_harami", "harami_cross", "tweezer_bottom", "tweezer_top",
+            "three_inside_up", "three_inside_down", "three_outside_up", "three_outside_down", "gap_up",
+            "gap_down", "on_neckline", "belt_hold_bullish", "belt_hold_bearish", "counterattack_bullish",
+            "counterattack_bearish", "unique_three_river_bottom", "breakaway_bullish", "breakaway_bearish",
+            "pattern_strength", "patterns",
         ]
 
     @staticmethod
