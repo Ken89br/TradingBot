@@ -308,7 +308,7 @@ class MLPredictor:
         df["sentiment"] = df["sentiment"].map(sentiment_mapping)
         df["rsi_zone"] = df["rsi_zone"].map(zone_mapping)
         df["trend_strength"] = df["trend_strength"].map(trend_mapping)
-
+        
         # Diferença entre médias móveis (curta e longa)
         df['diff_sma_5_20'] = df['sma_5'] - df['sma_20']
         df['diff_ema_12_26'] = df['ema_12'] - df['ema_26']
@@ -319,6 +319,29 @@ class MLPredictor:
 
         # Cruzamento MACD/Signal
         df['macd_cross'] = ((df['macd_line'] > df['macd_signal_line']) & (df['macd_line'].shift(1) <= df['macd_signal_line'].shift(1))).astype(int)
+
+        # Supondo que você já tem uma lista de padrões em cada candle em df['patterns']
+        df['num_patterns'] = df['patterns'].apply(lambda x: len(x) if isinstance(x, list) else 0)
+        df['rare_pattern_event'] = (df['num_patterns'] >= 3).astype(int)
+
+        # ATR para múltiplos períodos
+        for period in [7, 14, 21, 28]:
+            tr1 = df['high'] - df['low']
+            tr2 = abs(df['high'] - df['close'].shift())
+            tr3 = abs(df['low'] - df['close'].shift())
+            true_range = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+            df[f'atr_{period}'] = true_range.rolling(period).mean()
+            # Você pode criar também a razão ATR/close para cada período:
+            df[f'atr_{period}_pct'] = df[f'atr_{period}'] / df['close']
+
+    # Bandas de Bollinger para múltiplos períodos
+        for period in [10, 20, 50]:
+            sma = df['close'].rolling(period).mean()
+            std = df['close'].rolling(period).std()
+            df[f'bb_upper_{period}'] = sma + 2 * std
+            df[f'bb_lower_{period}'] = sma - 2 * std
+            df[f'bb_width_{period}'] = (df[f'bb_upper_{period}'] - df[f'bb_lower_{period}']) / sma
+            df[f'bb_pct_{period}'] = (df['close'] - df[f'bb_lower_{period}']) / (df[f'bb_upper_{period}'] - df[f'bb_lower_{period}'])
 
         df.ffill(inplace=True)
         df.dropna(inplace=True)
@@ -396,7 +419,7 @@ class MLPredictor:
                 "separating_lines", "rising_three_methods", "falling_three_methods",
                 "pattern_strength", "patterns"
                 "diff_sma_5_20", "diff_ema_12_26", "cross_sma_5_20", "cross_ema_12_26", "macd_cross",
-                "num_patterns", "rare_pattern_event"
+                "num_patterns", "rare_pattern_event",
                 "atr_7", "atr_14", "atr_21", "atr_28", "atr_7_pct", "atr_14_pct",
                 "bb_upper_10", "bb_lower_10", "bb_width_10", "bb_pct_10"
             ]
