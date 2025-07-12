@@ -1,0 +1,19 @@
+Oi Copilot!
+Estou continuando o desenvolvimento de um projeto chamado TradingBot.
+Preciso que você leia atentamente o repositório inteiro, analisando linha por linha, incluindo subpastas
+
+A estrutura atual do projeto foi organizada com base em um pipeline de predição para Forex, com integração ao Telegram para envio de sinais. Recentemente, 
+Preciso que você mantenha o controle de contexto de onde eu parei e das mudanças feitas recentemente.
+Se eu te perguntar “onde parei?” ou “qual o próximo passo?”, quero que você saiba responder com base nos últimos arquivos modificados ou nas tarefas pendentes.
+
+Além disso, quero que:
+
+Analise e entenda qual estratégia está utilizando quais features.
+
+Ajude a adaptar qualquer estratégia antiga que ainda calcule indicadores próprios, para que passem a usar o DataFrame universal.
+
+Verifique duplicidades, código morto, funções não utilizadas ou redundantes nos arquivos.
+
+Mantenha sempre os comentários explicativos em português.
+
+A prioridade agora é continuar de forma limpa e padronizada. Se algo estiver fora de ordem, por favor, me avise.
