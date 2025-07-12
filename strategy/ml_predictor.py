@@ -357,7 +357,8 @@ class MLPredictor:
             "marubozu", "bullish_harami", "bearish_harami", "harami_cross", "tweezer_bottom", "tweezer_top",
             "three_inside_up", "three_inside_down", "three_outside_up", "three_outside_down", "gap_up",
             "gap_down", "on_neckline", "belt_hold_bullish", "belt_hold_bearish", "counterattack_bullish",
-            "counterattack_bearish", "unique_three_river_bottom", "breakaway_bullish", "breakaway_bearish"
+            "counterattack_bearish", "unique_three_river_bottom", "breakaway_bullish", "breakaway_bearish",
+            "pattern_strength", "patterns",
         ]
         for pattern in pattern_list:
             df[pattern] = 0
@@ -408,16 +409,18 @@ class MLPredictor:
                 'trend_score', 'trend_strength', 'trend_suggestion', 'support_lvls', 'resistance_lvls', 'price_position',
                 'obv', 'spread', 'variation',
                 'cot', 'macro', 'sentiment_news',
-                "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji",
-                "dragonfly_doji", "gravestone_doji", "long_legged_doji", "spinning_top",
-                "hanging_man", "inverted_hammer", "marubozu", "bullish_harami", "bearish_harami",
-                "harami_cross", "piercing_line", "dark_cloud_cover", "tweezer_bottom", "tweezer_top",
-                "morning_star", "evening_star", "three_white_soldiers", "three_black_crows",
-                "three_inside_up", "three_inside_down", "three_outside_up", "three_outside_down",
-                "abandoned_baby_bullish", "abandoned_baby_bearish", "kicker_bullish", "kicker_bearish",
-                "gap_up", "gap_down", "upside_tasuki_gap", "downside_tasuki_gap", "on_neckline",
-                "separating_lines", "rising_three_methods", "falling_three_methods",
+
+                "bullish_engulfing", "bearish_engulfing", "hammer", "hanging_man", "inverted_hammer", "shooting_star",
+                "morning_star", "evening_star", "piercing_line", "dark_cloud_cover","three_white_soldiers",
+                "three_black_crows", "abandoned_baby_bullish", "abandoned_baby_bearish", "kicker_bullish", "kicker_bearish",
+                "rising_three_methods", "falling_three_methods", "upside_tasuki_gap", "downside_tasuki_gap",
+                "separating_lines", "doji", "dragonfly_doji", "gravestone_doji", "long_legged_doji", "spinning_top",
+                "marubozu", "bullish_harami", "bearish_harami", "harami_cross", "tweezer_bottom", "tweezer_top",
+                "three_inside_up", "three_inside_down", "three_outside_up", "three_outside_down", "gap_up",
+                "gap_down", "on_neckline", "belt_hold_bullish", "belt_hold_bearish", "counterattack_bullish",
+                "counterattack_bearish", "unique_three_river_bottom", "breakaway_bullish", "breakaway_bearish",
                 "pattern_strength", "patterns",
+                
                 "diff_sma_5_20", "diff_ema_12_26", "cross_sma_5_20", "cross_ema_12_26", "macd_cross",
                 "num_patterns", "rare_pattern_event",
                 "atr_7", "atr_14", "atr_21", "atr_28", "atr_7_pct", "atr_14_pct", "atr_21_pct", "atr_28_pct",
