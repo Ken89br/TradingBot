@@ -222,32 +222,33 @@ class MLPredictor:
         df["sentiment"] = df["sentiment"].map(sentiment_mapping)
         return df
 
-    def _add_candlestick_features(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Adiciona padrões de candles clássicos + força dos padrões"""
-        pattern_list = [
-            "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji",
-            "dragonfly_doji", "gravestone_doji", "long_legged_doji", "spinning_top",
-            "hanging_man", "inverted_hammer", "marubozu", "bullish_harami", "bearish_harami",
-            "harami_cross", "piercing_line", "dark_cloud_cover", "tweezer_bottom", "tweezer_top",
-            "morning_star", "evening_star", "three_white_soldiers", "three_black_crows",
-            "three_inside_up", "three_inside_down", "three_outside_up", "three_outside_down",
-            "abandoned_baby_bullish", "abandoned_baby_bearish", "kicker_bullish", "kicker_bearish",
-            "gap_up", "gap_down", "upside_tasuki_gap", "downside_tasuki_gap", "on_neckline",
-            "separating_lines", "rising_three_methods", "falling_three_methods"
-        ]
-        
+    def def _add_candlestick_features(self, df: pd.DataFrame) -> pd.DataFrame:
+    pattern_list = [
+        "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji",
+        "dragonfly_doji", "gravestone_doji", "long_legged_doji", "spinning_top",
+        "hanging_man", "inverted_hammer", "marubozu", "bullish_harami", "bearish_harami",
+        "harami_cross", "piercing_line", "dark_cloud_cover", "tweezer_bottom", "tweezer_top",
+        "morning_star", "evening_star", "three_white_soldiers", "three_black_crows",
+        "three_inside_up", "three_inside_down", "three_outside_up", "three_outside_down",
+        "abandoned_baby_bullish", "abandoned_baby_bearish", "kicker_bullish", "kicker_bearish",
+        "gap_up", "gap_down", "upside_tasuki_gap", "downside_tasuki_gap", "on_neckline",
+        "separating_lines", "rising_three_methods", "falling_three_methods"
+    ]
+    for pattern in pattern_list:
+        df[pattern] = 0
+    pattern_strengths = []
+    patterns_col = []
+    for i in range(len(df)):
+        candles = df.iloc[max(i-5, 0):i+1][["open", "high", "low", "close", "volume"]].to_dict("records")
+        patterns = detect_candlestick_patterns(candles)
+        patterns_col.append(patterns)
         for pattern in pattern_list:
-            df[pattern] = 0
-        pattern_strengths = []
-        for i in range(len(df)):
-            candles = df.iloc[max(i-3, 0):i+1][["open", "high", "low", "close", "volume"]].to_dict("records")
-            patterns = detect_candlestick_patterns(candles)
-            for pattern in pattern_list:
-                if pattern in patterns:
-                    df.at[df.index[i], pattern] = 1
-            pattern_strengths.append(get_pattern_strength(patterns))
-        df["pattern_strength"] = pattern_strengths
-        return df
+            if pattern in patterns:
+                df.at[df.index[i], pattern] = 1
+        pattern_strengths.append(get_pattern_strength(patterns))
+    df["pattern_strength"] = pattern_strengths
+    df["patterns"] = patterns_col
+    return df
 
     def _get_features(self, df: pd.DataFrame) -> Optional[pd.DataFrame]:
         """Seleciona e valida features para previsão (compatível com pipeline de treino)"""
