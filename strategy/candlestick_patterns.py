@@ -584,5 +584,22 @@ def detect_candlestick_patterns(candles):
 
     return patterns
 
+REVERSAL_UP = [
+    "hammer", "bullish_engulfing", "piercing_line", "morning_star", "tweezer_bottom",
+    "bullish_harami", "kicker_bullish", "three_inside_up", "three_outside_up", "gap_up",
+    "dragonfly_doji", "three_white_soldiers", "inverted_hammer", "belt_hold_bullish",
+    "breakaway_bullish", "counterattack_bullish", "unique_three_river_bottom"
+]
+REVERSAL_DOWN = [
+    "hanging_man", "bearish_engulfing", "dark_cloud_cover", "evening_star", "tweezer_top",
+    "bearish_harami", "kicker_bearish", "three_inside_down", "three_outside_down", "gap_down",
+    "gravestone_doji", "three_black_crows", "shooting_star", "belt_hold_bearish",
+    "breakaway_bearish", "counterattack_bearish", "abandoned_baby_bearish"
+]
+TREND_UP = ["three_white_soldiers", "rising_three_methods", "upside_tasuki_gap", "separating_lines"]
+TREND_DOWN = ["three_black_crows", "falling_three_methods", "downside_tasuki_gap", "separating_lines"]
+NEUTRAL = ["doji", "dragonfly_doji", "gravestone_doji", "long_legged_doji", "spinning_top", "marubozu"]
+HYBRID = ["harami_cross"]
+
 # Alias para compatibilidade
 detect_patterns = detect_candlestick_patterns
