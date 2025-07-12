@@ -1,5 +1,6 @@
 import numpy as np
 from config import CONFIG
+from strategy.candlestick_patterns import PATTERN_STRENGTH
 
 class RSIStrategy:
     def __init__(self, config=None):
@@ -13,13 +14,12 @@ class RSIStrategy:
 
     def generate_signal(self, features_df):
         """
-        Estratégia RSI totalmente compatível com o DataFrame universal de features.
+        Estratégia RSI compatível com o DataFrame universal de features.
         """
         try:
             if features_df is None or features_df.empty or len(features_df) < max(2, self.candle_lookback):
                 return None
 
-            # Pega a linha mais recente (último candle)
             last = features_df.iloc[-1]
             prev = features_df.iloc[-2] if len(features_df) > 1 else last
 
@@ -29,7 +29,6 @@ class RSIStrategy:
             pattern_strength = last.get("pattern_strength", 0)
             close = last["close"]
 
-            # Calcula média de volume dos candles anteriores (para filtro de volume)
             if self.candle_lookback > 1:
                 prev_vols = features_df.iloc[-self.candle_lookback:-1]["volume"]
                 avg_prev_vol = prev_vols.mean() if not prev_vols.empty else 0
@@ -56,7 +55,7 @@ class RSIStrategy:
                     "volume_ok": volume_ok
                 }
 
-            # Aplica boost por padrões de vela (usando configuração universal)
+            # Aplica boost por padrões de vela
             if signal and patterns:
                 direction = signal["signal"]
                 if direction == "up":
@@ -66,7 +65,7 @@ class RSIStrategy:
                 else:
                     confirm_patterns = []
                 boost = sum(
-                    CONFIG.get("PATTERN_STRENGTH", {}).get(p, 0)
+                    PATTERN_STRENGTH.get(p, 0)
                     for p in patterns if p in confirm_patterns
                 )
                 if boost > 0:
