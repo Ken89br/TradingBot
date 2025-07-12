@@ -123,7 +123,11 @@ class MLPredictor:
             logger.error(f"Falha ao processar candles: {str(e)}")
             return None
 
-        @staticmethod
+
+
+
+
+    @staticmethod
     def add_technical_indicators(df: pd.DataFrame, timeframe: str = None, symbol: str = None) -> pd.DataFrame:
         if timeframe and timeframe.lower() in ['s1', '1s']:
             df = resample_candles(df, freq='10S')
@@ -134,41 +138,165 @@ class MLPredictor:
         lows = pd.Series(df["low"].values)
         volumes = pd.Series(df["volume"].values)
 
-        # RSI enriquecido
+    # RSI
         rsi = TechnicalIndicators.calc_rsi(closes)
-        df['rsi_value'] = rsi['value']
-        df['rsi_zone'] = rsi['zone']
-        df['rsi_trend'] = rsi['trend']
+        df["rsi_value"] = rsi["value"]
+        df["rsi_zone"] = rsi["zone"]
+        df["rsi_trend"] = rsi["trend"]
 
-        # MACD enriquecido
+    # MACD
         macd = TechnicalIndicators.calc_macd(closes)
-        df['macd_histogram'] = macd['histogram']
-        df['macd_line'] = macd['macd_line']
-        df['macd_signal_line'] = macd['signal_line']
-        df['macd_momentum'] = macd['momentum']
+        df["macd_histogram"] = macd["histogram"]
+        df["macd_line"] = macd["macd_line"]
+        df["macd_signal_line"] = macd["signal_line"]
+        df["macd_momentum"] = macd["momentum"]
 
-        # Bollinger Bands enriquecido
+    # Bollinger Bands
         bb = TechnicalIndicators.calc_bollinger(closes)
-        df['bb_upper'] = bb['upper']
-        df['bb_lower'] = bb['lower']
-        df['bb_width'] = bb['width']
-        df['bb_percent_b'] = bb['percent_b']
-        df['bb_position'] = bb['position']
+        df["bb_upper"] = bb["upper"]
+        df["bb_lower"] = bb["lower"]
+        df["bb_width"] = bb["width"]
+        df["bb_percent_b"] = bb["percent_b"]
+        df["bb_position"] = bb["position"]
 
-        # ATR enriquecido
+    # ATR
         atr = TechnicalIndicators.calc_atr(highs, lows, closes)
-        df['atr_value'] = atr['value']
-        df['atr_ratio'] = atr['ratio']
-        df['atr_trend'] = atr['trend']
+        df["atr_value"] = atr["value"]
+        df["atr_ratio"] = atr["ratio"]
+        df["atr_trend"] = atr["trend"]
 
-        # ADX enriquecido
+    # ADX
         adx = TechnicalIndicators.calc_adx(highs, lows, closes)
-        df['adx_value'] = adx['adx']
-        df['adx_di_plus'] = adx['di_plus']
-        df['adx_di_minus'] = adx['di_minus']
-        df['adx_strength'] = adx['strength']
+        df["adx_value"] = adx["adx"]
+        df["adx_di_plus"] = adx["di_plus"]
+        df["adx_di_minus"] = adx["di_minus"]
+        df["adx_strength"] = adx["strength"]
 
-        # ... Continue para todos os outros indicadores enriquecidos ...
+    # Ichimoku
+        ichimoku = TechnicalIndicators.calc_ichimoku(highs, lows, closes)
+        df["ichimoku_conversion"] = ichimoku["conversion"]
+        df["ichimoku_base"] = ichimoku["base"]
+        df["ichimoku_leading_a"] = ichimoku["leading_a"]
+        df["ichimoku_leading_b"] = ichimoku["leading_b"]
+        df["ichimoku_cloud_position"] = ichimoku["cloud_position"]
+
+    # Fibonacci
+        fibo = TechnicalIndicators.calc_fibonacci(highs, lows)
+        df["fibo_23_6"] = fibo["23.6%"]
+        df["fibo_38_2"] = fibo["38.2%"]
+        df["fibo_50"] = fibo["50%"]
+        df["fibo_61_8"] = fibo["61.8%"]
+
+    # Supertrend
+        supertrend = TechnicalIndicators.calc_supertrend(highs, lows, closes)
+        df["supertrend_value"] = supertrend["value"]
+        df["supertrend_direction"] = supertrend["direction"]
+        df["supertrend_changed"] = supertrend["changed"]
+
+    # Market Profile
+        mprofile = TechnicalIndicators.get_market_profile(closes, volumes)
+        df["market_poc"] = mprofile["poc"]
+        df["market_va_low"] = mprofile["value_area"]["low"]
+        df["market_va_high"] = mprofile["value_area"]["high"]
+
+    # Stochastic
+        stoch = TechnicalIndicators.calc_stochastic(highs, lows, closes)
+        df["stoch_k"] = stoch["k_line"]
+        df["stoch_d"] = stoch["d_line"]
+        df["stoch_state"] = stoch["state"]
+        df["stoch_cross"] = stoch["cross"]
+
+    # CCI
+         cci = TechnicalIndicators.calc_cci(highs, lows, closes)
+         df["cci_value"] = cci["value"]
+         df["cci_state"] = cci["state"]
+         df["cci_momentum"] = cci["momentum"]
+         df["cci_strength"] = cci["strength"]
+
+    # Williams %R
+        wr = TechnicalIndicators.calc_williams_r(highs, lows, closes)
+        df["williamsr_value"] = wr["value"]
+        df["williamsr_state"] = wr["state"]
+        df["williamsr_trend"] = wr["trend"]
+
+    # Parabolic SAR
+        psar = TechnicalIndicators.calc_parabolic_sar(highs, lows)
+        df["psar_value"] = psar["value"]
+        df["psar_trend"] = psar["trend"]
+        df["psar_acceleration"] = psar["acceleration"]
+
+    # Momentum
+        mom = TechnicalIndicators.calc_momentum(closes)
+        df["momentum_value"] = mom["value"]
+        df["momentum_trend"] = mom["trend"]
+        df["momentum_acceleration"] = mom["acceleration"]
+        df["momentum_strength"] = mom["strength"]
+
+    # ROC
+        roc = TechnicalIndicators.calc_roc(closes)
+        df["roc_value"] = roc["value"]
+        df["roc_trend"] = roc["trend"]
+        df["roc_momentum"] = roc["momentum"]
+        df["roc_extreme"] = roc["extreme"]
+
+    # DMI
+        dmi = TechnicalIndicators.calc_dmi(highs, lows, closes)
+        df["dmi_adx"] = dmi["adx"]
+        df["dmi_plus_di"] = dmi["plus_di"]
+        df["dmi_minus_di"] = dmi["minus_di"]
+        df["dmi_trend"] = dmi["trend"]
+        df["dmi_crossover"] = dmi["crossover"]
+
+    # VWAP
+        vwap = TechnicalIndicators.calc_vwap(highs, lows, closes, volumes)
+        df["vwap_value"] = vwap["value"]
+        df["vwap_relation"] = vwap["relation"]
+        df["vwap_spread"] = vwap["spread"]
+        df["vwap_trend"] = vwap["trend"]
+
+    # Envelope
+        envelope = TechnicalIndicators.calc_envelope(closes)
+        df["envelope_upper"] = envelope["upper"]
+        df["envelope_lower"] = envelope["lower"]
+        df["envelope_center"] = envelope["center"]
+        df["envelope_position"] = envelope["position"]
+        df["envelope_band_width"] = envelope["band_width"]
+        df["envelope_percent_center"] = envelope["percent_from_center"]
+
+    # Elliott Wave
+        elliott = TechnicalIndicators.calc_elliott_wave(closes)
+        df["elliott_peaks"] = str(elliott.get("peaks", []))
+        df["elliott_troughs"] = str(elliott.get("troughs", []))
+        df["elliott_phase"] = elliott.get("phase", "")
+        df["elliott_wave_counts"] = str(elliott.get("wave_counts", {}))
+
+    # Zigzag
+        zz = TechnicalIndicators.calc_zigzag(closes)
+        df["zigzag_peaks"] = str(zz.get("peaks", []))
+        df["zigzag_troughs"] = str(zz.get("troughs", []))
+        df["zigzag_trend"] = zz.get("trend", "")
+        df["zigzag_pattern"] = zz.get("pattern", "")
+        df["zigzag_retracements"] = str(zz.get("retracements", []))
+
+    # ========= AUXILIARES CONTEXTUAIS =========
+        ma_rating = TechnicalIndicators.calc_moving_averages(closes)
+        osc_rating = TechnicalIndicators.calc_oscillators(rsi["value"], macd["histogram"])
+        vol = TechnicalIndicators.calc_volatility(closes)
+        volstat = TechnicalIndicators.calc_volume_status(volumes)
+        sentiment = TechnicalIndicators.calc_sentiment(closes)
+        trendctx = TechnicalIndicators.get_trend_context(closes)
+        sr = TechnicalIndicators.get_support_resistance(closes)
+        df["ma_rating"] = ma_rating["rating"]
+        df["osc_rating"] = osc_rating["rating"]
+        df["volatility_level"] = vol["level"]
+        df["volume_status"] = volstat["status"]
+        df["sentiment"] = sentiment["sentiment"]
+        df["trend_score"] = trendctx["trend_score"]
+        df["trend_strength"] = trendctx["trend_strength"]
+        df["trend_suggestion"] = trendctx["suggestion"]
+        df["support_lvls"] = str(sr.get("support", []))
+        df["resistance_lvls"] = str(sr.get("resistance", []))
+        df["price_position"] = sr.get("current_position", "")
 
         # Ratings e auxiliares
         df['ma_rating'] = TechnicalIndicators.calc_moving_averages(closes)['rating']
@@ -210,9 +338,6 @@ class MLPredictor:
     @staticmethod
     def add_technical_indicators(df: pd.DataFrame, timeframe: str = None, symbol: str = None) -> pd.DataFrame:
 
-        if timeframe and timeframe.lower() in ['s1', '1s']:
-            df = resample_candles(df, freq='10S')
-        
         """Cálculo dos principais indicadores e features compatíveis com o pipeline de treino"""
         df = df.copy()
         # Rolling indicators
