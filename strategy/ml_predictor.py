@@ -309,6 +309,17 @@ class MLPredictor:
         df["rsi_zone"] = df["rsi_zone"].map(zone_mapping)
         df["trend_strength"] = df["trend_strength"].map(trend_mapping)
 
+        # Diferença entre médias móveis (curta e longa)
+        df['diff_sma_5_20'] = df['sma_5'] - df['sma_20']
+        df['diff_ema_12_26'] = df['ema_12'] - df['ema_26']
+
+        # Cruzamento de médias móveis (flag booleana)
+        df['cross_sma_5_20'] = ((df['sma_5'] > df['sma_20']) & (df['sma_5'].shift(1) <= df['sma_20'].shift(1))).astype(int)
+        df['cross_ema_12_26'] = ((df['ema_12'] > df['ema_26']) & (df['ema_12'].shift(1) <= df['ema_26'].shift(1))).astype(int)
+
+        # Cruzamento MACD/Signal
+        df['macd_cross'] = ((df['macd_line'] > df['macd_signal_line']) & (df['macd_line'].shift(1) <= df['macd_signal_line'].shift(1))).astype(int)
+
         df.ffill(inplace=True)
         df.dropna(inplace=True)
         return df
@@ -384,8 +395,8 @@ class MLPredictor:
                 "gap_up", "gap_down", "upside_tasuki_gap", "downside_tasuki_gap", "on_neckline",
                 "separating_lines", "rising_three_methods", "falling_three_methods",
                 "pattern_strength", "patterns"
-                "diff_sma_5_20, diff_ema_12_26, cross_sma_5_20, cross_ema_12_26, macd_cross
-                "num_patterns, rare_pattern_event
+                "diff_sma_5_20", "diff_ema_12_26", "cross_sma_5_20", "cross_ema_12_26", "macd_cross",
+                "num_patterns", "rare_pattern_event"
                 "atr_7", "atr_14", "atr_21", "atr_28", "atr_7_pct", "atr_14_pct",
                 "bb_upper_10", "bb_lower_10", "bb_width_10", "bb_pct_10"
             ]
