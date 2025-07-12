@@ -276,17 +276,73 @@ class FeatureEngineer:
     @staticmethod
     def get_feature_columns() -> List[str]:
         """Lista de features para treino - ajuste para compatibilidade"""
-        return [
+        features = [
             'open', 'high', 'low', 'close', 'volume',
+
+            # Rolling/Price
             'returns', 'volatility',
             'sma_5', 'sma_10', 'sma_20', 'sma_50',
             'ema_12', 'ema_26',
-            'rsi', 'macd', 'macd_signal', 'macd_hist',
-            'bb_upper', 'bb_lower', 'bb_width', 'bb_pct',
-            'atr', 'volume_sma', 'volume_pct',
-            "adx", "bb_width_proj", "bb_pos", "ma_rating", "osc_rating",
-            "volatility_proj", "volume_status", "sentiment", "support_distance", "resistance_distance", "variation",
-            "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji", "pattern_strength", "obv", "spread", "cot", "macro", "sentiment_news"
+            # RSI
+            'rsi_value', 'rsi_zone', 'rsi_trend',
+            # MACD
+            'macd_histogram', 'macd_line', 'macd_signal_line', 'macd_momentum',
+            # Bollinger Bands
+            'bb_upper', 'bb_lower', 'bb_width', 'bb_percent_b', 'bb_position',                
+            # ATR
+            'atr_value', 'atr_ratio', 'atr_trend',                
+            # ADX
+            'adx_value', 'adx_di_plus', 'adx_di_minus', 'adx_strength',
+            # Ichimoku
+            'ichimoku_conversion', 'ichimoku_base', 'ichimoku_leading_a', 'ichimoku_leading_b', 'ichimoku_cloud_position',
+            # Fibonacci
+            'fibo_23_6', 'fibo_38_2', 'fibo_50', 'fibo_61_8',
+            # Supertrend
+            'supertrend_value', 'supertrend_direction', 'supertrend_changed',             
+            # Market Profile
+            'market_poc', 'market_va_low', 'market_va_high',
+            # Stochastic
+            'stoch_k', 'stoch_d', 'stoch_state', 'stoch_cross',
+            # CCI
+            'cci_value', 'cci_state', 'cci_momentum', 'cci_strength',
+            # Williams %R
+            'williamsr_value', 'williamsr_state', 'williamsr_trend',
+            # Parabolic SAR
+            'psar_value', 'psar_trend', 'psar_acceleration',
+            # Momentum
+            'momentum_value', 'momentum_trend', 'momentum_acceleration', 'momentum_strength',            
+            # ROC
+            'roc_value', 'roc_trend', 'roc_momentum', 'roc_extreme',
+            # DMI
+            'dmi_adx', 'dmi_plus_di', 'dmi_minus_di', 'dmi_trend', 'dmi_crossover',
+            # VWAP
+            'vwap_value', 'vwap_relation', 'vwap_spread', 'vwap_trend',
+            # Envelope
+            'envelope_upper', 'envelope_lower', 'envelope_center', 'envelope_position', 'envelope_band_width', 'envelope_percent_center',
+            # Elliott Wave
+            'elliott_peaks', 'elliott_troughs', 'elliott_phase', 'elliott_wave_counts',
+            # Zigzag
+            'zigzag_peaks', 'zigzag_troughs', 'zigzag_trend', 'zigzag_pattern', 'zigzag_retracements',
+            # Contexto/trend auxiliar
+            'ma_rating', 'osc_rating', 'volatility_level', 'volume_status', 'sentiment',
+            'trend_score', 'trend_strength', 'trend_suggestion', 'support_lvls', 'resistance_lvls', 'price_position',
+            # EXTRAS
+            'obv', 'spread', 'variation',
+            # Fundamentalistas
+            'cot', 'macro', 'sentiment_news',
+
+            # PADRÕES DE VELA
+            "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji",
+            "dragonfly_doji", "gravestone_doji", "long_legged_doji", "spinning_top",
+            "hanging_man", "inverted_hammer", "marubozu", "bullish_harami", "bearish_harami",
+            "harami_cross", "piercing_line", "dark_cloud_cover", "tweezer_bottom", "tweezer_top",
+            "morning_star", "evening_star", "three_white_soldiers", "three_black_crows",
+            "three_inside_up", "three_inside_down", "three_outside_up", "three_outside_down",
+            "abandoned_baby_bullish", "abandoned_baby_bearish", "kicker_bullish", "kicker_bearish",
+            "gap_up", "gap_down", "upside_tasuki_gap", "downside_tasuki_gap", "on_neckline",
+            "separating_lines", "rising_three_methods", "falling_three_methods",
+            # Padrão de força e lista de padrões
+            "pattern_strength", "patterns"
         ]
 
     @staticmethod
