@@ -415,6 +415,11 @@ class FeatureEngineer:
             'trend_score', 'trend_strength', 'trend_suggestion', 'support_lvls', 'resistance_lvls', 'price_position',
             'obv', 'spread', 'variation',
             'cot', 'macro', 'sentiment_news',
+            "diff_sma_5_20", "diff_ema_12_26", "cross_sma_5_20", "cross_ema_12_26", "macd_cross",
+            "num_patterns", "rare_pattern_event",
+            "atr_7", "atr_14", "atr_21", "atr_28", "atr_7_pct", "atr_14_pct",
+            "bb_upper_10", "bb_lower_10", "bb_width_10", "bb_pct_10"
+    
             # PADRÕES DE VELA
             "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji",
             "dragonfly_doji", "gravestone_doji", "long_legged_doji", "spinning_top",
@@ -426,6 +431,7 @@ class FeatureEngineer:
             "gap_up", "gap_down", "upside_tasuki_gap", "downside_tasuki_gap", "on_neckline",
             "separating_lines", "rising_three_methods", "falling_three_methods",
             "pattern_strength", "patterns"
+            "diff_sma_5_20", "diff_ema_12_26", "cross_sma_5_20", "cross_ema_12_26", "macd_cross",
         ]
 
     @staticmethod
