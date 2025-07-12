@@ -225,15 +225,15 @@ class MLPredictor:
     def _add_candlestick_features(self, df: pd.DataFrame) -> pd.DataFrame:
         """Adiciona padrões de candles clássicos + força dos padrões"""
         pattern_list = [
-        "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji",
-        "dragonfly_doji", "gravestone_doji", "long_legged_doji", "spinning_top",
-        "hanging_man", "inverted_hammer", "marubozu", "bullish_harami", "bearish_harami",
-        "harami_cross", "piercing_line", "dark_cloud_cover", "tweezer_bottom", "tweezer_top",
-        "morning_star", "evening_star", "three_white_soldiers", "three_black_crows",
-        "three_inside_up", "three_inside_down", "three_outside_up", "three_outside_down",
-        "abandoned_baby_bullish", "abandoned_baby_bearish", "kicker_bullish", "kicker_bearish",
-        "gap_up", "gap_down", "upside_tasuki_gap", "downside_tasuki_gap", "on_neckline",
-        "separating_lines", "rising_three_methods", "falling_three_methods"
+            "bullish_engulfing", "bearish_engulfing", "hammer", "shooting_star", "doji",
+            "dragonfly_doji", "gravestone_doji", "long_legged_doji", "spinning_top",
+            "hanging_man", "inverted_hammer", "marubozu", "bullish_harami", "bearish_harami",
+            "harami_cross", "piercing_line", "dark_cloud_cover", "tweezer_bottom", "tweezer_top",
+            "morning_star", "evening_star", "three_white_soldiers", "three_black_crows",
+            "three_inside_up", "three_inside_down", "three_outside_up", "three_outside_down",
+            "abandoned_baby_bullish", "abandoned_baby_bearish", "kicker_bullish", "kicker_bearish",
+            "gap_up", "gap_down", "upside_tasuki_gap", "downside_tasuki_gap", "on_neckline",
+            "separating_lines", "rising_three_methods", "falling_three_methods"
         ]
         
         for pattern in pattern_list:
